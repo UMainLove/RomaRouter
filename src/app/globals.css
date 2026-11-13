@@ -78,3 +78,399 @@
     color: #7a7166;
   }
 }
+
+/*
+ * Home «Il miglio d'oro» (src/app/page.tsx). Telefono: linea verticale con le diramazioni;
+ * da 64rem: diagramma con le strade in SVG e i capolinea sopra. Le strade si disegnano
+ * all'arrivo e, al passaggio o col Tab su un capolinea, la sua strada si accende e "scorre";
+ * con la riduzione del movimento tutto resta fermo e visibile.
+ */
+@layer components {
+  .mg {
+    background: radial-gradient(ellipse at 50% 56%, #fff 0, var(--color-bg) 62%);
+  }
+  .mg-occhiello {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    text-transform: uppercase;
+    color: var(--color-amaranto);
+  }
+  .mg-occhiello::before,
+  .mg-occhiello::after {
+    content: "";
+    display: none;
+    width: 28px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--color-oro);
+  }
+
+  .mg-diagramma {
+    position: relative;
+    width: 100%;
+    max-width: 560px;
+    margin: 28px auto 0;
+  }
+  .mg-mappa {
+    display: none;
+  }
+
+  /* ---- telefono: dal miliario scende una linea, ogni ambito è una diramazione ---- */
+  .mg-miliario-telefono {
+    position: relative;
+    display: block;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--color-amaranto);
+  }
+  .mg-miliario-telefono::after {
+    content: "";
+    position: absolute;
+    inset: 13px;
+    border-radius: 50%;
+    background: var(--color-oro);
+  }
+  .mg-stazioni {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .mg-stazioni::after {
+    content: "";
+    display: block;
+    height: 28px;
+    margin-left: 18px;
+    border-left: 4px dashed var(--color-campo);
+  }
+  .mg-stazione {
+    position: relative;
+    padding-left: 64px;
+  }
+  .mg-stazione::before {
+    content: "";
+    position: absolute;
+    left: 18px;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--color-line);
+  }
+  .mg-stazione::after {
+    content: "";
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    width: 48px;
+    height: 8px;
+    margin-top: -4px;
+    border-radius: 0 4px 4px 0;
+    background: var(--mg-colore);
+  }
+  .mg-link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 84px;
+    padding: 10px 12px 10px 0;
+    border-radius: 16px;
+    animation: mg-compare 0.5s ease-out calc(var(--mg-ritardo, 0ms) + 650ms) both;
+  }
+  .mg-segno-box {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+  }
+  .mg-segno {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    color: #fff;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(37, 29, 28, 0.25);
+    transition: transform 0.2s;
+  }
+  .mg-testo {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .mg-nome {
+    font-size: 20px;
+    line-height: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .mg-breve {
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--color-ink-soft);
+  }
+  .mg-vai {
+    display: none;
+  }
+  .mg-link:is(:hover, :focus-visible) .mg-segno {
+    transform: scale(1.12);
+  }
+
+  .mg-altro {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 640px;
+    min-height: 64px;
+    margin-top: 4px;
+    padding: 8px 8px 8px 20px;
+    border: 1.5px solid var(--color-campo);
+    border-radius: 999px;
+    background: var(--color-panel);
+    box-shadow: 0 6px 20px rgba(37, 29, 28, 0.06);
+    transition: border-color 0.2s;
+  }
+  .mg-altro:hover {
+    border-color: var(--color-ink);
+  }
+
+  /* ---- il diagramma (SVG decorativo, aria-hidden) ---- */
+  .mg-anello {
+    fill: none;
+    stroke: var(--color-line);
+    stroke-width: 1.5;
+    stroke-dasharray: 2 7;
+  }
+  .mg-strada {
+    fill: none;
+    stroke-width: 12;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: mg-disegna 1s cubic-bezier(0.3, 0.7, 0.2, 1) var(--mg-ritardo, 0ms) forwards;
+    transition:
+      opacity 0.25s,
+      stroke-width 0.25s;
+  }
+  .mg-strada-altro {
+    stroke: var(--color-campo);
+    stroke-width: 4;
+    stroke-dasharray: 4 12;
+    stroke-dashoffset: 0;
+    animation: mg-compare 0.6s ease-out 0.5s both;
+  }
+  .mg-flusso {
+    fill: none;
+    stroke: #fff;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-dasharray: 0.012 0.032;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .mg-piazza {
+    fill: #fff;
+    stroke: var(--color-line);
+    stroke-width: 1.5;
+  }
+  .mg-miliario-alone {
+    fill: none;
+    stroke: color-mix(in oklab, var(--color-amaranto) 22%, transparent);
+    stroke-width: 2;
+  }
+  .mg-iscrizione {
+    font: 700 10.5px var(--font-sans);
+    letter-spacing: 0.3em;
+    fill: var(--color-muted);
+  }
+
+  /* la strada del capolinea scelto si accende, le altre si spengono */
+  .mg:has(.mg-link:is(:hover, :focus-visible)) .mg-strada:not(.mg-strada-altro),
+  .mg:has(.mg-altro:is(:hover, :focus-visible)) .mg-strada:not(.mg-strada-altro) {
+    opacity: 0.22;
+  }
+  .mg:has(.mg-link[data-ambito="oggetti"]:is(:hover, :focus-visible)) .mg-strada[data-ambito="oggetti"],
+  .mg:has(.mg-link[data-ambito="sport"]:is(:hover, :focus-visible)) .mg-strada[data-ambito="sport"],
+  .mg:has(.mg-link[data-ambito="antenne"]:is(:hover, :focus-visible)) .mg-strada[data-ambito="antenne"],
+  .mg:has(.mg-link[data-ambito="arte"]:is(:hover, :focus-visible)) .mg-strada[data-ambito="arte"] {
+    opacity: 1;
+    stroke-width: 16;
+  }
+  .mg:has(.mg-link[data-ambito="oggetti"]:is(:hover, :focus-visible)) .mg-flusso[data-ambito="oggetti"],
+  .mg:has(.mg-link[data-ambito="sport"]:is(:hover, :focus-visible)) .mg-flusso[data-ambito="sport"],
+  .mg:has(.mg-link[data-ambito="antenne"]:is(:hover, :focus-visible)) .mg-flusso[data-ambito="antenne"],
+  .mg:has(.mg-link[data-ambito="arte"]:is(:hover, :focus-visible)) .mg-flusso[data-ambito="arte"] {
+    opacity: 0.95;
+    animation: mg-scorre 1.1s linear infinite;
+  }
+  .mg:has(.mg-altro:is(:hover, :focus-visible)) .mg-strada-altro {
+    stroke: var(--color-ink);
+  }
+
+  @media (min-width: 64rem) {
+    .mg-diagramma {
+      width: min(100%, max(880px, calc((100dvh - 360px) * 2.1429)));
+      max-width: none;
+      aspect-ratio: 1200 / 560;
+      margin-top: 4px;
+    }
+    .mg-mappa {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+    .mg-miliario-telefono,
+    .mg-stazioni::after,
+    .mg-stazione::before,
+    .mg-stazione::after {
+      display: none;
+    }
+    .mg-stazioni {
+      position: absolute;
+      inset: 0;
+    }
+    .mg-stazione {
+      position: absolute;
+      left: var(--x);
+      top: var(--y);
+      width: 0;
+      height: 0;
+      padding: 0;
+    }
+    /* il segno cade esattamente sul capolinea (10px di margine + metà dei 44px = 32px),
+       il testo sta sotto */
+    .mg-link {
+      position: absolute;
+      top: -32px;
+      width: 340px;
+      min-height: 0;
+      padding: 10px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .mg-sx .mg-link {
+      left: -32px;
+    }
+    .mg-dx .mg-link {
+      right: -32px;
+      align-items: flex-end;
+      text-align: right;
+    }
+    .mg-dx .mg-testo {
+      align-items: flex-end;
+    }
+    .mg-segno {
+      width: 44px;
+      height: 44px;
+    }
+    .mg-nome {
+      font-size: 30px;
+      line-height: 34px;
+      letter-spacing: -0.02em;
+    }
+    .mg-breve {
+      max-width: 290px;
+      font-size: 15px;
+      line-height: 21px;
+    }
+    .mg-vai {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--color-amaranto);
+      opacity: 0;
+      translate: -6px 0;
+      transition:
+        opacity 0.2s,
+        translate 0.2s;
+    }
+    .mg-dx .mg-vai {
+      translate: 6px 0;
+    }
+    .mg-link:is(:hover, :focus-visible) .mg-vai {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
+
+  @media (min-width: 40rem) {
+    .mg-occhiello {
+      font-size: 13px;
+      letter-spacing: 0.1em;
+    }
+    .mg-occhiello::before,
+    .mg-occhiello::after {
+      display: block;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mg-strada {
+      stroke-dashoffset: 0;
+      animation: none;
+    }
+    .mg-strada-altro,
+    .mg-link {
+      animation: none;
+    }
+    .mg .mg-flusso {
+      animation: none !important;
+    }
+    .mg-segno,
+    .mg-vai {
+      transition: none;
+    }
+  }
+}
+
+/* Portatili bassi (es. 1280×720): titolo più compatto, così la barra resta in vista.
+   Fuori dai layer perché deve vincere sulle utility di Tailwind della pagina. */
+@media (min-width: 64rem) and (max-height: 800px) {
+  .mg {
+    padding-top: 16px;
+  }
+  .mg-titolo {
+    font-size: 44px;
+    line-height: 48px;
+  }
+  .mg-sottotitolo {
+    display: none;
+  }
+  .mg-diagramma {
+    width: min(100%, max(880px, calc((100dvh - 250px) * 2.1429)));
+  }
+}
+
+@keyframes mg-disegna {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes mg-compare {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+@keyframes mg-scorre {
+  to {
+    stroke-dashoffset: -0.044;
+  }
+}

@@ -1,13 +1,13 @@
 // Il segno: il Miliarium Aureum, la colonna del Foro da cui si misuravano le strade.
-// Quattro strade, una per ambito, nei colori degli ambiti.
+// Quattro strade, una per ambito, nei colori degli ambiti e nelle stesse posizioni della home.
 export function LogoMark({ size = 30 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
       <g strokeWidth="3.2" strokeLinecap="round">
-        <path d="M16 16L5 5" stroke="var(--color-sport)" />
-        <path d="M16 16L27 5" stroke="var(--color-antenne)" />
-        <path d="M16 16L27 27" stroke="var(--color-arte)" />
-        <path d="M16 16L5 27" stroke="var(--color-oggetti)" />
+        <path d="M16 16L5 5" stroke="var(--color-oggetti)" />
+        <path d="M16 16L27 5" stroke="var(--color-sport)" />
+        <path d="M16 16L27 27" stroke="var(--color-antenne)" />
+        <path d="M16 16L5 27" stroke="var(--color-arte)" />
       </g>
       <circle cx="16" cy="16" r="7.5" fill="var(--color-amaranto)" />
       <circle cx="16" cy="16" r="3" fill="var(--color-oro)" />
