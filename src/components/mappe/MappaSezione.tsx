@@ -38,8 +38,18 @@ export function MappaSezione({
       contenitore.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       iframe.current?.contentWindow?.postMessage({ tipo: "rr:apri-antenna", id: d.id }, window.location.origin);
     }
+    // messaggio libero per la mappa della sezione (es. arte di strada: { tipo: "rr:verifica", lat, lon })
+    function inoltra(e: Event) {
+      const d = (e as CustomEvent<{ sezione: string; dati: Record<string, unknown> }>).detail;
+      if (!d || d.sezione !== sezione) return;
+      iframe.current?.contentWindow?.postMessage(d.dati, window.location.origin);
+    }
     window.addEventListener("rr:apri-su-mappa", apri);
-    return () => window.removeEventListener("rr:apri-su-mappa", apri);
+    window.addEventListener("rr:alla-mappa", inoltra);
+    return () => {
+      window.removeEventListener("rr:apri-su-mappa", apri);
+      window.removeEventListener("rr:alla-mappa", inoltra);
+    };
   }, [sezione]);
   const base = `/mappe/${sezione}/index.html`;
   const src = `${base}?incorporata=1${parametri ? `&${parametri}` : ""}`;
@@ -48,6 +58,10 @@ export function MappaSezione({
     function suMessaggio(e: MessageEvent) {
       if (e.origin !== window.location.origin || e.source !== iframe.current?.contentWindow) return;
       if (e.data?.tipo === "rr:mappa-pronta") setPronta(true);
+      // il resto passa alla pagina come evento (es. il verdetto di un punto toccato sulla mappa)
+      else if (typeof e.data?.tipo === "string" && e.data.tipo.startsWith("rr:")) {
+        window.dispatchEvent(new CustomEvent("rr:dalla-mappa", { detail: { sezione, dati: e.data } }));
+      }
     }
     window.addEventListener("message", suMessaggio);
     // rete lenta o dati non disponibili: dopo qualche secondo si mostra comunque la mappa
@@ -56,7 +70,7 @@ export function MappaSezione({
       window.removeEventListener("message", suMessaggio);
       clearTimeout(t);
     };
-  }, []);
+  }, [sezione]);
 
   const riquadro = (
     <div
