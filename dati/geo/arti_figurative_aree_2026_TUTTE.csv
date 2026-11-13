@@ -1,0 +1,118 @@
+codice_area,municipio,area,n_postazioni,lat,lon,stato_geocodifica
+01.01,I,Ponte della Musica,4,41.9260156,12.4585266,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+01.02,I,Largo Brancaccio,3,41.8949263,12.4995476,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+01.03,I,Largo Tassoni,2,41.8996916,12.4666756,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+01.04,I,Piazza Trilussa,2,41.8918206,12.4700408,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+01.05,I,Piazza del Catalone,3,41.9038842,12.4616989,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+01.06,I,Piazza Navona,13,41.8989282,12.4731178,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+02.01,II,Piazza Ledro,1,41.9231462,12.5106409,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+02.02,II,Piazza Gimma,1,41.9306586,12.5180594,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+02.03,II,Largo degli Osci,2,41.8969359,12.5140859,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+02.04,II,Piazza Jan Palach,2,41.9334460,12.4748938,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+02.05,II,Piazza Mancini,2,41.9306156,12.4643470,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+03.01,III,Vigne Nuove,2,41.9541388,12.5378519,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+03.02,III,Conca d'Oro,3,41.9397676,12.5281410,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+03.03,III,Tufello,1,41.9460325,12.5267896,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+03.04,III,Prati Fiscali,2,,12.5096965,NON GEOCODIFICATA (omonimia: OSM restituisce un luogo in altro Municipio)
+03.05,III,Talenti,2,41.9543226,12.5545663,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+03.06,III,Espero,2,,,NON GEOCODIFICATA
+03.07,III,Città Giardino,2,41.9342245,12.5347048,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+03.08,III,Nuovo Salario,3,41.9551884,12.5114486,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+03.09,III,Colle Salario,1,41.9833712,12.5136419,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+03.10,III,Fidene,3,41.9740302,12.5142870,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+03.11,III,Villa Spada,1,,12.4644056,NON GEOCODIFICATA (omonimia: OSM restituisce un luogo in altro Municipio)
+03.12,III,Casale Nei,2,,,NON GEOCODIFICATA
+03.13,III,Porta di Roma,2,41.9705905,12.5396314,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+03.14,III,Cinquina,2,41.9794995,12.5623748,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+03.15,III,Settebagni,3,42.0062734,12.5201149,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+03.16,III,Castel Giubileo,1,41.9746561,12.5232369,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+03.17,III,Serpentara,3,41.9651293,12.5142788,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+03.18,III,Monte Cervialto,2,41.9789200,12.6223476,APPROSSIMATA (municipio non indicato da OSM)
+03.19,III,Antamoro,2,41.9595934,12.5447793,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+03.20,III,Val Melaina,3,41.9522196,12.5125058,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+04.01,IV,Piazza S. Maria Consolatrice (Casal Bertone),2,41.8980092,12.5355468,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+04.02,IV,Largo di Pietralata (area pedonale),2,41.9186350,12.5545233,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+04.03,IV,Via Filippo Meda (area interna mercato),1,41.9146784,12.5467935,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+04.04,IV,Piazza Balsamo Crivelli,2,41.9056349,12.5507919,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+04.05,IV,Via Casal Tidei (area mercato),2,41.9425804,12.5764362,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+04.06,IV,Via Cercepiccola 53 (Case Rosse),1,41.9323871,12.6446769,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+04.07,IV,Via Tiburtina (fronte galleria Shopping Center),1,41.9415526,12.6404823,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+04.08,IV,via Tiburtina angolo via di Casal Bruciato,1,41.9367736,12.6165482,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+04.09,IV,Largo Beltramelli,1,41.9101654,12.5380201,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+04.10,IV,Piazza Santa Maria dell'Ulivo Settecamini,1,41.9396308,12.6254107,APPROSSIMATA (municipio non indicato da OSM)
+05.01,V,Via Dameta,6,41.9186916,12.6052198,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+05.02,V,Piazza dei Gerani,3,41.8859075,12.5671327,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+05.03,V,Via dei Castani,4,41.8772787,12.5662182,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+06.01,VI,Teatro Tor Bella Monaca,1,41.8694150,12.6331947,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+06.02,VI,Mercato Torre Spaccata,1,41.8695876,12.5755544,GEOCODIFICATA AREA (al confine tra Municipi secondo OSM); non è la postazione esatta
+07.01,VII,Largo Appio Claudio,10,41.8548693,12.5643326,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+07.02,VII,Piazza dei Re di Roma,8,41.8812100,12.5142453,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+07.03,VII,Piazzale Appio,4,41.8855747,12.5097986,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+07.04,VII,Via Libero Leonardi,6,41.8491204,12.5938897,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+07.05,VII,Via Lemonia,4,41.8501359,12.5612588,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+08.01,VIII,Metro Garbatella (via Pullino),3,41.8658112,12.4828017,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+08.02,VIII,Metro S. Paolo,2,41.8543878,12.4780119,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+08.03,VIII,Parco Schuster,4,41.8604984,12.4772195,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+08.04,VIII,C.ne Ostiense angolo via Caffaro,2,41.8673977,12.4955183,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+08.05,VIII,Piazza Biffi,2,41.8666319,12.4903681,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+08.06,VIII,Piazza S. Eurosia,2,,,NON GEOCODIFICATA
+08.07,VIII,"Parco Caduti del Mare – via David Salinieri, 20",1,41.8652401,12.4839057,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+08.08,VIII,Piazza Caduti della Montagnola,3,41.8450419,12.4833799,APPROSSIMATA (municipio non indicato da OSM)
+08.09,VIII,Via Ostiense in corrispondenza del Rettorato Università di Roma Tre,1,41.8624517,12.4789957,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+08.10,VIII,Area interna Mercato di Grottaperfetta,2,41.8328222,12.5068863,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+08.11,VIII,Via Baldovinetti,1,41.8318579,12.4946125,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+08.12,VIII,Piazza Brin,4,41.8622016,12.4821568,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.01,IX,Viale Europa,3,41.8323447,12.4639859,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.02,IX,Viale Beethoven,2,41.8312013,12.4658015,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.03,IX,Viale degli Astri,2,41.8130729,12.4487254,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.04,IX,Via Carmelo Maestrini,1,41.7943339,12.4473451,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.05,IX,Via Gustavo D'Arpe e parte di Via di Trigoria,2,41.7651370,12.4765060,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.06,IX,Via Federico Alessandrini,1,41.7659974,12.4728705,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.07,IX,Via Francesco Sapori,1,41.8107622,12.4840656,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.08,IX,Via Andrea Meldola,1,41.8235469,12.5076341,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.09,IX,Viale Caduti per la Resistenza,1,41.7929159,12.4502810,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.10,IX,Via Vitaliano Rotellini,1,41.7731038,12.4370829,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.11,IX,Largo Giuseppe Montanari,1,41.7876610,12.5192693,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.12,IX,Viale Beata Vergine del Carmelo,2,41.8086164,12.4452171,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.13,IX,Viale Bartolomeo Cavaceppi,1,41.7969804,12.4309306,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.14,IX,Parco di Via Giuseppe Mendozza,1,41.8062289,12.4437314,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.15,IX,Parco Via Carlo Emilio Gadda,1,41.8109243,12.4716095,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.16,IX,Parco Via Matteo Bartoli ang. Via Laurentina,1,41.8289057,12.4796886,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.17,IX,Parco Via Aldo della Rocca,1,41.7871448,12.4288624,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.18,IX,Giardino Nils Erik Liedholm - Via Gustavo D'Arpe,1,41.7656896,12.4760397,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.19,IX,Parco Molino Santa Felicola,1,41.7892903,12.5345118,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.20,IX,Parco Piazza Giuliani e Dalmati - Giardino Ludovico Zeriav,1,41.8211994,12.4836039,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.21,IX,Parco tra Via Riccardo Forster - Via Tommaso Arcidiacono,1,41.8206038,12.5103390,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.22,IX,Parco di Via Salisburgo,1,41.8203284,12.4526800,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.23,IX,Parco di Via Camillo Sabatini - Via Mario Mona,1,41.8180287,12.4411708,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.24,IX,Giardino Riccardo Cino - Via Ignazio Silone,1,41.8135176,12.4848184,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.25,IX,Parco Piazza Castello della Cecchignola,1,41.8153992,12.5050284,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.26,IX,Parco Matteo di Fazio - Viale Pechino,1,41.8060298,12.4364628,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.27,IX,Parco Eunice Kennedy Shriver - Via Carmelo Maestrini,1,41.7954527,12.4437399,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.28,IX,Parco Via Sarsina - Vitinia,1,41.7910805,12.4080482,APPROSSIMATA (municipio non indicato da OSM)
+09.29,IX,Giardino Giuseppe Lima - Via Guido Fubini,1,41.7914665,12.4870685,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.30,IX,Parco degli Eroi - Viale Eroi di Cefalonia,1,41.7785966,12.4410963,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.31,IX,Parco di Via Antonino Giuffrè,1,41.7712914,12.4763852,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.32,IX,Parco Via Giacomo Dina,1,41.7676043,12.4752574,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.33,IX,Parco Lupo Alberto - Torrino Mezzocammino area V1 - Viale Gianluigi Bonelli,1,41.7925902,12.4272057,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.34,IX,Parco Martin Mystère - Torrino Mezzocammino area V6 - Viale Bartolomeo Cavaceppi,1,41.7982009,12.4335438,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.35,IX,Parco della Cisterna – Torrino - Via Mar della Cina,1,41.8113428,12.4387464,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.36,IX,Parco di Via Renzo Bertani - Via Vittorio Veltroni,1,41.7745059,12.4399760,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.37,IX,Parco Las Palmas - Via di Spregamore - Via Felitto,1,41.7339701,12.5598813,APPROSSIMATA (municipio non indicato da OSM)
+09.38,IX,Parco La Porta di Valentina - Torrino Mezzocammino area V7 - Via Andrea Cascella,1,41.8019640,12.4371329,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+09.39,IX,Parco La Porta di Valentina - Torrino Mezzocammino area V8 - Via Andrea Cascella,1,41.8019640,12.4371329,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+10.01,X,Piazza San Leonardo da Porto Maurizio,1,41.7829186,12.3659367,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+10.02,X,Piazza Umberto I,3,41.7942073,12.7632689,APPROSSIMATA (municipio non indicato da OSM)
+10.03,X,Lungomare Duca degli Abruzzi,7,41.7344015,12.2620093,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+11.01,XI,Ponte della Scienza,3,41.8685719,12.4739017,GEOCODIFICATA AREA (al confine tra Municipi secondo OSM); non è la postazione esatta
+11.02,XI,Parco Fluviale Tevere Sud,3,,,NON GEOCODIFICATA
+11.03,XI,Viale Ventimiglia,3,41.8388498,12.4388198,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+12.01,XII,Largo Nostra Signora di Coromoto,3,41.8627108,12.4441955,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+12.02,XII,Piazza Carlo Alberto Scotti,4,41.8696226,12.4460451,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+12.03,XII,Piazza San Giovanni di Dio,1,41.8747521,12.4470765,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+12.04,XII,Largo Ludovico Quaroni,4,41.8704445,12.4077701,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+13.01,XIII,Piazza Imerio,1,,,NON GEOCODIFICATA
+13.02,XIII,Largo Boccea,1,41.9008654,12.4274658,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+13.03,XIII,Piazza Santa Maria alle Fornaci,1,41.8974822,12.4552131,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+14.01,XIV,Via Federico Borromeo,6,41.9171071,12.4150347,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta
+15.01,XV,Piazza Padella,1,42.0821246,12.3497580,GEOCODIFICATA AREA (coerente col Municipio); non è la postazione esatta

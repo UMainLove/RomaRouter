@@ -1,0 +1,1023 @@
+{
+  "meta": {
+    "title": "Art Spot – workflow prenotazione spot arte di strada a Roma Capitale",
+    "version": "0.1.0",
+    "generated": "2026-11-14 (dossier verificato)",
+    "language": "it",
+    "disclaimer": "Specifica NON ufficiale. Art Spot non è la piattaforma telematica di Roma Capitale e non rilascia autorizzazioni, ricevute o nulla osta. Genera bozze che l'artista firma e invia dai propri recapiti.",
+    "regime_vigente": "DAC 24/2012 (con annullamenti TAR Lazio 5494/2013)",
+    "regime_futuro": "Proposta RC/33675/2025 (bozza, non approvata al 26/10/2026 secondo Corriere Roma). Vedi future_regime.",
+    "sources": {
+      "DAC24": "https://www.comune.roma.it/web-resources/cms/documents/regolamentoartistidistrada.pdf",
+      "SCHEDA_ISCR": "https://www.comune.roma.it/web/it/scheda-servizi.page?contentId=INF39339&pagina=3",
+      "MODULO": "https://www.comune.roma.it/web-resources/cms/documents/MODULO_ARTISTI_DI_STRADA.pdf",
+      "UFF": "https://www.comune.roma.it/web/it/dipartimento-attivita-culturali-uffici-e-contatti.page?contentId=UFF215869",
+      "TAR": "https://www.ambientediritto.it/giurisprudenza/tar-lazio-roma-31-maggio-2013/",
+      "PL1": "https://www.comune.roma.it/web/it/corpo-di-polizia-locale-di-roma-capitale-uffici-e-contatti.page?contentId=UFF20018",
+      "MUN1": "https://www.comune.roma.it/web/it/rubrica-uffici.page?cpz=amministrativa&cpz=cultu&mun=municipio_i",
+      "MUN5": "https://www.comune.roma.it/web/it/municipio-v-uffici-e-contatti.page?contentId=UFF1319385",
+      "DEROGA": "https://www.comune.roma.it/web/it/scheda-servizi.page?contentId=INF101751",
+      "PUBSPETT": "https://www.comune.roma.it/web/it/scheda-servizi.page?contentId=INF38948&pagina=3",
+      "SIAE": "https://d2aod8qfhzlk6j.cloudfront.net/SITOIS/13_1_Artisti_strada_2026_f091e6f677.pdf",
+      "BOZZA": "https://www.fnas.it/web/content/26968?access_token=5a7d3b6c-9fb1-4fb3-8940-ede75ec94bd3&unique=2122f45b95a1927a845b6c71c6a86194782b5531",
+      "CAD65": "https://docs.italia.it/italia/piano-triennale-ict/codice-amministrazione-digitale-docs/it/v2026-04-20/_rst/capo5_sezione3_art65.html",
+      "BIR2018": "https://www.buskersinrome.com/2018/12/12/la-delibera-comunale-sullarte-di-strada-attualmente-in-vigore-a-roma-come-viene-veramente-attuata/",
+      "BIR2025": "https://www.buskersinrome.com/2025/02/24/perche-per-lanno-del-giubileo-hanno-vietato-larte-di-strada-a-roma/",
+      "TB": "https://www.terzobinario.it/suolo-pubblico-in-piazza-navona-64mila-euro-di-sanzioni-di-roma-capitale/",
+      "DAC304": "https://www.comune.roma.it/web-resources/cms/documents/Assemblea_Capitolina_304_2025_1.pdf"
+    },
+    "verification_legend": {
+      "ufficiale": "testo di atto o pagina di Roma Capitale/SIAE",
+      "bozza": "testo di proposta non approvata",
+      "prassi": "testimonianze artisti/stampa",
+      "da_verificare": "non trovato in fonti ufficiali"
+    }
+  },
+  "enums": {
+    "figure_artistiche_modulo": [
+      "acrobata",
+      "antipodista",
+      "attore",
+      "ballerino",
+      "burattinaio",
+      "cantante",
+      "cantastorie",
+      "clown",
+      "contorsionista",
+      "esoterico",
+      "fachiro",
+      "giocoliere",
+      "illusionista",
+      "madonnaro",
+      "mangiatore di fuoco",
+      "mimo",
+      "poeta",
+      "saltimbanco",
+      "scultore di palloncini",
+      "spray/face painting artist",
+      "statua vivente",
+      "suonatore",
+      "trampoliere",
+      "trovatore"
+    ],
+    "modalita": [
+      "a_cerchio",
+      "a_passaggio",
+      "posteggiatore"
+    ],
+    "tipo_spettacolo": [
+      "tipo2_basso_impatto",
+      "tipo1_alto_impatto"
+    ],
+    "tipo_luogo": [
+      "allegatoB",
+      "municipio_X_area_ammessa",
+      "altro_luogo",
+      "vietato"
+    ],
+    "canale_invio": [
+      "pec_artista",
+      "email_artista",
+      "consegna_a_mano",
+      "raccomandata_ar"
+    ],
+    "fascia": [
+      "mattina",
+      "pomeriggio",
+      "esoterici_16_20",
+      "esoterici_20_24"
+    ]
+  },
+  "time_rules": {
+    "source": "https://www.comune.roma.it/web-resources/cms/documents/regolamentoartistidistrada.pdf (art. 4, 6, 13)",
+    "status": "ufficiale",
+    "fasce": [
+      {
+        "periodo": "01-10..05-31",
+        "mattina": [
+          "10:00",
+          "13:00"
+        ],
+        "pomeriggio": [
+          "16:00",
+          "20:00"
+        ]
+      },
+      {
+        "periodo": "06-01..09-30",
+        "mattina": [
+          "10:00",
+          "13:00"
+        ],
+        "pomeriggio": [
+          "16:00",
+          "22:00"
+        ]
+      },
+      {
+        "categoria": "esoterico",
+        "fasce": [
+          [
+            "16:00",
+            "20:00"
+          ],
+          [
+            "20:00",
+            "24:00"
+          ]
+        ]
+      }
+    ],
+    "max_ore_per_fascia": 2,
+    "turni_se_piu_artisti_min": {
+      "a_cerchio": 45,
+      "a_passaggio": 90,
+      "posteggiatore": 15
+    },
+    "altri_luoghi": "max 2 ore per fascia e un solo luogo di esibizione per sito (art. 4)",
+    "max_giorni_settimana_mese": null,
+    "max_giorni_note": "Non previsto dalla DAC 24/2012 (da_verificare se esistono limiti interni dei Municipi/PL). La bozza RC/33675/2025 prevede max 4 volte la stessa postazione in 30 giorni.",
+    "deroghe": "dentro eventi autorizzati dall'Amministrazione o in luoghi con orari propri (parchi, ville, metro) – art. 6"
+  },
+  "validation_rules": [
+    {
+      "id": "V01",
+      "rule": "Registro: l'artista deve risultare iscritto o con richiesta inviata prima di prenotare",
+      "status": "ufficiale (art. 1-2 DAC 24/2012; prassi)",
+      "blocking": true
+    },
+    {
+      "id": "V02",
+      "rule": "Orario dentro le fasce stagionali e durata ≤ 2 h per fascia",
+      "status": "ufficiale",
+      "blocking": true
+    },
+    {
+      "id": "V03",
+      "rule": "Allegato B: nessuna amplificazione né strumenti a corrente/batteria; solo dentro la postazione e il raggio della scheda; postazioni non impegnate contemporaneamente",
+      "status": "ufficiale (art. 4 non annullato)",
+      "blocking": true
+    },
+    {
+      "id": "V04",
+      "rule": "Luogo non presente in bans.csv attivo alla data (delibere Municipio I e altri)",
+      "status": "ufficiale/da_verificare secondo il divieto",
+      "blocking": true
+    },
+    {
+      "id": "V05",
+      "rule": "Municipio X: solo le 12 aree ammesse (art. 4)",
+      "status": "ufficiale",
+      "blocking": true
+    },
+    {
+      "id": "V06",
+      "rule": "Emissioni sonore: avviso se < 10 m da sagrato/luogo di culto aperto, vicino a scuole in orario, ospedali, beni artistici, vie < 5 m",
+      "status": "ufficiale (art. 2) – distanze diverse da 10 m non definite",
+      "blocking": false
+    },
+    {
+      "id": "V07",
+      "rule": "Ingombro ≤ 1 m² per artista fuori Allegato B; marciapiede con ≥ 2 m liberi; ≥ 10 m da emergenze monumentali",
+      "status": "ufficiale (art. 4, Allegato A)",
+      "blocking": false
+    },
+    {
+      "id": "V08",
+      "rule": "Se >5 artisti o amplificazione potente o scenografia >1 m² → percorso alto impatto",
+      "status": "ufficiale (art. 1)",
+      "blocking": true
+    },
+    {
+      "id": "V09",
+      "rule": "Fuoco: distanza ≥ 5 m; se >2 artisti con fuoco: teli ignifughi + estintore",
+      "status": "ufficiale (art. 5)",
+      "blocking": false
+    },
+    {
+      "id": "V10",
+      "rule": "Nessun minore coinvolto (salvo volontari dal pubblico con adulto o minori autorizzati); nessun animale",
+      "status": "ufficiale (art. 5)",
+      "blocking": true
+    },
+    {
+      "id": "V11",
+      "rule": "Carnevale Romano: divieto su piazze e percorsi della manifestazione per tutta la durata",
+      "status": "ufficiale (art. 2, 12)",
+      "blocking": true
+    },
+    {
+      "id": "V12",
+      "rule": "Preavviso PL inviato almeno 3 giorni prima dell'esibizione",
+      "status": "ufficiale (art. 10)",
+      "blocking": true
+    }
+  ],
+  "routing": {
+    "registro": {
+      "to": "artistidistrada.cultura@comune.roma.it",
+      "alt_pec": "protocollo.cultura@pec.comune.roma.it",
+      "alt_mano": "Piazza di Campitelli 7, 00186 Roma – su appuntamento tel. 06 67102356",
+      "alt_posta": "Raccomandata A/R a Roma Capitale - Dipartimento Attività Culturali - Piazza Campitelli 7, 00186 Roma, busta 'Richiesta annotazione nel Registro degli artisti di strada'",
+      "source": [
+        "https://www.comune.roma.it/web/it/scheda-servizi.page?contentId=INF39339&pagina=3",
+        "https://www.comune.roma.it/web/it/dipartimento-attivita-culturali-uffici-e-contatti.page?contentId=UFF215869"
+      ],
+      "status": "ufficiale"
+    },
+    "richiesta_postazione": {
+      "allegatoB": {
+        "to": "protocollo.cultura@pec.comune.roma.it",
+        "cc": "artistidistrada.cultura@comune.roma.it",
+        "status": "da_verificare",
+        "note": "Art. 8 dice 'competente Ufficio dell'Amministrazione Capitolina' senza nominarlo; si presume l'Ufficio arti di strada. Confermare per telefono."
+      },
+      "altro_luogo": {
+        "to": "contacts_municipi.csv → pec_municipio (formato protocollo.municipioromaNN@pec.comune.roma.it)",
+        "override": {
+          "I": {
+            "to": "protocollo.municipioroma01@pec.comune.roma.it",
+            "cc": "municipio01.cultura@comune.roma.it",
+            "ufficio": "Ufficio Sport, Cultura e Promozione Turistica – servizio OSP Cultura, Via Petroselli 50, tel. 06 69601454",
+            "source": "https://www.comune.roma.it/web/it/rubrica-uffici.page?cpz=amministrativa&cpz=cultu&mun=municipio_i",
+            "status": "ufficiale (rubrica)"
+          }
+        },
+        "status": "PEC Municipio: formato ufficiale; ufficio competente da_verificare per i Municipi II–XV"
+      }
+    },
+    "preavviso_pl": {
+      "to": "contacts_municipi.csv → pec_pl del Gruppo competente per il luogo (point-in-polygon sul Municipio; più sedi → scegliere la sede di riferimento del Gruppo)",
+      "override": {
+        "I": {
+          "to": "protocollo.polizialocale.01trevi@pec.comune.roma.it",
+          "sede": "Via della Greca 5 (IPA: civico 3); centralino 06 67693702",
+          "email_segreteria": "seg01centrostorico.polizialocale@comune.roma.it",
+          "source": "https://www.comune.roma.it/web/it/corpo-di-polizia-locale-di-roma-capitale-uffici-e-contatti.page?contentId=UFF20018"
+        },
+        "I_Prati": {
+          "when": "luogo nel quadrante Prati/Borgo del Municipio I (es. Via Ottaviano, Piazza Risorgimento, Castel S. Angelo lato Prati – da confermare)",
+          "to": "protocollo.polizialocale.01prati@pec.comune.roma.it",
+          "sede": "Via del Falco 6",
+          "source": "IPA AOO VR_PLGR17; GdM I 6/2026 trasmessa al \"I Gruppo Prati\"",
+          "status": "PEC verificata (IPA); ripartizione territoriale Centro/Prati da confermare con la PL"
+        }
+      },
+      "status": "PEC verificate su IPA il 14/11/2026 (tutti i Gruppi); vedi contacts_municipi.csv"
+    },
+    "alto_impatto": {
+      "to": "PEC Municipio (ufficio eventi/OSP) + cc Dip. Attività Culturali",
+      "status": "da_verificare",
+      "example": "https://www.comune.roma.it/web/it/municipio-v-uffici-e-contatti.page?contentId=UFF1319385"
+    }
+  },
+  "steps": [
+    {
+      "id": "S0_onboarding",
+      "title": "Profilo artista e verifica tipo di spettacolo",
+      "trigger": "primo accesso / nuova prenotazione",
+      "inputs": [
+        {
+          "name": "artista.nome",
+          "type": "string",
+          "required": true,
+          "validation": "1-80 caratteri"
+        },
+        {
+          "name": "artista.cognome",
+          "type": "string",
+          "required": true,
+          "validation": "1-80 caratteri"
+        },
+        {
+          "name": "artista.data_nascita",
+          "type": "date",
+          "required": true,
+          "validation": "età ≥ 18 per flusso automatico; se minore → percorso manuale (regole sui minori iscritti non trovate)"
+        },
+        {
+          "name": "artista.luogo_nascita",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "artista.provincia_nascita",
+          "type": "string",
+          "required": false,
+          "validation": "sigla 2 lettere o 'EE'"
+        },
+        {
+          "name": "artista.cittadinanza",
+          "type": "string",
+          "required": true,
+          "validation": "ISO 3166"
+        },
+        {
+          "name": "artista.codice_fiscale",
+          "type": "string",
+          "required": true,
+          "validation": "regex ^[A-Z0-9]{16}$ + checksum; per stranieri senza CF: obbligatorio? da_verificare"
+        },
+        {
+          "name": "artista.comune_residenza",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "artista.indirizzo",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "artista.civico",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "artista.cap",
+          "type": "string",
+          "required": true,
+          "validation": "5 cifre se Italia"
+        },
+        {
+          "name": "artista.telefono",
+          "type": "string",
+          "required": true,
+          "validation": "E.164"
+        },
+        {
+          "name": "artista.email",
+          "type": "email",
+          "required": true
+        },
+        {
+          "name": "artista.pec",
+          "type": "email",
+          "required": false,
+          "validation": "dominio PEC; consigliata per il preavviso con protocollo"
+        },
+        {
+          "name": "artista.figure_artistiche",
+          "type": "enum[]",
+          "required": true,
+          "validation": "almeno 1 da enums.figure_artistiche_modulo"
+        },
+        {
+          "name": "artista.titolo_soggiorno",
+          "type": "file",
+          "required": false,
+          "validation": "richiesto solo nella bozza RC/33675 per extra-UE"
+        }
+      ],
+      "outputs": [
+        "profilo"
+      ],
+      "automation": "full",
+      "statuses": [
+        "profile_incomplete",
+        "profile_complete"
+      ]
+    },
+    {
+      "id": "S1_registro",
+      "title": "Iscrizione al Registro degli artisti di strada",
+      "trigger": "profile_complete AND registro.stato in [none]",
+      "inputs": [
+        {
+          "name": "allegati.modulo_firmato",
+          "type": "file(pdf|jpg)",
+          "required": true,
+          "validation": "modulo ufficiale compilato e firmato",
+          "note": "source",
+          "source": "https://www.comune.roma.it/web-resources/cms/documents/MODULO_ARTISTI_DI_STRADA.pdf"
+        },
+        {
+          "name": "allegati.documento_identita",
+          "type": "file",
+          "required": true,
+          "validation": "leggibile, in corso di validità"
+        },
+        {
+          "name": "registro.canale_invio",
+          "type": "enum",
+          "required": true,
+          "validation": "enums.canale_invio"
+        }
+      ],
+      "generates": [
+        {
+          "doc": "modulo ufficiale precompilato (PDF) da firmare",
+          "automation": "full (precompilazione)",
+          "signature": "autografa dell'artista oppure firma digitale qualificata/avanzata"
+        },
+        {
+          "doc": "01_email_iscrizione_registro.md",
+          "automation": "draft",
+          "send": "manuale dall'email/PEC dell'artista (mailto/bozza)"
+        }
+      ],
+      "recipient": "routing.registro",
+      "deadlines": {
+        "processing_time": null,
+        "note": "Tempi di risposta non indicati dalle fonti ufficiali: Art Spot imposta un promemoria di sollecito a 30 giorni (scelta di prodotto, non norma)"
+      },
+      "cost": {
+        "amount": null,
+        "note": "Nessun costo o marca da bollo indicati nella scheda servizio (assenza di indicazione, non conferma di gratuità)"
+      },
+      "validity": {
+        "current": "non indicata dalla DAC 24/2012",
+        "future": "bozza RC/33675 art. 9: iscritti esistenti restano per 2 anni dall'entrata in vigore, poi devono riconfermare"
+      },
+      "statuses": [
+        "none",
+        "draft",
+        "awaiting_signature",
+        "ready_to_send",
+        "sent",
+        "acknowledged",
+        "registered",
+        "incomplete_requested",
+        "rejected"
+      ],
+      "transitions": [
+        [
+          "none",
+          "draft",
+          "utente avvia"
+        ],
+        [
+          "draft",
+          "awaiting_signature",
+          "modulo precompilato generato"
+        ],
+        [
+          "awaiting_signature",
+          "ready_to_send",
+          "upload modulo firmato + documento"
+        ],
+        [
+          "ready_to_send",
+          "sent",
+          "utente conferma invio (inserisce data/ora e copia della mail inviata)"
+        ],
+        [
+          "sent",
+          "acknowledged",
+          "risposta/ricevuta dell'ufficio caricata"
+        ],
+        [
+          "acknowledged",
+          "registered",
+          "comunicazione di annotazione caricata"
+        ],
+        [
+          "sent",
+          "incomplete_requested",
+          "ufficio chiede integrazioni"
+        ],
+        [
+          "incomplete_requested",
+          "ready_to_send",
+          "integrazione pronta"
+        ],
+        [
+          "sent",
+          "sent",
+          "timer 30 gg → promemoria sollecito"
+        ]
+      ],
+      "legal_limits": [
+        "La firma sul modulo è personale (CAD art. 65 c.1 lett. c: istanza sottoscritta + copia documento)",
+        "Art Spot non deve inviare a nome dell'artista da un proprio indirizzo senza delega scritta; anche con delega l'accettazione da parte dell'ufficio è da_verificare",
+        "Documento d'identità = dato personale: conservare cifrato, solo con consenso, cancellabile"
+      ]
+    },
+    {
+      "id": "S2_tipo_e_luogo",
+      "title": "Scelta luogo, data, fascia e classificazione",
+      "trigger": "utente sceglie uno spot sulla mappa",
+      "inputs": [
+        {
+          "name": "luogo_esibizione.spot_id",
+          "type": "string",
+          "required": true,
+          "validation": "id di spots.csv o punto libero"
+        },
+        {
+          "name": "luogo_esibizione.lat",
+          "type": "number",
+          "required": true
+        },
+        {
+          "name": "luogo_esibizione.lon",
+          "type": "number",
+          "required": true
+        },
+        {
+          "name": "municipio.numero",
+          "type": "enum",
+          "required": true,
+          "validation": "calcolato con point-in-polygon su urbehub_municipi-roma.geojson"
+        },
+        {
+          "name": "esibizione.data",
+          "type": "date",
+          "required": true,
+          "validation": "≥ oggi + 4 giorni (per poter rispettare il preavviso PL di 3 giorni)"
+        },
+        {
+          "name": "esibizione.ora_inizio",
+          "type": "time",
+          "required": true,
+          "validation": "dentro time_rules.fasce"
+        },
+        {
+          "name": "esibizione.ora_fine",
+          "type": "time",
+          "required": true,
+          "validation": "durata ≤ 120 min per fascia"
+        },
+        {
+          "name": "esibizione.figura",
+          "type": "enum",
+          "required": true
+        },
+        {
+          "name": "esibizione.modalita",
+          "type": "enum",
+          "required": true
+        },
+        {
+          "name": "esibizione.numero_artisti",
+          "type": "integer",
+          "required": true,
+          "validation": "1-50; >5 → alto impatto"
+        },
+        {
+          "name": "esibizione.componenti",
+          "type": "string[]",
+          "required": false,
+          "validation": "nomi + estremi registro di ciascuno; obbligatorio se numero_artisti>1 (scelta prudenziale)"
+        },
+        {
+          "name": "esibizione.emissioni_sonore",
+          "type": "enum",
+          "required": true,
+          "validation": "nessuna|acustiche|amplificate"
+        },
+        {
+          "name": "esibizione.amplificazione_descrizione",
+          "type": "string",
+          "required": false,
+          "validation": "obbligatorio se amplificate"
+        },
+        {
+          "name": "esibizione.attrezzatura",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "esibizione.ingombro_mq",
+          "type": "number",
+          "required": true,
+          "validation": "≤ 1 m² per artista fuori Allegato B; >1 m² scenografia → alto impatto"
+        },
+        {
+          "name": "esibizione.fuoco",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "esibizione.musica_repertorio",
+          "type": "enum",
+          "required": false,
+          "validation": "propria|libera|tutelata_SIAE|basi_registrate"
+        }
+      ],
+      "derived": {
+        "tipo_luogo": "allegatoB se spot.layer=postazioni_allegatoB; municipio_X_area_ammessa se layer=aree_consentite_munX; vietato se interseca bans attivi; altrimenti altro_luogo",
+        "tipo_spettacolo": "tipo1_alto_impatto se numero_artisti>5 OR amplificazione potente OR ingombro scenografia>1 m²",
+        "pl_gruppo": "da municipio"
+      },
+      "automation": "full",
+      "checks": [
+        "V02",
+        "V03",
+        "V04",
+        "V05",
+        "V06",
+        "V07",
+        "V08",
+        "V09",
+        "V10",
+        "V11"
+      ],
+      "statuses": [
+        "draft",
+        "validated",
+        "blocked"
+      ],
+      "transitions": [
+        [
+          "draft",
+          "validated",
+          "tutti i check bloccanti superati"
+        ],
+        [
+          "draft",
+          "blocked",
+          "check bloccante fallito (motivo mostrato)"
+        ]
+      ]
+    },
+    {
+      "id": "S3_richiesta_postazione",
+      "title": "Richiesta postazione e orario (ricevuta art. 8)",
+      "trigger": "validated AND tipo_spettacolo=tipo2_basso_impatto",
+      "branches": {
+        "allegatoB": {
+          "template": "02_richiesta_postazione_allegatoB_ufficio_capitolino.md",
+          "recipient": "routing.richiesta_postazione.allegatoB"
+        },
+        "altro_luogo|municipio_X_area_ammessa": {
+          "template": "03_richiesta_postazione_municipio.md",
+          "recipient": "routing.richiesta_postazione.altro_luogo"
+        }
+      },
+      "deadlines": {
+        "lead_time": null,
+        "note": "Nessun anticipo minimo fissato dall'art. 8; Art Spot consiglia di inviare insieme o prima del preavviso PL (≥ 7 giorni prima, scelta di prodotto)"
+      },
+      "allocation": {
+        "current": "La DAC 24/2012 non lo dice espressamente, ma la sentenza TAR Lazio II n.5494/2013 afferma che, in caso di richieste concorrenti, i Municipi applicano il criterio della priorità temporale (ordine di ricezione); nelle postazioni Allegato B vale la 'turnazione' indicata nella scheda e, tra più artisti presenti, i turni dell'art. 6",
+        "future": "bozza RC/33675 art. 5 c.3: ordine di ricezione delle istanze complete"
+      },
+      "receipt_fields_expected": [
+        "ente e protocollo",
+        "postazione assegnata",
+        "data",
+        "orario assegnato"
+      ],
+      "statuses": [
+        "not_needed",
+        "draft",
+        "ready_to_send",
+        "sent",
+        "receipt_received",
+        "refused",
+        "no_answer"
+      ],
+      "transitions": [
+        [
+          "draft",
+          "ready_to_send",
+          "bozza approvata dall'artista"
+        ],
+        [
+          "ready_to_send",
+          "sent",
+          "invio manuale confermato"
+        ],
+        [
+          "sent",
+          "receipt_received",
+          "upload ricevuta con postazione e orario"
+        ],
+        [
+          "sent",
+          "refused",
+          "risposta negativa"
+        ],
+        [
+          "sent",
+          "no_answer",
+          "T-3 giorni senza risposta → avviso: decidere se procedere solo con preavviso PL (rischio)"
+        ]
+      ],
+      "automation": "draft + tracking",
+      "legal_limits": [
+        "La ricevuta è un atto dell'ente: Art Spot non può simularla né sostituirla"
+      ]
+    },
+    {
+      "id": "S4_preavviso_pl",
+      "title": "Comunicazione al Gruppo di Polizia Locale (art. 10)",
+      "trigger": "validated (in parallelo a S3)",
+      "template": "04_preavviso_polizia_locale.md",
+      "recipient": "routing.preavviso_pl",
+      "deadlines": {
+        "must_send_by": "esibizione.data - 3 giorni (calendario) – interpretazione prudente: inviare entro le 23:59 del giorno D-4",
+        "reminders": [
+          "D-7 09:00",
+          "D-5 09:00",
+          "D-4 09:00"
+        ],
+        "lock": "se ora > D-3 00:00 la prenotazione passa a 'too_late' (non si può più rispettare l'art. 10)",
+        "source": "https://www.comune.roma.it/web-resources/cms/documents/regolamentoartistidistrada.pdf art. 10",
+        "status": "ufficiale (il calcolo dei giorni è un'interpretazione)"
+      },
+      "required_response": "numero di protocollo di ricezione (la norma chiede 'protocollo di ricezione')",
+      "statuses": [
+        "draft",
+        "ready_to_send",
+        "sent",
+        "protocol_received",
+        "too_late",
+        "refused"
+      ],
+      "transitions": [
+        [
+          "draft",
+          "ready_to_send",
+          "bozza approvata"
+        ],
+        [
+          "ready_to_send",
+          "sent",
+          "invio manuale confermato con data/ora"
+        ],
+        [
+          "sent",
+          "protocol_received",
+          "upload ricevuta PEC di consegna o numero di protocollo"
+        ],
+        [
+          "draft",
+          "too_late",
+          "timer D-3 scaduto"
+        ],
+        [
+          "sent",
+          "refused",
+          "PL non accetta (es. Centro Storico fuori Allegato B nel 2025, secondo Buskers in Rome)"
+        ]
+      ],
+      "notes": [
+        "La ricevuta di consegna PEC prova l'invio; il numero di protocollo arriva dopo – conservarli entrambi",
+        "Testimonianza: la ricevuta può riportare 'La presente comunicazione non costituisce titolo autorizzativo' (https://www.buskersinrome.com/2018/12/12/la-delibera-comunale-sullarte-di-strada-attualmente-in-vigore-a-roma-come-viene-veramente-attuata/)"
+      ],
+      "automation": "draft + timer + tracking",
+      "legal_limits": [
+        "Per valere come istanza dell'artista va inviata dal suo domicilio digitale/PEC (CAD art. 65 c.1 lett. c-bis) o firmata con copia documento (lett. c) – https://docs.italia.it/italia/piano-triennale-ict/codice-amministrazione-digitale-docs/it/v2026-04-20/_rst/capo5_sezione3_art65.html",
+        "Una PEC inviata dalla casella di Art Spot sarebbe un'istanza di Art Spot, non dell'artista: possibile solo con procura/delega e con accettazione dell'ufficio da_verificare"
+      ]
+    },
+    {
+      "id": "S5_alto_impatto",
+      "title": "Spettacolo ad alto impatto: spazio + nulla-osta (art. 1 p.1)",
+      "trigger": "validated AND tipo_spettacolo=tipo1_alto_impatto",
+      "template": "05_richiesta_spazio_nullaosta_alto_impatto.md",
+      "recipient": "routing.alto_impatto",
+      "inputs": [
+        {
+          "name": "referente.*",
+          "type": "object",
+          "required": true,
+          "validation": "come artista + eventuale ente"
+        },
+        {
+          "name": "alto_impatto.motivi",
+          "type": "enum[]",
+          "required": true
+        },
+        {
+          "name": "alto_impatto.superficie_mq",
+          "type": "number",
+          "required": true
+        },
+        {
+          "name": "alto_impatto.impianto_audio",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "alto_impatto.potenza_w",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "alto_impatto.pubblico_stimato",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "alto_impatto.asseverazione_acustica",
+          "type": "file",
+          "required": false,
+          "validation": "tecnico ENTECA se 1 giorno e ≤ 200 persone con attrezzature acustiche (DAC 84/2019 art. 30, come indicato dal Mun. V)"
+        },
+        {
+          "name": "bollo.identificativo",
+          "type": "string",
+          "required": false,
+          "validation": "marca da bollo 16 € se richiesta"
+        }
+      ],
+      "deadlines": {
+        "lead_time_days_min": 45,
+        "lead_time_days_max": 60,
+        "lead_time_with_pareri": "75–60 giorni",
+        "source": "https://www.comune.roma.it/web/it/municipio-v-uffici-e-contatti.page?contentId=UFF1319385",
+        "status": "ufficiale per il Municipio V; da_verificare per gli altri"
+      },
+      "costs": [
+        "marca da bollo 16 € (Mun. V)",
+        "canone OSP: art. 8 DAC 24/2012 esenta l'arte di strada dalla Cosap, ma per eventi/strutture l'applicazione del canone è da_verificare",
+        "eventuale autorizzazione di pubblico spettacolo: diritti istruttoria 60 € + bollo, rilascio entro 60 giorni (https://www.comune.roma.it/web/it/scheda-servizi.page?contentId=INF38948&pagina=3)"
+      ],
+      "statuses": [
+        "draft",
+        "ready_to_send",
+        "sent",
+        "integration_requested",
+        "nulla_osta_received",
+        "refused"
+      ],
+      "automation": "draft + checklist; invio e firme manuali"
+    },
+    {
+      "id": "S6_permessi_accessori",
+      "title": "Permessi accessori secondo l'atto",
+      "trigger": "validated",
+      "items": [
+        {
+          "if": "esibizione.musica_repertorio in [tutelata_SIAE]",
+          "action": "abbonamento SIAE artisti di strada 2026: annuale 44,40 € + IVA, semestrale 60% (26,64 € + IVA); intestato all'artista; ufficio SIAE vicino al luogo",
+          "source": "https://d2aod8qfhzlk6j.cloudfront.net/SITOIS/13_1_Artisti_strada_2026_f091e6f677.pdf",
+          "status": "ufficiale"
+        },
+        {
+          "if": "esibizione.musica_repertorio = basi_registrate",
+          "action": "oltre a SIAE possono servire i diritti dei produttori fonografici",
+          "status": "da_verificare (fonte secondaria)"
+        },
+        {
+          "if": "emissioni amplificate e luogo/evento oltre i limiti acustici",
+          "action": "richiesta parere/deroga ai limiti acustici per attività temporanea (modulo + relazione tecnico competente)",
+          "source": "https://www.comune.roma.it/web/it/scheda-servizi.page?contentId=INF101751",
+          "status": "ufficiale (procedura generale, non specifica per busker)"
+        },
+        {
+          "if": "vendita di opere figurative (pittura, scultura, disegno)",
+          "action": "non è arte di strada: serve concessione OSP da graduatoria DAC 304/2025 (avviso pubblico, durata triennale, solo opere proprie con attestato di autenticità, fattura/ricevuta)",
+          "source": "https://www.comune.roma.it/web-resources/cms/documents/Assemblea_Capitolina_304_2025_1.pdf",
+          "status": "ufficiale"
+        },
+        {
+          "if": "vendita CD/merch",
+          "action": "non disciplinata dalla DAC 24/2012 (art. 7 vieta di chiedere compensi); possibile qualificazione come commercio su area pubblica",
+          "status": "da_verificare"
+        },
+        {
+          "if": "fuoco",
+          "action": "checklist sicurezza art. 5",
+          "status": "ufficiale"
+        },
+        {
+          "if": "assicurazione RC",
+          "action": "non obbligatoria per la DAC 24/2012; l'artista risponde dei danni (art. 9) → consigliata",
+          "status": "consiglio, non norma"
+        }
+      ],
+      "automation": "full (checklist informativa)"
+    },
+    {
+      "id": "S7_giorno_esibizione",
+      "title": "Kit del giorno",
+      "trigger": "D-1 18:00",
+      "outputs": [
+        "PDF/QR con: iscrizione registro, ricevuta postazione, protocollo PL, eventuale SIAE, regole del luogo (raggio, turni, divieti)"
+      ],
+      "statuses": [
+        "ready",
+        "incomplete_documents"
+      ],
+      "automation": "full"
+    },
+    {
+      "id": "S8_chiusura",
+      "title": "Esito",
+      "trigger": "esibizione.ora_fine + 2h",
+      "statuses": [
+        "performed",
+        "cancelled",
+        "fined"
+      ],
+      "inputs": [
+        {
+          "name": "esito.verbale",
+          "type": "file",
+          "required": false,
+          "validation": "se multato: importo, articolo contestato, data – per statistiche e ricorsi"
+        }
+      ],
+      "notes": [
+        "Sanzione DAC 24/2012 art. 11: da 100 a 1.000 €; sequestro (art. 11 c.2) annullato dal TAR 5494/2013"
+      ],
+      "automation": "full"
+    }
+  ],
+  "booking_state_machine": {
+    "states": [
+      "draft",
+      "validated",
+      "blocked",
+      "awaiting_registration",
+      "requests_pending",
+      "partially_confirmed",
+      "ready",
+      "too_late",
+      "cancelled",
+      "performed"
+    ],
+    "rules": [
+      "ready = (S3.receipt_received OR S3.not_needed_by_user_choice_with_warning) AND S4.protocol_received AND S6 obligations acknowledged",
+      "too_late se S4 non 'sent' entro D-3",
+      "cancelled → genera email di annullamento facoltativa a PL e ufficio"
+    ]
+  },
+  "timers": [
+    {
+      "id": "T_preavviso",
+      "at": "esibizione.data - 3d",
+      "effect": "S4 → too_late se non inviato"
+    },
+    {
+      "id": "T_reminder_preavviso",
+      "at": [
+        "D-7",
+        "D-5",
+        "D-4"
+      ],
+      "effect": "notifica"
+    },
+    {
+      "id": "T_sollecito_registro",
+      "at": "registro.sent + 30d",
+      "effect": "promemoria sollecito (scelta di prodotto)"
+    },
+    {
+      "id": "T_alto_impatto",
+      "at": "esibizione.data - 60d",
+      "effect": "ultimo giorno consigliato per richiesta OSP evento (Mun. V: 60–45 gg)"
+    },
+    {
+      "id": "T_siae_scadenza",
+      "at": "siae.scadenza - 15d",
+      "effect": "rinnovo abbonamento"
+    },
+    {
+      "id": "T_divieti",
+      "at": "giornaliero",
+      "effect": "ricontrollo bans.csv per prenotazioni future (divieti temporanei art. 3)"
+    }
+  ],
+  "automation_matrix": {
+    "full": [
+      "calcolo Municipio e Gruppo PL",
+      "controlli orari/fasce/turni",
+      "controlli divieti e distanze (con dati mappa)",
+      "precompilazione modulo e testi",
+      "timer e promemoria",
+      "archivio ricevute",
+      "kit del giorno"
+    ],
+    "needs_artist": [
+      "firma del modulo di iscrizione",
+      "invio email/PEC dai propri recapiti",
+      "upload ricevute e protocolli",
+      "acquisto SIAE",
+      "pagamento bollo"
+    ],
+    "not_allowed_or_unverified": [
+      "inviare PEC/email a nome dell'artista senza delega",
+      "firmare per l'artista",
+      "presentare Art Spot come piattaforma o titolo autorizzativo del Comune",
+      "generare ricevute o protocolli"
+    ]
+  },
+  "future_regime": {
+    "source": "https://www.fnas.it/web/content/26968?access_token=5a7d3b6c-9fb1-4fb3-8940-ede75ec94bd3&unique=2122f45b95a1927a845b6c71c6a86194782b5531",
+    "status": "bozza (proposta RC/33675/2025, non approvata)",
+    "changes": [
+      "Registro obbligatorio con domanda via piattaforma telematica (o modalità alternative); allegati: documento + prova di regolare presenza per extra-UE; dichiarazione ex art. 32-ter c.p.",
+      "Nulla osta della postazione dal Municipio dopo l'iscrizione: luogo, data, orario, tipologia, nomi del gruppo",
+      "Assegnazione per ordine di ricezione delle istanze complete",
+      "Max 60 min per esibizione (posteggiatori 15, madonnari 120); fino a 4 postazioni/giorno (2 se >60 min); stessa postazione max 4 volte in 30 giorni; prenotazioni fino a 30 giorni avanti",
+      "Orari 10–13 e 15–22 (aree senza limitazioni e classe A); 10–13 e 16–21 (classi B e C)",
+      "Aree: senza limitazioni / sensibili A (silenzio), B (acustico, no percussioni-mantici-ottoni), C (amplificazione) / interdette",
+      "Distanze: 15 m da culto, ospedali, scuole in attività; 5 m da beni artistici",
+      "Fuoco: sempre teli ignifughi + estintore",
+      "Sanzioni 100–500 €; sospensione 3–30 giorni; sospensione registro 12 mesi oltre 40 giorni/anno; cancellazione dopo 2 sospensioni in 5 anni",
+      "Esente dal canone OSP",
+      "Transitorio: la DAC 24/2012 si applica fino alla delibera di Giunta che approva Aree e Postazioni"
+    ],
+    "art_spot_impact": "Tenere i parametri (durate, limiti, orari, classi) in config versionata per passare al nuovo regime senza riscrivere il flusso"
+  },
+  "aggiornamento_2026_11_14": {
+    "divieti": "dati/bans.csv aggiornato con atti ufficiali: GdM I 41 del 03/11/2026 proroga al 31/12/2027 i divieti di GdM 47/2025, 56/2025, 8/2026 (Pasquino, Portico d'Ottavia, Goldoni, Via del Corso, ZTL Tridente salvo Allegato B, Agnesi, San Calisto, Via Ottaviano, Piazza Risorgimento); Fori Imperiali GdM 22/2026 fino al 31/12/2026; San Calisto + 4 vie limitrofe CdM 22/2024 fino al nuovo regolamento; Piazza di Pietra max 30 min per esibizioni sonore (CdM 22/2024)",
+    "regime_futuro": "RC/33675/2025 NON approvata al 14/11/2026 (elenco regolamenti vigenti su comune.roma.it riporta ancora DAC 24/2012)",
+    "controllo_scadenze": "Il motore deve leggere valid_to e trattare come VIGENTE fino a quella data; il 31/12/2026 (Fori Imperiali) richiede ricontrollo albo pretorio Municipio I a dicembre 2026"
+  }
+}

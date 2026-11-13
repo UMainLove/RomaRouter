@@ -1,0 +1,20 @@
+/workspace/art-spot/finale/.venv/lib/python3.13/site-packages/fitz/__init__.py:17: FutureWarning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
+  warnings.warn(
+done GMD_CA_17_2023.pdf
+done GMD_CA_22_2026.pdf
+done GMD_CA_34_2025.pdf
+done GMD_CA_40_2024.pdf
+done GMD_CA_41_2026.pdf
+done GMD_CA_47_2025.pdf
+done GMD_CA_56_2025.pdf
+done GMD_CA_59_2024.pdf
+done GMD_CA_63_2023.pdf
+done GMD_CA_6_2026.pdf
+done GMD_CA_8_2026.pdf
+done CMD_CD_1_2026.pdf
+done CMD_CEA_1_2026.pdf
+done CMD_CM_1_2026.pdf
+done CMD_CN_2_2026.pdf
+done CMD_CO_1_2026.pdf
+done CMD_CS_3_2026.pdf
+done GMT_CD_3_2023.pdf
