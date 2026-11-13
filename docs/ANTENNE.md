@@ -15,7 +15,7 @@ Dati, API e pagina per la sfida 02 dell'Agentic Hack Rome, «Antenne di telefoni
 
 La mappa è costruita in `mappe/antenne/` (personalizzazioni di `mappe/base/`) con `npm run mappe:build -- antenne` e pubblicata in `public/mappe/antenne/`. La pagina la incorpora con `MappaSezione`. Legge le API qui sotto usando gli id delle feature e i campi `gestori`, `indirizzo`, `tipo_intervento`, `regime`, `data_pubblicazione`, `protocollo`, `quartiere`, `municipio_nome`, `qualita_posizione`, `sito_sensibile_vicino` e `url_avviso`. **Se cambiate nomi o forma di questi campi, aggiornate `mappe/antenne/antenne.js` e rilanciate la build.**
 
-La prima versione della mappa (`src/components/antenne/MappaAntenne.tsx`, MapLibre GL, con il worker servito da `/api/antenne/maplibre-worker`) resta nel repo come riserva, ma nessuna pagina la usa.
+La prima versione della mappa (MapLibre GL, `src/components/antenne/MappaAntenne.tsx`) è stata rimossa. Se serve, è nella storia di git, per esempio nel commit `73ab510`.
 
 ## In breve
 
