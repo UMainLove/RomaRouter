@@ -36,7 +36,7 @@ export function VistaAmbito({
         {mappa}
       </div>
 
-      <div className="flex flex-col gap-4 px-4 pt-4 pb-10 sm:px-6 lg:col-start-1 lg:row-start-2 lg:overflow-y-auto lg:border-r lg:border-line lg:bg-panel lg:pt-1">
+      <div className="flex flex-col gap-4 px-4 pt-4 pb-10 *:shrink-0 sm:px-6 lg:col-start-1 lg:row-start-2 lg:overflow-y-auto lg:border-r lg:border-line lg:bg-panel lg:pt-1">
         {children}
       </div>
     </main>

@@ -16,7 +16,10 @@ import { MappaSchematica, type PropsMappa, type SegnoExtra } from "./MappaSchema
  *   mappa → app   { tipo: "rr:apri", ambito, id }    tocco su un punto
  */
 const URL_MAPPA = "/quartieri/index.html";
-const SRC_IFRAME = `${URL_MAPPA}?intro=no&incorporata=1#3d`;
+// Desktop: la vista 3D (come romaquartieri.it/#3d). Telefono e tablet, dove la mappa è una
+// fascia di metà schermo: la 2D, più leggibile; il tasto 3D | 2D resta nella mappa.
+const SRC_3D = `${URL_MAPPA}?intro=no&incorporata=1#3d`;
+const SRC_2D = `${URL_MAPPA}?intro=no&incorporata=1&vista=2d`;
 const NESSUNO: SegnoExtra[] = [];
 
 let verifica: Promise<boolean> | null = null;
@@ -50,6 +53,7 @@ export function Mappa({ titolo, ...props }: PropsMappa & { titolo: string }) {
 
 function MappaQuartieri({ titolo, punti, selezionato, onSeleziona, centro, raggioMetri, extra = NESSUNO }: PropsMappa & { titolo: string }) {
   const iframe = useRef<HTMLIFrameElement>(null);
+  const [src] = useState(() => (window.matchMedia("(min-width: 64rem)").matches ? SRC_3D : SRC_2D));
   const [pronta, setPronta] = useState(false);
   const seleziona = useRef(onSeleziona);
   useEffect(() => {
@@ -91,5 +95,5 @@ function MappaQuartieri({ titolo, punti, selezionato, onSeleziona, centro, raggi
     );
   }, [pronta, punti, extra, selezionato, centro, raggioMetri]);
 
-  return <iframe ref={iframe} src={SRC_IFRAME} title={titolo} className="absolute inset-0 size-full border-0" />;
+  return <iframe ref={iframe} src={src} title={titolo} className="absolute inset-0 size-full border-0" />;
 }
