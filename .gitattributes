@@ -1,0 +1,7 @@
+# Fine riga LF nel repo per tutti (Windows, macOS, Linux)
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ico binary
+*.png binary
+*.jpg binary
