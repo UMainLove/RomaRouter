@@ -24,6 +24,10 @@ if (richiesti.length && daFare.length !== richiesti.length) {
   process.exit(1);
 }
 
+if (!process.env.DATABASE_URL_ANTENNE) {
+  console.error("DATABASE_URL_ANTENNE non impostata: copia .env.example in .env.local");
+  process.exit(1);
+}
 await db.connect();
 const inizio = Date.now();
 try {

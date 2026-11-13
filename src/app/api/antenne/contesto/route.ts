@@ -33,12 +33,15 @@ export async function GET(req: NextRequest) {
        ORDER BY distanza_m LIMIT 50`,
       p,
     ),
+    // L'indice KNN (<->) ordina in gradi: prendiamo i 25 candidati più vicini e li riordiniamo in metri veri
     query(
-      `SELECT s.categoria, s.nome, s.indirizzo, s.ufficiale,
-              round(ST_Distance(s.geom::geography, ${PUNTO}::geography)) AS distanza_m
-       FROM antenne.siti_sensibili s
-       WHERE $3::int IS NOT NULL
-       ORDER BY s.geom <-> ${PUNTO} LIMIT 5`,
+      `SELECT * FROM (
+         SELECT s.categoria, s.nome, s.indirizzo, s.ufficiale,
+                round(ST_Distance(s.geom::geography, ${PUNTO}::geography)) AS distanza_m
+         FROM antenne.siti_sensibili s
+         WHERE $3::int IS NOT NULL
+         ORDER BY s.geom <-> ${PUNTO} LIMIT 25
+       ) c ORDER BY distanza_m LIMIT 5`,
       p,
     ),
     query(

@@ -364,7 +364,7 @@ async function Fonti() {
 // ---------------------------------------------------------------------------
 function Blocco({ id, occhiello, titolo, testo, children }: { id: string; occhiello: string; titolo: string; testo?: string; children: React.ReactNode }) {
   return (
-    <section id={id} aria-labelledby={`${id}-titolo`} className="scroll-mt-6">
+    <section id={id} aria-labelledby={`${id}-titolo`} className="min-w-0 scroll-mt-6">
       <p className="text-sm font-semibold text-accent">{occhiello}</p>
       <h2 id={`${id}-titolo`} className="mt-1 text-2xl font-bold tracking-tight text-ink">{titolo}</h2>
       {testo && <p className="mt-1 max-w-3xl text-muted">{testo}</p>}
@@ -386,7 +386,8 @@ export default function Antenne(props: PageProps<"/antenne">) {
         ))}
       </nav>
 
-      <div className="grid gap-14">
+      {/* minmax(0,1fr): le tabelle larghe scorrono nel loro riquadro invece di allargare la pagina su mobile */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-14">
         <Suspense fallback={<Attesa cosa="dei numeri" />}><Cifre /></Suspense>
 
         <Blocco id="mappa" occhiello="Impianti" titolo="La mappa delle antenne"
@@ -399,7 +400,7 @@ export default function Antenne(props: PageProps<"/antenne">) {
           <Suspense fallback={<Attesa cosa="delle misure" />}><Misure /></Suspense>
         </Blocco>
 
-        <Blocco id="contesto" occhiello="Contesto" titolo="Le regole, dal Campidoglio a Roma"
+        <Blocco id="contesto" occhiello="Contesto" titolo="Le regole, dall'Italia al tuo Municipio"
           testo="Come si autorizza un'antenna, dove è vietata e quali norme valgono.">
           <Suspense fallback={<Attesa cosa="delle regole" />}><Contesto /></Suspense>
         </Blocco>

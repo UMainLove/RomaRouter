@@ -1,6 +1,19 @@
 # Layer antenne di telefonia mobile
 
-Dati e API per la sfida 02 dell'Agentic Hack Rome, «Antenne di telefonia mobile: impianti, misure e contesto». Le spiegazioni sulle fonti e sulle norme sono nel report di ricerca in `reports/`.
+Dati, API e pagina per la sfida 02 dell'Agentic Hack Rome, «Antenne di telefonia mobile: impianti, misure e contesto». Le spiegazioni sulle fonti e sulle norme sono nel report di ricerca in `reports/`.
+
+## La pagina `/antenne`
+
+| Sezione | Cosa mostra |
+| --- | --- |
+| Cifre | Impianti nel Comune secondo ARPA, istanze in mappa, siti sensibili, valore di attenzione |
+| **Mappa** (MapLibre GL + OpenFreeMap, senza chiavi API) | Istanze SRB, siti sensibili per gruppo, aree vincolate, centraline ARPA; filtri per operatore e Municipio; ricerca indirizzo sullo stradario ufficiale; pulsante «Vicino a me». Il clic su un'antenna apre la sua scheda, il clic su un punto qualsiasi mostra il contesto entro 500 m |
+| Misure | Scala dei limiti (6 / 15 / 20 V/m), pareri ed esposti ARPA anno per anno, centraline, come chiedere una misura |
+| Regole | Iter di un'antenna a Roma e norme comunali, regionali e nazionali |
+| Elenco | Le stesse istanze in tabella, filtrabile: funziona anche senza JavaScript |
+| Fonti | Registro delle fonti e lacune dei dati pubblici |
+
+Il componente della mappa (`src/components/antenne/MappaAntenne.tsx`) legge solo le API qui sotto, quindi si può riusare su un'altra mappa. MapLibre 6 carica il suo web worker da `/api/antenne/maplibre-worker`, perché Turbopack non pubblica il file `.mjs` separato.
 
 ## In breve
 
@@ -24,9 +37,21 @@ Il secondo comando scarica tutto dalle fonti originali, salva una copia in `data
 npm run antenne:import -- istanze arpa
 ```
 
-I passi disponibili sono `normativa`, `territorio`, `sensibili`, `istanze` e `arpa`. Ogni passo si può rilanciare senza duplicare dati.
+I passi disponibili sono `normativa`, `territorio`, `sensibili`, `istanze` e `arpa`. Ogni passo si può rilanciare senza duplicare dati. I dati finiscono nel database della sezione, `rr_antenne` (variabile `DATABASE_URL_ANTENNE`).
 
-Il geocoding usa OpenStreetMap Nominatim, a una richiesta ogni 1,5 secondi, con la cache in `data/raw/antenne/geocode-cache.json`.
+**Geocoding.** Si usa prima lo **stradario ufficiale di Roma Capitale**: circa 559.000 numeri civici del layer GeoRoma `DIPCUL:GeoromaCiviciLocator`. OpenStreetMap Nominatim resta come riserva, con al massimo una richiesta ogni 1,5 secondi, e si disattiva da solo se risponde 429. La cache sta in `data/raw/antenne/geocode-cache.json`. Sulle istanze che hanno sia coordinate pubblicate sia indirizzo, lo scarto mediano tra i due è di circa 24 m.
+
+**Dopo ogni import** rigenerate i dati versionati (dump e GeoJSON in `data/`), con `npm run dev` attivo:
+
+```bash
+npm run antenne:esporta
+```
+
+Test del parser di coordinate e indirizzi:
+
+```bash
+npm run antenne:test
+```
 
 ## Tabelle (schema `antenne`)
 
@@ -63,6 +88,7 @@ I confini di Municipi, suddivisione toponomastica (rioni, quartieri, suburbi, zo
 | `GET /api/antenne/monitoraggio` | Centraline ARPA con i link ai report | nessuno |
 | `GET /api/antenne/contesto?lat=&lon=&raggio=500` | Per un punto: Municipio, quartiere, antenne nel raggio, siti sensibili più vicini, vincoli, limiti di legge | `raggio` da 50 a 3000 m |
 | `GET /api/antenne/info` | Limiti, norme, procedure, statistiche, fonti, riepilogo per Municipio | nessuno |
+| `GET /api/antenne/indirizzo?q=via salaria 292` | Fino a 6 indirizzi dallo stradario ufficiale di Roma Capitale, con coordinate e Municipio | `q`, almeno 3 caratteri |
 
 Ogni FeatureCollection ha un campo `metadata` con attribuzioni, avvertenze e legenda. **Mostrate le attribuzioni sulla mappa**, perché la licenza ODbL di OpenStreetMap le rende obbligatorie.
 
@@ -114,5 +140,5 @@ map.addLayer({
 1. **Allegato A della DAC 78/2024** (elenco georeferenziato ufficiale dei siti sensibili) in formato vettoriale: va chiesto al Dipartimento Urbanistica o al SUAP. Per ora lo ricostruiamo con i layer GeoRoma più OpenStreetMap.
 2. **Catasto degli impianti attivi**: ARPA Lazio (NirWeb, da aprile 2026) e MIMIT non lo pubblicano. Andrebbe chiesta un'apertura dei dati, anche a precisione ridotta.
 3. **Misure CEM puntuali**: ARPA non le pubblica, e i report della centralina di via Boncompagni sono solo grafici, fermi a giugno 2022.
-4. **Elenchi SRB degli altri Municipi**: per ora abbiamo il Municipio X (PDF 2025) più la tabella 2025 del Dipartimento Urbanistica e gli avvisi pubblicati sul sito. Il PDF 2024 del Municipio X oggi risponde 404.
+4. **Elenchi SRB degli altri Municipi**: per ora abbiamo il Municipio X (PDF 2025) più la tabella 2025 del Dipartimento Urbanistica e gli avvisi pubblicati sul sito. Il PDF 2024 del Municipio X oggi risponde 404. Su 196 istanze, 192 hanno una posizione. Delle altre 4, tre hanno l'indirizzo scritto in modo diverso dallo stradario (es. «Bagigalupo» invece di «Bacigalupo», «Fontebuono») e una non ha né indirizzo né coordinate.
 5. **Licenza dei dati comunali**: non è dichiarata né sugli avvisi né sui layer GeoRoma. Per le linee guida AgID il riferimento è CC BY 4.0, ma va confermata con il Comune.

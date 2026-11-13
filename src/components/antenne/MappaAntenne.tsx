@@ -313,7 +313,7 @@ export function MappaAntenne() {
   );
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_24rem]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_24rem]">
       <div className="relative h-[70vh] min-h-[28rem] overflow-hidden rounded-3xl border border-line bg-surface-2 shadow-sm lg:h-auto lg:min-h-[44rem]">
         <RicercaIndirizzo onScelta={(r) => void mostraContesto([r.lon, r.lat], r.etichetta, true)} />
         {/* MapLibre impone position:relative al suo contenitore: l'involucro assoluto gli dà le dimensioni */}

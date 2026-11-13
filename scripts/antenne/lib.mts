@@ -9,8 +9,8 @@ export const RAW_DIR = path.resolve(import.meta.dirname, "../../data/raw/antenne
 // gli User-Agent che imitano un browser ("Mozilla/5.0 ..."), quindi niente imitazioni.
 export const USER_AGENT = "civic-data-ingest/0.1";
 
-// La sezione antenne ha il suo database (rr_antenne): vedi src/lib/sezioni.ts e db/init.sql
-if (!process.env.DATABASE_URL_ANTENNE) throw new Error("DATABASE_URL_ANTENNE non impostata: copia .env.example in .env.local");
+// La sezione antenne ha il suo database (rr_antenne): vedi src/lib/sezioni.ts e db/init.sql.
+// Il client si crea subito ma si connette solo in import.mts (i test non toccano il database).
 export const db = new pg.Client({ connectionString: process.env.DATABASE_URL_ANTENNE });
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -106,7 +106,8 @@ const OPERATORI: [RegExp, string][] = [
   [/\bwind\s*-?\s*tre\b|\bwindtre\b|\bwind\b/i, "WindTre"],
   [/\bvodafone\b/i, "Vodafone"],
   [/\btelecom\s+italia\b|\btim\b/i, "TIM"],
-  [/\biliad\b/i, "Iliad"],
+  [/\bil+iad\b/i, "Iliad"],               // anche il refuso "Illiad" presente negli elenchi
+  [/\bfiber\s*cop\b/i, "FiberCop"],
   [/\binwit\b/i, "INWIT"],
   [/\bcellnex\b/i, "Cellnex"],
   [/\bfastweb\b/i, "Fastweb"],
