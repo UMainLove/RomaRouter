@@ -10,7 +10,8 @@
     "db:migrate": "node --env-file=.env.local scripts/db/migrate.mts",
     "antenne:import": "node --env-file=.env.local scripts/antenne/import.mts",
     "antenne:esporta": "node --env-file=.env.local scripts/antenne/esporta.mts",
-    "antenne:test": "node --test scripts/antenne/coord.test.mts scripts/antenne/geocode.test.mts"
+    "antenne:test": "node --test scripts/antenne/coord.test.mts scripts/antenne/geocode.test.mts",
+    "mappe:build": "node scripts/mappe/build.mts"
   },
   "dependencies": {
     "maplibre-gl": "^6.18.0",

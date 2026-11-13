@@ -43,6 +43,8 @@ Poi apri http://localhost:3000. Se http://localhost:3000/api/health risponde `"o
 | `db/<sezione>/migrations/` | Tabelle di ciascuna sezione |
 | `docs/SETUP.md` | Installazione completa su Windows |
 | `docs/ANTENNE.md` | Dati e API della sezione antenne |
+| `mappe/` | Le quattro mappe delle sezioni, basate su «Quartieri di Roma 2026» (vedi [mappe/README.md](mappe/README.md)) |
+| `public/mappe/` | Le mappe costruite (`npm run mappe:build -- tutte`), incorporate nelle pagine con `MappaSezione` |
 
 ### Schemi per database
 

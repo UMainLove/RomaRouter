@@ -4,7 +4,8 @@ import { Suspense } from "react";
 import { IntestazionePagina } from "@/components/ui/Varie";
 import { contenitore } from "@/components/ui/stili";
 import { Badge, BarraFiltri, CampoScelta, CampoTesto, Conteggio, MUNICIPI, Vuoto, parametro } from "@/components/Filtri";
-import { MappaAntenne } from "@/components/antenne/MappaAntenne";
+import { MappaSezione } from "@/components/mappe/MappaSezione";
+import { VediSuMappa } from "@/components/mappe/VediSuMappa";
 import { queryAntenne } from "@/lib/antenne";
 
 export const metadata: Metadata = {
@@ -293,7 +294,10 @@ async function Elenco({ searchParams }: { searchParams: PageProps<"/antenne">["s
                   <td className="px-4 py-3">{r.tipo_intervento ? <Badge tono="accento">{r.tipo_intervento}</Badge> : "—"}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-muted">{dataIt(r.data_pubblicazione)}</td>
                   <td className="px-4 py-3">
-                    {r.url_avviso ? <a href={r.url_avviso} target="_blank" rel="noopener noreferrer" className="font-semibold text-accent hover:underline">Avviso</a> : "—"}
+                    <span className="flex gap-3">
+                      <VediSuMappa sezione="antenne" id={r.id} etichetta={`${r.gestori.join(", ")}, ${r.indirizzo ?? ""}`} />
+                      {r.url_avviso && <a href={r.url_avviso} target="_blank" rel="noopener noreferrer" className="font-semibold text-accent hover:underline">Avviso</a>}
+                    </span>
                     {r.qualita !== "originale" && <span className="block text-xs text-muted">{r.qualita === "geocodificata" ? "posizione da indirizzo" : "coordinate corrette"}</span>}
                   </td>
                 </tr>
@@ -397,8 +401,8 @@ export default function Antenne(props: PageProps<"/antenne">) {
         <Suspense fallback={<Attesa cosa="dei numeri" />}><Cifre /></Suspense>
 
         <Blocco id="mappa" occhiello="Impianti" titolo="La mappa delle antenne"
-          testo="Le richieste di nuove antenne o di modifiche pubblicate da Roma Capitale, con i siti sensibili e le aree vincolate intorno. Clicca un punto per scoprire cosa c'è entro 500 metri.">
-          <MappaAntenne />
+          testo="Le richieste di nuove antenne o di modifiche pubblicate da Roma Capitale, con i siti sensibili e le aree vincolate intorno. Cerca una via per vedere le antenne lungo la via, o apri un quartiere per sapere quante ce ne sono.">
+          <MappaSezione sezione="antenne" titolo="Mappa delle antenne di telefonia mobile a Roma" />
         </Blocco>
 
         <Blocco id="misure" occhiello="Misure" titolo="Campi elettromagnetici: limiti e controlli"

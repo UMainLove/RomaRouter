@@ -1,0 +1,4 @@
+# Test unitari (test_build.py, test_zero_footprint.py, test_accorpamento.py): solo pytest.
+pytest
+# Solo per icone/prepara_icone_app.py: i test unitari non lo usano.
+playwright
