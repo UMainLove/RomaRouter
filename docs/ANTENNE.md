@@ -7,13 +7,15 @@ Dati, API e pagina per la sfida 02 dell'Agentic Hack Rome, «Antenne di telefoni
 | Sezione | Cosa mostra |
 | --- | --- |
 | Cifre | Impianti nel Comune secondo ARPA, istanze in mappa, siti sensibili, valore di attenzione |
-| **Mappa** (MapLibre GL + OpenFreeMap, senza chiavi API) | Istanze SRB, siti sensibili per gruppo, aree vincolate, centraline ARPA; filtri per operatore e Municipio; ricerca indirizzo sullo stradario ufficiale; pulsante «Vicino a me». Il clic su un'antenna apre la sua scheda, il clic su un punto qualsiasi mostra il contesto entro 500 m |
+| **Mappa** (mappa del team, basata su quartieri-roma-2026, in iframe) | Istanze SRB, siti sensibili, aree vincolate, centraline ARPA; ricerca vie con «antenne lungo la via»; schede delle antenne; vista 3D |
 | Misure | Scala dei limiti (6 / 15 / 20 V/m), pareri ed esposti ARPA anno per anno, centraline, come chiedere una misura |
 | Regole | Iter di un'antenna a Roma e norme comunali, regionali e nazionali |
-| Elenco | Le stesse istanze in tabella, filtrabile: funziona anche senza JavaScript |
+| Elenco | Le stesse istanze in tabella, filtrabile: funziona anche senza JavaScript. Il pulsante «Mappa» apre l'antenna sulla mappa |
 | Fonti | Registro delle fonti e lacune dei dati pubblici |
 
-Il componente della mappa (`src/components/antenne/MappaAntenne.tsx`) legge solo le API qui sotto, quindi si può riusare su un'altra mappa. MapLibre 6 carica il suo web worker da `/api/antenne/maplibre-worker`, perché Turbopack non pubblica il file `.mjs` separato.
+La mappa è costruita in `mappe/antenne/` (personalizzazioni di `mappe/base/`) con `npm run mappe:build -- antenne` e pubblicata in `public/mappe/antenne/`. La pagina la incorpora con `MappaSezione`. Legge le API qui sotto usando gli id delle feature e i campi `gestori`, `indirizzo`, `tipo_intervento`, `regime`, `data_pubblicazione`, `protocollo`, `quartiere`, `municipio_nome`, `qualita_posizione`, `sito_sensibile_vicino` e `url_avviso`. **Se cambiate nomi o forma di questi campi, aggiornate `mappe/antenne/antenne.js` e rilanciate la build.**
+
+La prima versione della mappa (`src/components/antenne/MappaAntenne.tsx`, MapLibre GL, con il worker servito da `/api/antenne/maplibre-worker`) resta nel repo come riserva, ma nessuna pagina la usa.
 
 ## In breve
 
