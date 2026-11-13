@@ -169,7 +169,10 @@ export function MappaAntenne() {
     if (!contenitore.current || !dati || mappa.current) return;
     // Il worker di MapLibre è servito dalla nostra rotta (Turbopack non pubblica il file .mjs separato)
     maplibregl.setWorkerUrl("/api/antenne/maplibre-worker");
-    const scuro = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    // Segue il tema della PAGINA (color-scheme del sito), non quello del sistema operativo:
+    // il sito è chiaro, quindi la mappa resta chiara anche su un PC in modalità scura.
+    const scuro = getComputedStyle(document.documentElement).colorScheme.trim() === "dark";
+    contenitore.current.classList.toggle("mappa-scura", scuro);
     const m = new maplibregl.Map({
       container: contenitore.current,
       style: `https://tiles.openfreemap.org/styles/${scuro ? "dark" : "positron"}`,
@@ -269,14 +272,19 @@ export function MappaAntenne() {
       });
       setPronta(true);
     });
-    return () => { m.remove(); mappa.current = null; };
+    return () => {
+      // In sviluppo React monta due volte: la mappa nuova non è "pronta" finché non carica il suo stile
+      setPronta(false);
+      m.remove();
+      mappa.current = null;
+    };
   }, [dati, mostraContesto]);
 
   // --- Evidenzia l'istanza selezionata ---------------------------------------
   const selezionataPrima = useRef<number | null>(null);
   useEffect(() => {
     const m = mappa.current;
-    if (!m || !pronta) return;
+    if (!m || !pronta || !m.getSource("istanze")) return;
     if (selezionataPrima.current != null) m.setFeatureState({ source: "istanze", id: selezionataPrima.current }, { selezionata: false });
     const id = selezione?.tipo === "istanza" ? selezione.id : null;
     if (id != null) m.setFeatureState({ source: "istanze", id }, { selezionata: true });
@@ -286,7 +294,7 @@ export function MappaAntenne() {
   // --- Visibilità e filtri ----------------------------------------------------
   useEffect(() => {
     const m = mappa.current;
-    if (!m || !pronta) return;
+    if (!m || !pronta || !m.getLayer("istanze")) return;
     const vis = (v: boolean) => (v ? "visible" : "none");
     m.setLayoutProperty("istanze", "visibility", vis(visibili.istanze));
     m.setLayoutProperty("istanze-alone", "visibility", vis(visibili.istanze));
