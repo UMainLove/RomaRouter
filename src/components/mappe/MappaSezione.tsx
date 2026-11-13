@@ -14,6 +14,7 @@ export function MappaSezione({
   titolo,
   parametri = "",
   altezza = "min(78vh, 760px)",
+  pieno = false,
 }: {
   sezione: Sezione;
   /** Titolo accessibile dell'iframe, es. "Mappa delle antenne di telefonia mobile". */
@@ -21,6 +22,8 @@ export function MappaSezione({
   /** Parametri aggiuntivi per la mappa, es. "antenna=12" o "lat=41.9&lon=12.5". */
   parametri?: string;
   altezza?: string;
+  /** Riempie il contenitore (colonna mappa di VistaAmbito): niente bordo, niente link sotto. */
+  pieno?: boolean;
 }) {
   const iframe = useRef<HTMLIFrameElement>(null);
   const contenitore = useRef<HTMLDivElement>(null);
@@ -55,24 +58,33 @@ export function MappaSezione({
     };
   }, []);
 
+  const riquadro = (
+    <div
+      ref={contenitore}
+      className={pieno ? "absolute inset-0 overflow-hidden bg-panel" : "relative overflow-hidden rounded-panel border border-line bg-panel"}
+      style={pieno ? undefined : { height: altezza, minHeight: 520 }}
+    >
+      <iframe
+        ref={iframe}
+        src={src}
+        title={titolo}
+        allow="geolocation; fullscreen"
+        className="absolute inset-0 h-full w-full border-0"
+      />
+      {!pronta && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-panel/70" role="status">
+          <span className="rounded-full border border-line bg-panel px-4 py-2 text-sm font-semibold text-ink-soft shadow-sm">
+            Carico la mappa…
+          </span>
+        </div>
+      )}
+    </div>
+  );
+  if (pieno) return riquadro;
+
   return (
     <div className="flex flex-col gap-2">
-      <div ref={contenitore} className="relative overflow-hidden rounded-panel border border-line bg-panel" style={{ height: altezza, minHeight: 520 }}>
-        <iframe
-          ref={iframe}
-          src={src}
-          title={titolo}
-          allow="geolocation; fullscreen"
-          className="absolute inset-0 h-full w-full border-0"
-        />
-        {!pronta && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-panel/70" role="status">
-            <span className="rounded-full border border-line bg-panel px-4 py-2 text-sm font-semibold text-ink-soft shadow-sm">
-              Carico la mappa…
-            </span>
-          </div>
-        )}
-      </div>
+      {riquadro}
       <a
         href={base}
         target="_blank"

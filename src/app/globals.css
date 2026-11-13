@@ -3,8 +3,9 @@
 /*
  * Token di RomaRouter, allineati alla mappa "Quartieri di Roma 2026" (fork in public/quartieri).
  * Riferimento visivo: canvas "RomaRouter — UI/UX", tavola "Sistema di design".
- * Regola: il colore di un ambito non è mai da solo (sempre icona, forma ed etichetta)
- * e i testi stanno in inchiostro o nella variante "-ink" su tinta.
+ * Regole: il colore di un ambito non è mai da solo (sempre icona, forma ed etichetta) e i testi stanno
+ * in inchiostro o nella variante "-ink". Forme sulla mappa: oggetti rombo, sport cerchio, antenne quadrato,
+ * artisti goccia.
  */
 @theme {
   --color-amaranto: #8e001c;
@@ -16,24 +17,31 @@
   --color-ink-soft: #3e3634;
   --color-muted: #5f5654;
   --color-campo: #8a807e;
-  --color-line: #e2dddc;
-  --color-line-soft: #efeceb;
-  --color-bg: #f9f6f4;
-  --color-bg-sink: #f3efed;
+  --color-line: #e4e0dc;
+  --color-line-soft: #efece9;
+  --color-bg: #faf9f7;
+  --color-bg-sink: #f2f0ed;
   --color-panel: #ffffff;
+  /* fondo della mappa schematica, lo stesso "travertino" della mappa dei quartieri */
+  --color-mappa: #ebe6dc;
 
-  --color-sport: #0f9466;
+  /*
+   * Colori degli ambiti, rivisti perché ora stanno tutti insieme (home, testata, mappa di "Altro").
+   * Verificati con il controllo del daltonismo su tutte le coppie: ΔE minimo 10 (deuteranopia),
+   * 21,5 a vista normale, contrasto ≥ 3:1 su bianco. Il testo usa sempre la variante -ink (≥ 5,5:1).
+   */
+  --color-sport: #12a06e;
   --color-sport-ink: #0a6b49;
-  --color-sport-tint: #e3f4ec;
+  --color-sport-tint: #e4f5ec;
   --color-antenne: #2a6fd6;
   --color-antenne-ink: #1f55a8;
   --color-antenne-tint: #e5eefb;
-  --color-arte: #e0602e;
-  --color-arte-ink: #a8431c;
-  --color-arte-tint: #fcebe3;
-  --color-oggetti: #7a4fd0;
-  --color-oggetti-ink: #5b37a8;
-  --color-oggetti-tint: #efe9fb;
+  --color-arte: #d4691a;
+  --color-arte-ink: #9a4a10;
+  --color-arte-tint: #fcefe4;
+  --color-oggetti: #a8327e;
+  --color-oggetti-ink: #86245f;
+  --color-oggetti-tint: #f8e8f1;
 
   --color-ok: #0c7a3e;
   --color-ok-tint: #e6f4ec;

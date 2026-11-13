@@ -42,6 +42,12 @@ export interface RichiestaAgente {
   risposte?: Record<string, string>;
   /** Ambito scelto a mano con "Cambia". */
   ambitoForzato?: AmbitoRisposta;
+  /**
+   * Vista in cui si trova il cittadino (barra di ricerca di un ambito). Se la richiesta non
+   * indica chiaramente un altro ambito, la risposta resta qui; se lo indica, la risposta è
+   * per l'altro ambito e l'interfaccia propone di andarci.
+   */
+  ambitoCorrente?: AmbitoId;
 }
 
 export interface RispostaAgente {

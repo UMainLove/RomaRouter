@@ -119,7 +119,7 @@ export default async function PaginaImpianto({ params }: PageProps<"/sport/[id]"
               Apri su OpenStreetMap
               <Icon name="esterno" size={18} />
             </a>
-            <Link href={`/mappa?livelli=sport&zona=${impianto.quartiere.toLowerCase()}`} className={btnSecondario}>
+            <Link href={`/sport?sel=${impianto.id}`} className={btnSecondario}>
               <Icon name="mappa" size={18} />
               Vedi sulla mappa
             </Link>

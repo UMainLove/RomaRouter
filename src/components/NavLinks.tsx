@@ -2,30 +2,25 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { VOCI, type Voce } from "@/lib/ambiti";
+import { TesseraVoce } from "./ui/Varie";
 
-const VOCI = [
-  { href: "/mappa", etichetta: "Mappa comune" },
-  { href: "/oggetti", etichetta: "Oggetti smarriti" },
-  { href: "/sport", etichetta: "Impianti sportivi" },
-  { href: "/antenne", etichetta: "Antenne" },
-  { href: "/arte", etichetta: "Arte di strada" },
-];
-
-function classi(attiva: boolean) {
-  return attiva
-    ? "flex min-h-11 shrink-0 items-center rounded-[10px] bg-velo px-3 text-[15px] font-bold text-amaranto"
-    : "flex min-h-11 shrink-0 items-center rounded-[10px] px-3 text-[15px] font-semibold text-ink-soft hover:bg-bg-sink hover:text-ink";
-}
-
-export function NavLinks() {
-  const percorso = usePathname();
+function Voci({ attiva }: { attiva: (v: Voce) => boolean }) {
   return (
     <>
       {VOCI.map((v) => {
-        const attiva = percorso === v.href || percorso.startsWith(v.href + "/");
+        const corrente = attiva(v);
         return (
-          <Link key={v.href} href={v.href} aria-current={attiva ? "page" : undefined} className={classi(attiva)}>
-            {v.etichetta}
+          <Link
+            key={v.id}
+            href={v.href}
+            aria-current={corrente ? "page" : undefined}
+            className={`flex min-h-11 shrink-0 items-center gap-2 rounded-full py-1 pr-3.5 pl-1.5 text-[15px] ${
+              corrente ? "bg-ink font-bold text-white" : "font-semibold text-ink-soft hover:bg-bg-sink hover:text-ink"
+            }`}
+          >
+            <TesseraVoce id={v.id} size={28} />
+            {v.corto}
           </Link>
         );
       })}
@@ -33,15 +28,14 @@ export function NavLinks() {
   );
 }
 
+/** Selettore degli ambiti in testata. Nella home non serve: la pagina stessa è la scelta. */
+export function NavLinks() {
+  const percorso = usePathname();
+  if (percorso === "/") return null;
+  return <Voci attiva={(v) => percorso === v.href || percorso.startsWith(v.href + "/")} />;
+}
+
 /** Stessi link senza stato attivo: fallback mentre il percorso non è noto (rotte dinamiche). */
 export function NavLinksStatici() {
-  return (
-    <>
-      {VOCI.map((v) => (
-        <Link key={v.href} href={v.href} className={classi(false)}>
-          {v.etichetta}
-        </Link>
-      ))}
-    </>
-  );
+  return <Voci attiva={() => false} />;
 }

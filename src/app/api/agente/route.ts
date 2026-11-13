@@ -1,3 +1,4 @@
+import { eAmbito } from "@/lib/ambiti";
 import { instrada } from "@/lib/agente/instrada";
 import type { RichiestaAgente } from "@/lib/agente/tipi";
 
@@ -27,5 +28,8 @@ export async function POST(request: Request) {
         )
       : undefined;
 
-  return Response.json(instrada({ messaggi, risposte, ambitoForzato: corpo.ambitoForzato }));
+  const ambitoForzato = eAmbito(corpo.ambitoForzato) || corpo.ambitoForzato === "altro" ? corpo.ambitoForzato : undefined;
+  const ambitoCorrente = eAmbito(corpo.ambitoCorrente) ? corpo.ambitoCorrente : undefined;
+
+  return Response.json(instrada({ messaggi, risposte, ambitoForzato, ambitoCorrente }));
 }

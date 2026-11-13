@@ -1,0 +1,383 @@
+From 09d1b1ada8d66b678d50149a27e0667c77ae4dc8 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 13 Nov 2026 23:24:09 +0100
+Subject: [PATCH] RomaRouter: mappa incorporata con il livello dei punti
+ dell'app
+
+- ?incorporata=1: resta la base (2D e 3D, zoom, attribuzioni), il resto
+  dell'interfaccia si nasconde; il tasto 3D | 2D resta in alto a destra
+- Livello RomaRouter in 2D (Leaflet) e in 3D (MapLibre): l'app manda i
+  punti gia' filtrati con postMessage (rr:mostra), la mappa segnala i
+  tocchi (rr:apri) e quando e' pronta (rr:pronta); solo stessa origine
+- Inquadratura: nella 2D punti e cerchio; nella 3D l'area del centro per
+  i raggi piccoli, altrimenti il municipio con piu' punti
+- build.py inlina romarouter/incorporata.{css,js}; MAPPA_MARCHIO=0 toglie
+  logo e anteprima social di Urbe Hub (non coperti dalla MIT)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_017JeyyGWsmFZ11FFMgfEw4M
+---
+ build.py                      |  17 ++-
+ mappa-quartieri.template.html |   2 +
+ romarouter/incorporata.css    |  59 ++++++++++
+ romarouter/incorporata.js     | 206 ++++++++++++++++++++++++++++++++++
+ 4 files changed, 281 insertions(+), 3 deletions(-)
+ create mode 100644 romarouter/incorporata.css
+ create mode 100644 romarouter/incorporata.js
+
+diff --git a/build.py b/build.py
+index b7b3ba3..0be8bf9 100644
+--- a/build.py
++++ b/build.py
+@@ -121,6 +121,14 @@ VISTA3D_OUT = DIST_DIR / "3d"
+ MAPLIBRE_DIR = SCRIPT_DIR / "vendor" / "maplibre-gl"
+ MARKER_VISTA3D_CSS = "/*<<VISTA_3D_CSS>>*/"
+ MARKER_VISTA3D_JS = "/*<<VISTA_3D_JS>>*/"
++# RomaRouter: mappa incorporata (?incorporata=1) e livello dei punti dell'app, inlinati come
++# l'aggancio della 3D. MAPPA_MARCHIO=0 toglie logo e anteprima social di Urbe Hub, che non
++# sono coperti dalla licenza MIT del codice.
++ROMAROUTER_SRC = SCRIPT_DIR / "romarouter"
++MARKER_ROMAROUTER_CSS = "/*<<ROMAROUTER_CSS>>*/"
++MARKER_ROMAROUTER_JS = "/*<<ROMAROUTER_JS>>*/"
++SENZA_MARCHIO = os.environ.get("MAPPA_MARCHIO", "1") == "0"
++PIXEL_VUOTO = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+ 
+ QUARTIERI_PATH = SCRIPT_DIR / "data" / "quartieri-2026.simplified.geojson"
+ MUNICIPI_PATH = SCRIPT_DIR / "data" / "municipi-roma.geojson"
+@@ -578,7 +586,7 @@ def copia_licenze_e_og():
+         if not src.exists():
+             raise SystemExit("Errore: licenza mancante " + str(src) + ".")
+         shutil.copyfile(src, out)
+-    if OG_SRC.exists():
++    if OG_SRC.exists() and not SENZA_MARCHIO:
+         shutil.copyfile(OG_SRC, OG_OUT)
+     elif OG_OUT.exists():
+         OG_OUT.unlink()
+@@ -928,7 +936,7 @@ def main(argv=None):
+     municipi_geojson = whitelist_feature_collection(municipi_geojson, MUNICIPI_PROPERTIES_WHITELIST)
+     print("Properties ricostruite con whitelist.")
+ 
+-    urbe_logo = data_uri_png(URBE_LOGO_PATH)
++    urbe_logo = PIXEL_VUOTO if SENZA_MARCHIO else data_uri_png(URBE_LOGO_PATH)
+     icone_servizi = costruisci_icone_servizi()
+     print("Icone servizi: " + str(len(icone_servizi)) + " categorie inlinate.")
+ 
+@@ -949,7 +957,8 @@ def main(argv=None):
+ 
+     for marker in (MARKER_FONTS_CSS, MARKER_LEAFLET_CSS, MARKER_LEAFLET_JS, MARKER_QUARTIERI,
+                    MARKER_MUNICIPI, MARKER_URBE_LOGO, MARKER_ICONE_SERVIZI, MARKER_VERSIONI,
+-                   MARKER_VISTA3D_CSS, MARKER_VISTA3D_JS, MARKER_INTRO_SVG, MARKER_STATISTICHE_TAG,
++                   MARKER_VISTA3D_CSS, MARKER_VISTA3D_JS, MARKER_ROMAROUTER_CSS, MARKER_ROMAROUTER_JS,
++                   MARKER_INTRO_SVG, MARKER_STATISTICHE_TAG,
+                    MARKER_STATISTICHE_LINK, MARKER_STATISTICHE_LINK_FINE, MARKER_STATISTICHE_URL):
+         occorrenze = template.count(marker)
+         if occorrenze != 1:
+@@ -973,6 +982,8 @@ def main(argv=None):
+     output = output.replace(MARKER_VERSIONI, dump_json_sicuro(versioni))
+     output = output.replace(MARKER_VISTA3D_CSS, leggi_input_obbligatorio(VISTA3D_SRC / "aggancio.css"))
+     output = output.replace(MARKER_VISTA3D_JS, escava_chiusura_script(leggi_input_obbligatorio(VISTA3D_SRC / "aggancio.js")))
++    output = output.replace(MARKER_ROMAROUTER_CSS, leggi_input_obbligatorio(ROMAROUTER_SRC / "incorporata.css"))
++    output = output.replace(MARKER_ROMAROUTER_JS, escava_chiusura_script(leggi_input_obbligatorio(ROMAROUTER_SRC / "incorporata.js")))
+ 
+     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+     OUTPUT_PATH.write_text(output, encoding="utf-8")
+diff --git a/mappa-quartieri.template.html b/mappa-quartieri.template.html
+index e924891..3a2f1ff 100644
+--- a/mappa-quartieri.template.html
++++ b/mappa-quartieri.template.html
+@@ -1460,6 +1460,7 @@
+     body { height: auto; overflow: visible; }
+   }
+ /*<<VISTA_3D_CSS>>*/
++/*<<ROMAROUTER_CSS>>*/
+ 
+   /* ---------- Intro animata, "il mosaico" (vedi MAPPA_INTRO in testa) ---------- */
+   #intro { display: none; }
+@@ -6865,6 +6866,7 @@
+   if (presentazioneAttivaDaHash()) { presentazioneAvvia(); presentazioneDaNavigazione = false; }
+   // ======================================================================
+   /*<<VISTA_3D_JS>>*/
++  /*<<ROMAROUTER_JS>>*/
+ })();
+ </script>
+ </body>
+diff --git a/romarouter/incorporata.css b/romarouter/incorporata.css
+new file mode 100644
+index 0000000..89354e0
+--- /dev/null
++++ b/romarouter/incorporata.css
+@@ -0,0 +1,59 @@
++  /* ======================================================================
++     RomaRouter: mappa incorporata (?incorporata=1, classe su <html>).
++     Resta la base (2D e 3D, zoom, attribuzioni); sparisce il resto dell'interfaccia,
++     perche' filtri, elenco e schede stanno nell'app che incorpora la mappa.
++     ====================================================================== */
++  html.rr-incorporata #intro, html.rr-incorporata #salta-mappa, html.rr-incorporata #topbar,
++  html.rr-incorporata #amaranto-rule, html.rr-incorporata #sidebar, html.rr-incorporata #sidebar-scrim,
++  html.rr-incorporata #drawer-toggle, html.rr-incorporata #reset-view, html.rr-incorporata #barra-mappa > :not(#vista-dd),
++  html.rr-incorporata #cartiglio, html.rr-incorporata #legend, html.rr-incorporata #livelli-btn,
++  html.rr-incorporata #livelli-foglio, html.rr-incorporata #copertura, html.rr-incorporata #servizi-panel,
++  html.rr-incorporata #info-panel, html.rr-incorporata #scheda-servizio, html.rr-incorporata #q15-toggle,
++  html.rr-incorporata #q15-panel, html.rr-incorporata #inset, html.rr-incorporata #toast,
++  html.rr-incorporata #about-scrim, html.rr-incorporata #about-panel, html.rr-incorporata #tour-veil,
++  html.rr-incorporata #tour-hole, html.rr-incorporata #tour-card,
++  html.rr-incorporata #map .servizio-marker, html.rr-incorporata #map .servizio-cluster,
++  html.rr-incorporata #vista-3d .servizio-marker, html.rr-incorporata #vista-3d .servizio-cluster,
++  html.rr-incorporata #vista-3d .v3d-popup, html.rr-incorporata #vista-3d .v3d-cartiglio,
++  html.rr-incorporata #vista-3d .v3d-vero, html.rr-incorporata #vista-3d .v3d-conta { display: none !important; }
++
++  /* della riga delle cifre (desktop) e della barra sulla mappa (telefono) resta solo il tasto
++     3D | 2D, in alto a destra */
++  html.rr-incorporata #overview, html.rr-incorporata #barra-mappa { position: absolute; top: 0; left: 0; width: 0; height: 0; padding: 0; margin: 0;
++    border: 0; overflow: visible; visibility: hidden; background: none; box-shadow: none; pointer-events: none; }
++  html.rr-incorporata #overview #vista-dd, html.rr-incorporata #barra-mappa > #vista-dd { visibility: visible; pointer-events: auto; position: fixed;
++    top: 12px; right: 12px; left: auto; z-index: 1300; margin: 0; box-shadow: 0 2px 10px oklch(0.24 0.04 25 / 0.16); }
++  html.rr-incorporata #vista-dd[hidden] { display: none; }
++
++  /* nella 2D le aree non si scelgono col tocco: il tocco e' per i punti dell'app */
++  html.rr-incorporata #map .leaflet-overlay-pane path { pointer-events: none; }
++
++  /* ---- i segni dell'app: forma, colore e icona insieme, come in RomaRouter ---- */
++  .rr-divicon { background: none; border: 0; }
++  .rr-segno-box { position: relative; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; }
++  .rr-bottone { appearance: none; background: none; border: 0; padding: 4px; margin: 0; cursor: pointer; display: block; }
++  .rr-bottone:focus-visible { outline: 3px solid #251d1c; outline-offset: 1px; border-radius: 10px; }
++  .rr-segno { width: var(--rr-lato); height: var(--rr-lato); background: var(--rr-colore); color: #fff; border: 2px solid #fff;
++    display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px oklch(0.24 0.04 25 / 0.35); transition: transform 0.15s; }
++  .rr-segno svg { width: 58%; height: 58%; display: block; }
++  .rr-segno b { font: 700 15px/1 Montserrat, system-ui, sans-serif; }
++  .rr-cerchio { border-radius: 50%; }
++  .rr-quadrato { border-radius: 7px; }
++  .rr-rombo { border-radius: 6px; transform: rotate(45deg) scale(0.86); }
++  .rr-rombo > .rr-dentro { transform: rotate(-45deg); }
++  .rr-goccia { border-radius: 50% 50% 50% 4px; transform: rotate(-45deg); }
++  .rr-goccia > .rr-dentro { transform: rotate(45deg); }
++  .rr-dentro { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
++  .rr-scelto { box-shadow: 0 0 0 6px oklch(0.24 0.04 25 / 0.14), 0 2px 8px oklch(0.24 0.04 25 / 0.35); }
++  .rr-bottone:hover .rr-segno:not(.rr-rombo):not(.rr-goccia) { transform: scale(1.08); }
++  .rr-nome { margin-top: 6px; max-width: 220px; padding: 4px 10px; border-radius: 8px; background: #251d1c; color: #fff;
++    font: 700 13px/1.3 Montserrat, system-ui, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none;
++    box-shadow: 0 2px 8px oklch(0.24 0.04 25 / 0.3); }
++  .rr-extra { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #251d1c; background: #fff; color: #251d1c;
++    display: flex; align-items: center; justify-content: center; transform: translate(-50%, -50%); }
++  .rr-extra svg { width: 15px; height: 15px; }
++  .rr-valore { display: flex; align-items: center; gap: 4px; transform: translate(-7px, -50%); white-space: nowrap; }
++  .rr-valore i { width: 14px; height: 14px; border-radius: 50%; border: 3px solid #1f55a8; background: #fff; box-sizing: border-box; }
++  .rr-valore span { padding: 1px 6px; border-radius: 6px; background: #fff; color: #1f55a8; font: 700 12px/1.4 Montserrat, system-ui, sans-serif;
++    box-shadow: 0 1px 3px oklch(0.24 0.04 25 / 0.2); }
++  .rr-pin { transform: translate(-50%, -100%); width: 30px; height: 30px; display: block; }
+diff --git a/romarouter/incorporata.js b/romarouter/incorporata.js
+new file mode 100644
+index 0000000..aa486b1
+--- /dev/null
++++ b/romarouter/incorporata.js
+@@ -0,0 +1,206 @@
++  // ======================================================================
++  // RomaRouter: mappa incorporata (?incorporata=1), inlinata dal build dopo la 3D.
++  // La base resta questa mappa (2D e 3D); l'app che la incorpora (stessa origine) manda i
++  // punti del suo ambito, gia' filtrati, e li disegna sopra. Protocollo con postMessage:
++  //   mappa -> app  { tipo: "rr:pronta" }                  la mappa ascolta
++  //   app -> mappa  { tipo: "rr:mostra", stili, punti, extra, selezionato, centro, raggio }
++  //   mappa -> app  { tipo: "rr:apri", ambito, id }        tocco su un punto
++  // Nella 3D l'inquadratura passa dalla guida (guida3D.vola): l'area del centro se il raggio
++  // e' piccolo (verifica entro 300 m), altrimenti il municipio con piu' punti. Nella 2D si
++  // inquadrano punti e cerchio.
++  (function () {
++    if (!/[?&]incorporata=1\b/.test(location.search) || window.parent === window) return;
++    var app = window.parent, origine = location.origin;
++    document.documentElement.classList.add("rr-incorporata");
++
++    var SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
++    var ICONE = {
++      oggetti: '<circle cx="8" cy="15" r="4.5"/><path d="M11.2 11.8L20 3M16.5 6.5l2.5 2.5M14 9l2 2"/>',
++      sport: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18M5.6 5.6c3.4 3.4 3.4 9.4 0 12.8M18.4 5.6c-3.4 3.4-3.4 9.4 0 12.8"/>',
++      antenne: '<path d="M12 11v10M8.5 21h7M12 11l-3.5 10M12 11l3.5 10"/><circle cx="12" cy="8.5" r="2"/><path d="M7.8 4.8a6 6 0 0 0 0 7.4M16.2 4.8a6 6 0 0 1 0 7.4"/>',
++      arte: '<path d="M9 18V5.5l11-2.5v12.5"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="15.5" r="2.5"/>',
++      scuola: '<path d="M3 9.5L12 5l9 4.5-9 4.5z"/><path d="M7 11.5v4.5c3 2 7 2 10 0v-4.5"/>',
++      altalena: '<path d="M4 20L8 4h8l4 16"/><path d="M10 4v9M14 4v9M9 13h6"/>',
++      ospedale: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/>'
++    };
++    var PIN = '<svg class="rr-pin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 15.8 12 22 12 22z" fill="#251d1c" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="10.5" r="2.6" fill="#fff"/></svg>';
++
++    var stato = { stili: {}, punti: [], extra: [], selezionato: null, centro: null, raggio: null };
++    var firmaInquadratura = "";
++
++    function esc(s) {
++      return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
++    }
++    function numero(v) { return typeof v === "number" && isFinite(v); }
++    function valido(p) { return p && numero(p.lat) && numero(p.lon); }
++
++    // ---- i segni (stesso HTML per la 2D e per la 3D) ----
++    function htmlSegno(p) {
++      var st = stato.stili[p.ambito] || { colore: "#8e001c", forma: "cerchio", nome: "" };
++      var sel = p.id === stato.selezionato, conta = numero(p.conteggio);
++      var lato = conta ? (sel ? 44 : 36) : (sel ? 40 : 30);
++      var dentro = conta ? "<b>" + p.conteggio + "</b>" : SVG + (ICONE[p.ambito] || "") + "</svg>";
++      return '<span class="rr-segno-box"><button type="button" class="rr-bottone" aria-label="' + esc((st.nome ? st.nome + ": " : "") + p.nome) + '" aria-pressed="' + sel + '">' +
++        '<span class="rr-segno rr-' + esc(st.forma) + (sel ? " rr-scelto" : "") + '" style="--rr-colore:' + esc(st.colore) + ";--rr-lato:" + lato + 'px"><span class="rr-dentro">' + dentro + "</span></span></button>" +
++        (sel ? '<span class="rr-nome">' + esc(p.nome) + "</span>" : "") + "</span>";
++    }
++    function htmlExtra(s) {
++      if (s.valore) return '<span class="rr-valore" title="' + esc(s.etichetta) + '"><i></i><span>' + esc(s.valore) + "</span></span>";
++      return '<span class="rr-extra" title="' + esc(s.etichetta) + '">' + (ICONE[s.icona] ? SVG + ICONE[s.icona] + "</svg>" : "") + "</span>";
++    }
++    function apri(p) { app.postMessage({ tipo: "rr:apri", ambito: p.ambito, id: p.id }, origine); }
++
++    // ---- 2D (Leaflet), in un pane sopra tutto il resto ----
++    map.createPane("rrPane");
++    map.getPane("rrPane").style.zIndex = 650;
++    var strato2D = L.layerGroup().addTo(map);
++    function icona(html) { return L.divIcon({ className: "rr-divicon", html: html, iconSize: [0, 0] }); }
++    function disegna2D() {
++      strato2D.clearLayers();
++      if (stato.centro && stato.raggio) {
++        L.circle(stato.centro, { pane: "rrPane", radius: stato.raggio, color: "#251d1c", weight: 2.5, dashArray: "10 8",
++          fillColor: "#251d1c", fillOpacity: 0.07, interactive: false }).addTo(strato2D);
++      }
++      stato.extra.forEach(function (s) {
++        L.marker([s.lat, s.lon], { pane: "rrPane", icon: icona(htmlExtra(s)), interactive: false, keyboard: false }).addTo(strato2D);
++      });
++      stato.punti.forEach(function (p) {
++        var m = L.marker([p.lat, p.lon], { pane: "rrPane", icon: icona(htmlSegno(p)), keyboard: false, riseOnHover: true,
++          zIndexOffset: p.id === stato.selezionato ? 1000 : 0 });
++        m.on("click", function () { apri(p); });
++        m.addTo(strato2D);
++      });
++      if (stato.centro) L.marker(stato.centro, { pane: "rrPane", icon: icona(PIN), interactive: false, keyboard: false, zIndexOffset: 2000 }).addTo(strato2D);
++    }
++
++    // ---- 3D (MapLibre), quando la vista 3D e' aperta e pronta ----
++    var segni3D = [];
++    function mappa3D() {
++      var V = window.Vista3D, s = V && V.stato ? V.stato() : null;
++      return s && s.aperta && s.pronta && V.mappa ? V.mappa() : null;
++    }
++    function cerchio(c, r) {
++      var anello = [], kx = Math.cos(c[0] * Math.PI / 180);
++      for (var i = 0; i <= 64; i++) {
++        var a = i / 64 * 2 * Math.PI;
++        anello.push([c[1] + (r / 111320) * Math.sin(a) / kx, c[0] + (r / 111320) * Math.cos(a)]);
++      }
++      return { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [anello] } };
++    }
++    function disegna3D() {
++      segni3D.forEach(function (m) { m.remove(); });
++      segni3D = [];
++      var m3 = mappa3D();
++      if (!m3 || !window.maplibregl) return;
++      var dati = { type: "FeatureCollection", features: stato.centro && stato.raggio ? [cerchio(stato.centro, stato.raggio)] : [] };
++      try {
++        if (m3.getSource("rr-cerchio")) m3.getSource("rr-cerchio").setData(dati);
++        else {
++          m3.addSource("rr-cerchio", { type: "geojson", data: dati });
++          m3.addLayer({ id: "rr-cerchio-fondo", type: "fill", source: "rr-cerchio", paint: { "fill-color": "#251d1c", "fill-opacity": 0.08 } });
++          m3.addLayer({ id: "rr-cerchio-bordo", type: "line", source: "rr-cerchio", paint: { "line-color": "#251d1c", "line-width": 2.5, "line-dasharray": [3, 2] } });
++        }
++      } catch (e) { if (window.console) console.warn("RomaRouter: cerchio 3D", e); }
++      function aggiungi(html, ll, quando) {
++        var el = document.createElement("div");
++        el.innerHTML = html;
++        var nodo = el.firstChild;
++        if (quando) nodo.addEventListener("click", function (ev) { ev.stopPropagation(); quando(); });
++        segni3D.push(new window.maplibregl.Marker({ element: nodo, anchor: "top-left" }).setLngLat([ll[1], ll[0]]).addTo(m3));
++      }
++      stato.extra.forEach(function (s) { aggiungi(htmlExtra(s), [s.lat, s.lon]); });
++      stato.punti.forEach(function (p) { aggiungi(htmlSegno(p), [p.lat, p.lon], function () { apri(p); }); });
++      if (stato.centro) aggiungi(PIN, stato.centro);
++    }
++
++    // ---- inquadratura ----
++    function limiti() {
++      var b = null;
++      if (stato.centro && stato.raggio) b = L.latLng(stato.centro).toBounds(stato.raggio * 2.6);
++      else if (stato.punti.length) b = L.latLngBounds(stato.punti.map(function (p) { return [p.lat, p.lon]; })).pad(0.25);
++      return b && b.isValid() ? b : null;
++    }
++    // l'area che contiene un punto (ray casting sugli anelli esterni, bastano per scegliere)
++    function areaDi(ll) {
++      var x = ll[1], y = ll[0];
++      for (var i = 0; i < QUARTIERI.features.length; i++) {
++        var f = QUARTIERI.features[i], pol = f.geometry.coordinates;
++        for (var j = 0; j < pol.length; j++) {
++          var r = pol[j][0], dentro = false;
++          for (var a = 0, b = r.length - 1; a < r.length; b = a++) {
++            if (((r[a][1] > y) !== (r[b][1] > y)) && (x < (r[b][0] - r[a][0]) * (y - r[a][1]) / (r[b][1] - r[a][1]) + r[a][0])) dentro = !dentro;
++          }
++          if (dentro) return f.properties;
++        }
++      }
++      return null;
++    }
++    function scelta3D() {
++      if (stato.centro && stato.raggio && stato.raggio <= 500) {
++        var a = areaDi(stato.centro);
++        if (a && a.codice) return { tipo: "area", codice: a.codice };
++      }
++      var conta = {}, meglio = 0, arabo = 0;
++      stato.punti.forEach(function (p) {
++        var a = areaDi([p.lat, p.lon]), m = a && a.municipio_num_arabo;
++        if (!m) return;
++        conta[m] = (conta[m] || 0) + 1;
++        if (conta[m] > meglio) { meglio = conta[m]; arabo = m; }
++      });
++      return arabo ? { tipo: "municipio", arabo: arabo } : { tipo: "roma" };
++    }
++    // Nella 2D la mappa all'avvio (e a ogni ridimensionamento) torna su tutta Roma: finche'
++    // nessuno la tocca, l'inquadratura dei punti si rimette dopo.
++    var toccata = false;
++    ["pointerdown", "wheel", "keydown"].forEach(function (t) {
++      map.getContainer().addEventListener(t, function () { toccata = true; }, { capture: true, passive: true });
++    });
++    function adatta2D() {
++      var b = limiti();
++      if (b && !toccata) map.fitBounds(b, { padding: [40, 40], maxZoom: 16, animate: false });
++    }
++    map.on("resize", function () { setTimeout(adatta2D, 60); });
++    function inquadra(forza) {
++      var b = limiti();
++      var firma = b ? b.toBBoxString() : "";
++      if (!forza && firma === firmaInquadratura) return;
++      firmaInquadratura = firma;
++      toccata = false;
++      if (b) map.fitBounds(b, { padding: [40, 40], maxZoom: 16, animate: !document.body.classList.contains("vista-3d-on") });
++      setTimeout(adatta2D, 700);
++      setTimeout(adatta2D, 1800);
++      if (document.body.classList.contains("vista-3d-on") && typeof guida3D === "object" && guida3D && guida3D.vola) {
++        try { guida3D.vola(scelta3D()); } catch (e) { if (window.console) console.warn("RomaRouter: inquadratura 3D", e); }
++      }
++    }
++
++    function applica(forza) {
++      disegna2D();
++      disegna3D();
++      inquadra(forza);
++    }
++
++    window.addEventListener("message", function (ev) {
++      if (ev.origin !== origine || ev.source !== app) return;
++      var d = ev.data;
++      if (!d || d.tipo !== "rr:mostra") return;
++      stato = {
++        stili: d.stili && typeof d.stili === "object" ? d.stili : {},
++        punti: Array.isArray(d.punti) ? d.punti.filter(valido) : [],
++        extra: Array.isArray(d.extra) ? d.extra.filter(valido) : [],
++        selezionato: typeof d.selezionato === "string" ? d.selezionato : null,
++        centro: Array.isArray(d.centro) && numero(d.centro[0]) && numero(d.centro[1]) ? [d.centro[0], d.centro[1]] : null,
++        raggio: numero(d.raggio) ? d.raggio : null
++      };
++      applica(false);
++    });
++
++    // La 3D si apre e si chiude (tasto 3D | 2D): a ogni cambio si ridisegna e si reinquadra.
++    var pronta3D = false;
++    setInterval(function () {
++      var ora = !!mappa3D();
++      if (ora !== pronta3D) { pronta3D = ora; applica(true); }
++    }, 400);
++
++    app.postMessage({ tipo: "rr:pronta" }, origine);
++  })();
+-- 
+2.43.0
+

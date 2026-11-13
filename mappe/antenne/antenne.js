@@ -112,7 +112,7 @@
     aggiornaServiziFocus = function () {
       var sp = document.getElementById("servizi-panel"); if (sp) sp.hidden = true;
     };
-    try { aggiornaServiziFocus(null); } catch (e) {}
+    try { aggiornaServiziFocus(null); } catch { /* la base puo' non avere ancora il pannello */ }
 
     // ---------------------------------------------------------------- schede
     function etichetteQualita(p) {
@@ -461,7 +461,7 @@
         antenne: geo(R.acceso.antenne ? R.istanze.filter(visibileAntenna).map(function (a) {
           return { type: "Feature", properties: { rid: a.id, vicina: !!a.vicina }, geometry: { type: "Point", coordinates: [a.ll.lng, a.ll.lat] } };
         }) : []),
-        siti: geo(R.siti.filter(function (s) { return R.acceso[gruppoSito(s.p.categoria)]; }).map(function (s, i) {
+        siti: geo(R.siti.filter(function (s) { return R.acceso[gruppoSito(s.p.categoria)]; }).map(function (s) {
           return { type: "Feature", properties: { rid: s.i, col: COLORI[gruppoSito(s.p.categoria)] }, geometry: { type: "Point", coordinates: [s.ll.lng, s.ll.lat] } };
         })),
         aree: geo(R.aree.filter(function (a) { return R.acceso[(TIPI_AREA[a.f.properties.tipo] || TIPI_AREA.area_protetta).c]; }).map(function (a) {
@@ -515,7 +515,7 @@
           if (m.getSource("rr-antenne")) m.getSource("rr-antenne").setData(d.antenne);
           if (m.getSource("rr-siti")) m.getSource("rr-siti").setData(d.siti);
           if (m.getSource("rr-aree")) m.getSource("rr-aree").setData(d.aree);
-        } catch (e) {}
+        } catch { /* sorgente gia' rimossa: si ignora */ }
       });
     }
     window.addEventListener("rr:mappa3d", function (e) { prepara3D(e.detail); });
@@ -539,7 +539,7 @@
         apriDaParametri();
         if (selectedEntry) R.areaProps = selectedEntry.feature.properties;
         aggiornaZona();
-        try { window.parent.postMessage({ tipo: "rr:mappa-pronta", sezione: "antenne" }, location.origin); } catch (e) {}
+        try { window.parent.postMessage({ tipo: "rr:mappa-pronta", sezione: "antenne" }, location.origin); } catch { /* senza pagina ospite: nulla da avvisare */ }
       })
       .catch(function (err) {
         if (window.console) console.error("RomaRouter antenne:", err);

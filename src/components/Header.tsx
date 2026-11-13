@@ -4,17 +4,18 @@ import { Icon } from "./Icon";
 import { LogoMark, Wordmark } from "./Logo";
 import { NavLinks, NavLinksStatici } from "./NavLinks";
 
+// Su desktop la testata è alta esattamente 4rem (h-16): le viste con la mappa ne tolgono l'altezza.
 export function Header() {
   return (
     <header className="border-b border-line bg-panel">
-      <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-6 gap-y-1 px-4 py-2 sm:px-8">
-        <Link href="/" className="flex min-h-11 items-center gap-2.5" aria-label="RomaRouter, pagina iniziale">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 sm:px-6 lg:h-16 lg:flex-nowrap lg:py-0">
+        <Link href="/" className="flex min-h-11 items-center gap-2.5" aria-label="RomaRouter, scegli un ambito">
           <LogoMark />
           <Wordmark />
         </Link>
         <nav
           aria-label="Ambiti"
-          className="order-3 -mx-4 flex w-[calc(100%+2rem)] gap-1 overflow-x-auto px-4 pb-1 sm:order-none sm:mx-0 sm:w-auto sm:flex-1 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0"
+          className="order-3 -mx-4 flex w-[calc(100%+2rem)] gap-1 overflow-x-auto px-4 pb-1 empty:hidden sm:-mx-6 sm:w-[calc(100%+3rem)] sm:px-6 lg:order-none lg:mx-0 lg:w-auto lg:flex-1 lg:justify-center lg:overflow-visible lg:px-0 lg:pb-0"
         >
           <Suspense fallback={<NavLinksStatici />}>
             <NavLinks />
@@ -22,10 +23,11 @@ export function Header() {
         </nav>
         <Link
           href="/operatori"
-          className="ml-auto flex min-h-11 items-center gap-2 rounded-card border-[1.5px] border-campo px-4 text-[15px] font-semibold text-ink hover:bg-bg-sink sm:ml-0"
+          className="ml-auto flex min-h-11 items-center gap-2 rounded-full px-3 text-[15px] font-semibold text-ink-soft hover:bg-bg-sink hover:text-ink lg:ml-0"
         >
           <Icon name="utente" size={18} />
-          Area operatori
+          <span className="hidden sm:inline">Area operatori</span>
+          <span className="sm:hidden">Operatori</span>
         </Link>
       </div>
     </header>

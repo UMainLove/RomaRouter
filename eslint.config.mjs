@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Build della mappa dei quartieri (codice di terzi, si rifà con scripts/mappa.sh).
+    "public/quartieri/**",
+    // Mappe delle sezioni: base di terzi e build (si rifanno con npm run mappe:build, vedi mappe/README.md).
+    "mappe/base/**",
+    "public/mappe/**",
   ]),
 ]);
 
