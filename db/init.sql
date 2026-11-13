@@ -1,7 +1,16 @@
--- RomaRouter: database locale di sviluppo
--- Da eseguire UNA volta come superuser "postgres":
+-- RomaRouter: database locali di sviluppo
+-- Da eseguire come superuser "postgres", dalla cartella del progetto:
 --   psql -U postgres -h localhost -v app_password='scegli-una-password' -f db/init.sql
--- Poi metti la stessa password in DATABASE_URL dentro .env.local
+-- Poi metti la stessa password nelle variabili DATABASE_URL* di .env.local (vedi .env.example).
+-- Si può rilanciare: salta ciò che esiste già.
+--
+-- Struttura: un database separato per ogni sezione del sito, così ogni tool resta indipendente
+-- (la mappa delle antenne non vede i dati degli artisti di strada, e così via).
+--   rr_antenne            → /antenne             (antenne di telefonia mobile)
+--   rr_artisti_strada     → /artisti-di-strada   (postazioni, regole, prenotazioni)
+--   rr_impianti_sportivi  → /impianti-sportivi   (mappa per disciplina, municipio, accessibilità)
+--   rr_oggetti_smarriti   → /oggetti-smarriti    (catalogo ricercabile, inserimento, restituzione)
+--   romarouter            → database generale (controllo /api/health); le sezioni non lo usano
 
 \set ON_ERROR_STOP on
 
@@ -9,54 +18,28 @@
 SELECT format('CREATE ROLE romarouter LOGIN PASSWORD %L', :'app_password')
 WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'romarouter') \gexec
 
--- Database del progetto
-SELECT 'CREATE DATABASE romarouter OWNER romarouter ENCODING ''UTF8'' TEMPLATE template0'
-WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'romarouter') \gexec
+-- Database
+SELECT format('CREATE DATABASE %I OWNER romarouter ENCODING ''UTF8'' TEMPLATE template0', d)
+FROM unnest(ARRAY['romarouter', 'rr_antenne', 'rr_artisti_strada', 'rr_impianti_sportivi', 'rr_oggetti_smarriti']) AS d
+WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = d) \gexec
 
+-- ---------------------------------------------------------------------------
+-- Database generale
+-- ---------------------------------------------------------------------------
 \connect romarouter
+\ir _estensioni.sql
 
--- Estensioni
-CREATE EXTENSION IF NOT EXISTS postgis;      -- geometrie: municipi, quartieri, sedi, POI
-CREATE EXTENSION IF NOT EXISTS postgis_raster; -- dati raster (ortofoto, mappe di calore); richiesto da h3_postgis
-CREATE EXTENSION IF NOT EXISTS pgrouting;    -- percorsi su grafo stradale / trasporti
-CREATE EXTENSION IF NOT EXISTS h3;           -- griglia esagonale per aggregare dati sul territorio
-CREATE EXTENSION IF NOT EXISTS h3_postgis;
-CREATE EXTENSION IF NOT EXISTS ogr_fdw;      -- leggere GeoJSON/Shapefile/CSV degli open data come tabelle
-CREATE EXTENSION IF NOT EXISTS pg_trgm;      -- ricerca testuale "fuzzy" (vie, nomi uffici, servizi)
-CREATE EXTENSION IF NOT EXISTS unaccent;     -- ricerca senza accenti
-CREATE EXTENSION IF NOT EXISTS pgcrypto;     -- gen_random_uuid(), hash
-CREATE EXTENSION IF NOT EXISTS citext;       -- email / codici case-insensitive
+-- ---------------------------------------------------------------------------
+-- Un database per sezione (gli schemi li creano le migrazioni in db/<sezione>/migrations)
+-- ---------------------------------------------------------------------------
+\connect rr_antenne
+\ir _estensioni.sql
 
--- pgvector (embedding per il chatbot / RAG): richiede l'estensione installata sul server.
--- Su Windows con Smart App Control attivo la DLL compilata in locale viene bloccata
--- (errore 4551): in quel caso lo script prosegue senza pgvector. Vedi docs/SETUP.md.
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'vector') THEN
-    BEGIN
-      CREATE EXTENSION IF NOT EXISTS vector;
-    EXCEPTION WHEN OTHERS THEN
-      RAISE WARNING 'pgvector presente ma non caricabile: %', SQLERRM;
-    END;
-  ELSE
-    RAISE NOTICE 'pgvector non installato su questo server: vedi docs/SETUP.md';
-  END IF;
-END $$;
+\connect rr_artisti_strada
+\ir _estensioni.sql
 
--- Configurazione full-text in italiano senza accenti
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_ts_config WHERE cfgname = 'italian_unaccent') THEN
-    CREATE TEXT SEARCH CONFIGURATION italian_unaccent (COPY = italian);
-    ALTER TEXT SEARCH CONFIGURATION italian_unaccent
-      ALTER MAPPING FOR hword, hword_part, word WITH unaccent, italian_stem;
-  END IF;
-END $$;
+\connect rr_impianti_sportivi
+\ir _estensioni.sql
 
--- Schemi per organizzare i dati
-CREATE SCHEMA IF NOT EXISTS opendata AUTHORIZATION romarouter;  -- dataset importati (Roma Capitale, ISTAT, ...)
-CREATE SCHEMA IF NOT EXISTS chatbot  AUTHORIZATION romarouter;  -- conversazioni, documenti, embedding
-CREATE SCHEMA IF NOT EXISTS pagamenti AUTHORIZATION romarouter; -- posizioni debitorie / esiti pagoPA
-
-GRANT ALL ON SCHEMA public TO romarouter;
-ALTER DATABASE romarouter SET search_path = public, opendata, chatbot, pagamenti;
+\connect rr_oggetti_smarriti
+\ir _estensioni.sql

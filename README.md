@@ -1,6 +1,15 @@
 # RomaRouter
 
-Chatbot che aiuta chi vive a Roma a orientarsi tra servizi e pratiche di Roma Capitale, con dati open, geodati e pagamenti pagoPA.
+Servizi per chi vive a Roma, nati dalle quattro sfide dell'Agentic Hack Rome (Urbe Hub). Niente chatbot: la home ha quattro pulsanti e ognuno porta direttamente ai dati della sua sezione. **Ogni sezione è un tool indipendente con il proprio database**, quindi i dati di una sezione non compaiono mai nelle altre.
+
+| Sezione | Percorso | Database |
+| --- | --- | --- |
+| Artisti di strada: dove esibirsi e come prenotare | `/artisti-di-strada` | `rr_artisti_strada` |
+| Antenne di telefonia mobile: impianti, misure, contesto | `/antenne` | `rr_antenne` |
+| Oggetti smarriti: catalogo ricercabile, inserimento, restituzione | `/oggetti-smarriti` | `rr_oggetti_smarriti` |
+| Impianti sportivi: mappa per disciplina, Municipio e accessibilità | `/impianti-sportivi` | `rr_impianti_sportivi` |
+
+L'elenco delle sezioni sta in [src/lib/sezioni.ts](src/lib/sezioni.ts), unica fonte per home, pagine e connessioni. Nel codice server usate `querySezione("oggetti-smarriti", sql, params)` da [src/lib/db.ts](src/lib/db.ts): legge la variabile `DATABASE_URL_*` della sezione.
 
 ## Stack
 
@@ -26,15 +35,22 @@ Poi apri http://localhost:3000. Se http://localhost:3000/api/health risponde `"o
 | --- | --- |
 | `src/app/` | Pagine e rotte API (App Router) |
 | `src/app/api/health/` | Controllo della connessione al DB e delle estensioni |
-| `src/lib/db.ts` | Pool di connessioni Postgres (solo lato server) |
-| `db/init.sql` | Crea ruolo, database, estensioni e schemi |
+| `src/app/<sezione>/` | Pagina di ciascuna sezione |
+| `src/components/` | Componenti condivisi: guscio delle sezioni, icone, stato dei dati |
+| `src/lib/sezioni.ts` | Elenco delle quattro sezioni |
+| `src/lib/db.ts` | Pool di connessioni Postgres, uno per sezione (solo lato server) |
+| `db/init.sql` | Crea ruolo, database ed estensioni |
+| `db/<sezione>/migrations/` | Tabelle di ciascuna sezione |
 | `docs/SETUP.md` | Installazione completa su Windows |
+| `docs/ANTENNE.md` | Dati e API della sezione antenne |
 
-### Schemi del database
+### Schemi per database
 
-- `opendata`: dataset importati (Roma Capitale, ISTAT, …)
-- `chatbot`: conversazioni, documenti, embedding
-- `pagamenti`: posizioni debitorie ed esiti pagoPA
+- `rr_artisti_strada` → `artisti`: postazioni, regole, fasce orarie, prenotazioni
+- `rr_impianti_sportivi` → `sport`: impianti, discipline, accessibilità
+- `rr_oggetti_smarriti` → `smarriti`: oggetti (con ricerca full-text), categorie, richieste di restituzione
+- `rr_antenne` → `antenne`, `opendata`: vedi [docs/ANTENNE.md](docs/ANTENNE.md)
+- `romarouter` → database generale, usato solo da `/api/health`
 
 ## Regole del team
 

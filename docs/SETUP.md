@@ -43,7 +43,7 @@ Durante l'installazione scegliete la password del superuser `postgres` e annotat
 
 3. **Importante:** copiate anche `bin\postgisgui\libwinpthread-1.dll` in `C:\Program Files\PostgreSQL\17\bin`. Senza questa DLL `CREATE EXTENSION postgis` fallisce con "unknown error 126".
 
-## 5. pgvector (embedding per il chatbot)
+## 5. pgvector (ricerca per somiglianza)
 
 pgvector va compilato, quindi servono i Build Tools C++ di Microsoft:
 
@@ -72,7 +72,19 @@ Scegliete una password per l'utente applicativo `romarouter` e lanciate, dalla c
 & "C:\Program Files\PostgreSQL\17\bin\psql.exe" -U postgres -h localhost -v app_password='PASSWORD_APP' -f db/init.sql
 ```
 
-Lo script crea il ruolo `romarouter`, il database `romarouter`, le estensioni e gli schemi `opendata`, `chatbot` e `pagamenti`. Potete rilanciarlo senza problemi: salta quello che esiste già.
+Lo script crea il ruolo `romarouter` e cinque database, tutti con le stesse estensioni:
+
+| Database | Sezione |
+| --- | --- |
+| `rr_antenne` | Antenne di telefonia mobile |
+| `rr_artisti_strada` | Artisti di strada |
+| `rr_impianti_sportivi` | Impianti sportivi |
+| `rr_oggetti_smarriti` | Oggetti smarriti |
+| `romarouter` | Database generale, usato solo dal controllo `/api/health` |
+
+Ogni sezione del sito legge **solo** il proprio database. Potete rilanciare lo script senza problemi: salta quello che esiste già.
+
+Le tabelle delle sezioni le creano le migrazioni in `db/<sezione>/migrations/`.
 
 ## 7. Variabili d'ambiente
 
@@ -80,7 +92,7 @@ Lo script crea il ruolo `romarouter`, il database `romarouter`, le estensioni e 
 Copy-Item .env.example .env.local
 ```
 
-Aprite `.env.local` e sostituite `LA_TUA_PASSWORD` con la password scelta al punto 6.
+Aprite `.env.local` e sostituite `LA_TUA_PASSWORD` con la password scelta al punto 6, in tutte e cinque le righe `DATABASE_URL*`.
 
 ## 8. Avvio
 
