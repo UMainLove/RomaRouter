@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { PaginaSezione } from "@/components/PaginaSezione";
+import { IntestazionePagina } from "@/components/ui/Varie";
+import { contenitore } from "@/components/ui/stili";
 import { Badge, BarraFiltri, CampoScelta, CampoTesto, Conteggio, MUNICIPI, Vuoto, parametro } from "@/components/Filtri";
 import { MappaAntenne } from "@/components/antenne/MappaAntenne";
 import { queryAntenne } from "@/lib/antenne";
@@ -36,7 +37,7 @@ async function Cifre() {
   return (
     <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {voci.map((v) => (
-        <li key={v.testo} className="rounded-3xl border border-line bg-surface p-5">
+        <li key={v.testo} className="rounded-panel border border-line bg-surface p-5">
           <p className="bg-gradient-to-r from-accent to-accent-2 bg-clip-text text-3xl font-bold tracking-tight text-transparent sm:text-4xl">{v.valore}</p>
           <p className="mt-1 text-sm leading-snug text-ink">{v.testo}</p>
           <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-muted">{v.fonte}</p>
@@ -57,7 +58,7 @@ function ScalaLimiti() {
     { v: 20, testo: "20 V/m", nota: "limite di esposizione: mai superabile", stile: "border-accent text-accent" },
   ];
   return (
-    <figure className="rounded-3xl border border-line bg-surface p-6">
+    <figure className="rounded-panel border border-line bg-surface p-6">
       <figcaption className="text-lg font-bold text-ink">Quanto è &laquo;troppo&raquo;? I limiti italiani</figcaption>
       <p className="mt-1 text-sm text-muted">Campo elettrico per le frequenze della telefonia mobile (3 MHz – 3 GHz).</p>
       <div className="relative mt-14 h-4 rounded-full bg-gradient-to-r from-emerald-400/70 via-amber-300/80 to-rose-500/80" role="img"
@@ -71,7 +72,7 @@ function ScalaLimiti() {
       </div>
       <dl className="mt-6 grid gap-3 sm:grid-cols-3">
         {segni.map((s) => (
-          <div key={s.v} className="rounded-2xl bg-surface-2 p-4">
+          <div key={s.v} className="rounded-card bg-surface-2 p-4">
             <dt className="text-sm font-bold text-ink">{s.testo}</dt>
             <dd className="mt-1 text-sm text-muted">{s.nota}</dd>
           </div>
@@ -89,7 +90,7 @@ function ScalaLimiti() {
 function Barre({ titolo, sottotitolo, serie }: { titolo: string; sottotitolo: string; serie: { anno: number; valore: number }[] }) {
   const max = Math.max(...serie.map((s) => s.valore), 1);
   return (
-    <figure className="rounded-3xl border border-line bg-surface p-6">
+    <figure className="rounded-panel border border-line bg-surface p-6">
       <figcaption>
         <span className="block text-base font-bold text-ink">{titolo}</span>
         <span className="block text-sm text-muted">{sottotitolo}</span>
@@ -129,11 +130,11 @@ async function Misure() {
         <Barre titolo="Segnalazioni dei cittadini gestite" sottotitolo="Esposti CEM evasi da ARPA, provincia di Roma" serie={serie("esposti_evasi")} />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-3xl border border-line bg-surface p-6">
+        <section className="rounded-panel border border-line bg-surface p-6">
           <h3 className="text-base font-bold text-ink">Le centraline di monitoraggio a Roma</h3>
           <ul className="mt-3 grid gap-3">
             {centraline.rows.map((c) => (
-              <li key={c.nome} className="rounded-2xl bg-surface-2 p-4">
+              <li key={c.nome} className="rounded-card bg-surface-2 p-4">
                 <p className="font-semibold text-ink">{c.nome}</p>
                 {c.descrizione && <p className="mt-1 text-sm text-muted">{c.descrizione}</p>}
                 <p className="mt-2 text-xs font-semibold text-muted">
@@ -147,7 +148,7 @@ async function Misure() {
             sono state chieste le antenne, non quanto campo producono.
           </p>
         </section>
-        <section className="rounded-3xl border border-accent-2/30 bg-gradient-to-br from-accent/5 to-accent-2/10 p-6">
+        <section className="rounded-panel border border-accent-2/30 bg-gradient-to-br from-accent/5 to-accent-2/10 p-6">
           <h3 className="text-base font-bold text-ink">Vuoi sapere quanto campo c&apos;è a casa tua?</h3>
           <ol className="mt-3 grid gap-3 text-sm text-ink">
             <li className="flex gap-3"><Passo n={1} />Chi può chiederlo: proprietario, affittuario o un suo rappresentante (es. l&apos;amministratore di condominio).</li>
@@ -191,7 +192,7 @@ async function Contesto() {
   ];
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
-      <section className="rounded-3xl border border-line bg-surface p-6">
+      <section className="rounded-panel border border-line bg-surface p-6">
         <h3 className="text-base font-bold text-ink">Come nasce un&apos;antenna a Roma</h3>
         <ol className="relative mt-4 grid gap-5 border-l-2 border-line pl-6">
           {iter.map((p) => (
@@ -202,14 +203,14 @@ async function Contesto() {
             </li>
           ))}
         </ol>
-        <p className="mt-5 rounded-2xl bg-surface-2 p-4 text-sm text-muted">
+        <p className="mt-5 rounded-card bg-surface-2 p-4 text-sm text-muted">
           <strong className="text-ink">Dove sono vietate.</strong> Il regolamento di Roma (DAC 78/2024) vieta le antenne sopra ospedali, case di cura, RSA, asili nido,
           scuole, oratori, parchi gioco e carceri, e nelle aree vincolate. Non fissa invece distanze minime: il Consiglio di Stato aveva bocciato i 100 m del regolamento 2015.
         </p>
       </section>
       <section className="grid gap-3">
         {livelli.map((l) => (
-          <div key={l.id} className="rounded-3xl border border-line bg-surface p-5">
+          <div key={l.id} className="rounded-panel border border-line bg-surface p-5">
             <h3 className="text-sm font-bold uppercase tracking-wide text-muted">{l.titolo}</h3>
             <div className="mt-2 divide-y divide-line">
               {rows.filter((r) => r.livello === l.id).map((r) => (
@@ -269,7 +270,7 @@ async function Elenco({ searchParams }: { searchParams: PageProps<"/antenne">["s
       {righe.rows.length === 0 ? (
         <Vuoto filtrato={filtrato} cosa="antenna" />
       ) : (
-        <div className="overflow-x-auto rounded-3xl border border-line bg-surface">
+        <div className="overflow-x-auto rounded-panel border border-line bg-surface">
           <table className="w-full min-w-[46rem] text-left text-sm">
             <caption className="sr-only">Istanze di installazione o modifica di stazioni radio base pubblicate da Roma Capitale</caption>
             <thead className="border-b border-line text-xs uppercase tracking-wide text-muted">
@@ -321,7 +322,7 @@ async function Fonti() {
   ];
   return (
     <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-      <div className="overflow-x-auto rounded-3xl border border-line bg-surface">
+      <div className="overflow-x-auto rounded-panel border border-line bg-surface">
         <table className="w-full min-w-[36rem] text-left text-sm">
           <caption className="sr-only">Fonti dei dati della sezione antenne</caption>
           <thead className="border-b border-line text-xs uppercase tracking-wide text-muted">
@@ -346,7 +347,7 @@ async function Fonti() {
           </tbody>
         </table>
       </div>
-      <section className="rounded-3xl border border-dashed border-line bg-surface p-6">
+      <section className="rounded-panel border border-dashed border-line bg-surface p-6">
         <h3 className="text-base font-bold text-ink">Cosa i dati pubblici non dicono</h3>
         <ul className="mt-3 grid gap-3 text-sm leading-relaxed text-muted">
           {lacune.map((l) => (
@@ -374,13 +375,18 @@ function Blocco({ id, occhiello, titolo, testo, children }: { id: string; occhie
 }
 
 const Attesa = ({ cosa }: { cosa: string }) => (
-  <div className="rounded-3xl border border-line bg-surface p-8 text-center text-muted" role="status">Caricamento {cosa}…</div>
+  <div className="rounded-panel border border-line bg-surface p-8 text-center text-muted" role="status">Caricamento {cosa}…</div>
 );
 
 export default function Antenne(props: PageProps<"/antenne">) {
   return (
-    <PaginaSezione sezione="antenne">
-      <nav aria-label="In questa pagina" className="-mt-4 mb-8 flex flex-wrap gap-2">
+    <main className={`${contenitore} flex flex-col gap-6 py-8`}>
+      <IntestazionePagina
+        ambito="antenne"
+        titolo="Antenne di telefonia mobile"
+        sottotitolo="Impianti sul territorio, misure dei campi elettromagnetici e informazioni sul contesto"
+      />
+      <nav aria-label="In questa pagina" className="mb-4 flex flex-wrap gap-2">
         {[["#mappa", "Mappa"], ["#misure", "Misure"], ["#contesto", "Regole"], ["#elenco", "Elenco"], ["#fonti", "Fonti"]].map(([h, t]) => (
           <a key={h} href={h} className="rounded-full border border-line bg-surface px-4 py-1.5 text-sm font-semibold text-muted transition hover:border-accent hover:text-accent">{t}</a>
         ))}
@@ -414,6 +420,6 @@ export default function Antenne(props: PageProps<"/antenne">) {
           <Suspense fallback={<Attesa cosa="delle fonti" />}><Fonti /></Suspense>
         </Blocco>
       </div>
-    </PaginaSezione>
+    </main>
   );
 }

@@ -1,32 +1,36 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Titillium_Web } from "next/font/google";
+import localFont from "next/font/local";
+import { Footer } from "@/components/Footer";
+import { Header } from "@/components/Header";
 import "./globals.css";
 
-// Titillium Web è il carattere del design system della Pubblica Amministrazione (Designers Italia)
-const titillium = Titillium_Web({
-  variable: "--font-titillium",
-  subsets: ["latin", "latin-ext"],
-  weight: ["300", "400", "600", "700"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+// Montserrat variabile (100–900), latino, licenza SIL OFL 1.1 (fonts/OFL-Montserrat.txt).
+// Locale e non da Google Fonts: il build funziona senza rete e il browser non fa richieste esterne.
+const montserrat = localFont({
+  src: "./fonts/montserrat-latin.woff2",
+  weight: "100 900",
+  style: "normal",
+  variable: "--font-montserrat",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "RomaRouter",
+    default: "RomaRouter · tutte le strade portano al servizio giusto",
     template: "%s · RomaRouter",
   },
   description:
-    "Quattro servizi per orientarsi a Roma: artisti di strada, antenne di telefonia mobile, oggetti smarriti e impianti sportivi.",
+    "Chiedi a RomaRouter cosa ti serve: ti porta al servizio giusto di Roma Capitale, dagli oggetti smarriti agli impianti sportivi.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="it" className={`${titillium.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="it" className={`${montserrat.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col bg-bg font-sans text-ink">
+        <Header />
+        <div className="flex flex-1 flex-col">{children}</div>
+        <Footer />
+      </body>
     </html>
   );
 }

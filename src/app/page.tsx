@@ -1,76 +1,137 @@
 import Link from "next/link";
-import { IconaSezione } from "@/components/IconaSezione";
-import { SEZIONI } from "@/lib/sezioni";
+import { CampoRichiesta } from "@/components/agente/CampoRichiesta";
+import { Icon } from "@/components/Icon";
+import { AnteprimaMappa } from "@/components/mappa/AnteprimaMappa";
+import { CampioneForma, TesseraAmbito } from "@/components/ui/Varie";
+import { contenitore } from "@/components/ui/stili";
+import { AMBITI, LIVELLI_MAPPA, ORDINE_AMBITI } from "@/lib/ambiti";
+
+const ESEMPI = [
+  { testo: "Dove gioco a basket vicino a Testaccio? Meglio se gratis", ambito: "sport" as const },
+  { testo: "Ho perso lo zaino sul tram 8 ieri sera", ambito: "oggetti" as const },
+  { testo: "Ci sono antenne vicino alla scuola di Piazza Testaccio?", ambito: "antenne" as const },
+  { testo: "Voglio suonare a Trastevere sabato", ambito: "arte" as const },
+];
+
+const ALTRI = ["Segnalazioni", "Mobilità e ZTL", "Anagrafe", "Tributi"];
 
 export default function Home() {
   return (
-    <div className="relative flex flex-1 flex-col overflow-hidden">
-      {/* Alone decorativo */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -top-48 left-1/2 h-[36rem] w-[60rem] -translate-x-1/2 rounded-full bg-gradient-to-r from-accent/15 via-accent-2/15 to-transparent blur-3xl"
-      />
+    <main>
+      <section className={`${contenitore} flex flex-wrap items-stretch gap-10 pt-12 pb-10 sm:pt-14`}>
+        <div className="flex min-w-0 flex-[999_1_560px] flex-col gap-5">
+          <p className="flex items-center gap-3 text-sm font-bold tracking-[0.08em] text-amaranto uppercase">
+            <span aria-hidden="true" className="h-[3px] w-8 rounded-sm bg-oro" />
+            Tutte le strade portano al servizio giusto
+          </p>
+          <h1 className="max-w-[680px] text-[40px] leading-[46px] font-bold tracking-[-0.02em] sm:text-[56px] sm:leading-[60px]">
+            Cosa ti serve, oggi, a Roma?
+          </h1>
+          <p className="max-w-[620px] text-lg leading-7 text-ink-soft sm:text-xl sm:leading-[30px]">
+            Scrivi o parla come faresti allo sportello. L&apos;agente capisce la richiesta, ti fa al massimo una domanda e ti
+            porta al servizio giusto con i filtri già pronti.
+          </p>
+          <CampoRichiesta />
+          <div className="flex flex-col gap-2.5">
+            <p className="text-sm font-bold text-muted">Prova con</p>
+            <ul className="flex flex-wrap gap-2">
+              {ESEMPI.map((e) => (
+                <li key={e.testo}>
+                  <Link
+                    href={`/chiedi?q=${encodeURIComponent(e.testo)}`}
+                    className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-panel px-3.5 text-[15px] font-semibold hover:bg-bg-sink"
+                  >
+                    <span aria-hidden="true" className={`size-2.5 rounded-full ${AMBITI[e.ambito].classi.segno}`} />
+                    {e.testo}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
 
-      <header className="relative mx-auto w-full max-w-6xl px-5 pt-8 sm:px-8">
-        <p className="text-sm font-semibold tracking-wide text-muted">
-          Urbe Hub <span aria-hidden="true">·</span> Agentic Hack Rome
-        </p>
-      </header>
+        <aside aria-labelledby="titolo-mappa" className="flex min-w-0 flex-[1_1_380px] flex-col gap-3 rounded-[20px] border border-line bg-panel p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 id="titolo-mappa" className="text-xl leading-[26px] font-bold">
+                Mappa comune
+              </h2>
+              <p className="text-[15px] leading-[22px] text-ink-soft">Sport, antenne e arte di strada su un&apos;unica mappa</p>
+            </div>
+            <Link href="/mappa" className="inline-flex min-h-11 shrink-0 items-center gap-1.5 font-bold">
+              Apri
+              <Icon name="freccia" size={18} strokeWidth={2} />
+            </Link>
+          </div>
+          <AnteprimaMappa />
+          <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm font-semibold text-ink-soft">
+            {LIVELLI_MAPPA.map((id) => (
+              <li key={id} className="flex items-center gap-1.5">
+                <CampioneForma id={id} />
+                {AMBITI[id].nome}
+              </li>
+            ))}
+          </ul>
+        </aside>
+      </section>
 
-      <main id="contenuto" className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col px-5 pb-16 pt-10 sm:px-8 sm:pt-16">
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-accent">
-          Servizi per chi vive Roma
-        </p>
-        <h1 className="mt-3 max-w-3xl text-4xl font-bold leading-[1.1] tracking-tight text-ink sm:text-6xl">
-          Roma, <span className="bg-gradient-to-r from-accent to-accent-2 bg-clip-text text-transparent">più semplice</span>.
-        </h1>
-        <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted">
-          Quattro servizi, ognuno con i suoi dati. Scegli da dove partire.
-        </p>
+      <section aria-labelledby="titolo-ambiti" className={`${contenitore} pb-10`}>
+        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h2 id="titolo-ambiti" className="text-[28px] leading-9 font-bold">
+            Oppure scegli un ambito
+          </h2>
+          <p className="text-base text-muted">Le quattro sfide di Roma Capitale, in un solo posto</p>
+        </div>
+        <div className="flex flex-wrap gap-4">
+          {ORDINE_AMBITI.map((id) => {
+            const a = AMBITI[id];
+            return (
+              <article key={id} className="flex min-w-0 flex-[1_1_260px] flex-col gap-3 rounded-panel border border-line bg-panel p-5">
+                <div className="flex items-center gap-3">
+                  <TesseraAmbito id={id} />
+                  <h3 className="text-[21px] leading-[26px] font-bold">{a.nome}</h3>
+                </div>
+                <p className="text-base leading-6 text-ink-soft">{a.descrizione}</p>
+                <div className="mt-auto flex flex-col border-t border-line-soft pt-1.5">
+                  {a.azioni.map((az) => (
+                    <Link key={az.href} href={az.href} className="flex min-h-11 items-center justify-between text-base font-semibold text-ink hover:text-amaranto">
+                      {az.etichetta}
+                      <Icon name="avanti" size={18} className="text-muted" />
+                    </Link>
+                  ))}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
 
-        <nav aria-label="Sezioni del sito" className="mt-12">
-          <ul className="grid gap-5 sm:grid-cols-2">
-            {SEZIONI.map((s) => (
-              <li key={s.slug}>
-                <Link
-                  href={`/${s.slug}`}
-                  className="group relative flex h-full flex-col rounded-3xl border border-line bg-surface p-7 shadow-[0_1px_0_rgba(22,19,59,0.04),0_12px_32px_-12px_rgba(22,19,59,0.18)] transition duration-200 hover:-translate-y-1 hover:border-accent/40 hover:shadow-[0_1px_0_rgba(22,19,59,0.04),0_24px_48px_-16px_rgba(109,42,224,0.35)] sm:p-8"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-accent to-accent-2 text-white shadow-lg shadow-accent-2/25">
-                      <IconaSezione sezione={s.slug} className="h-7 w-7" />
-                    </span>
-                    <span className="font-mono text-sm text-muted">{s.numero}</span>
-                  </div>
-                  <p className="mt-6 text-sm font-semibold text-accent">{s.sottotitolo}</p>
-                  <h2 className="mt-1 text-2xl font-bold leading-tight text-ink sm:text-[1.7rem]">{s.titolo}</h2>
-                  <p className="mt-3 flex-1 text-base leading-relaxed text-muted">{s.descrizione}</p>
-                  <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-ink">
-                    Apri la sezione
-                    <svg
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      aria-hidden="true"
-                      className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1"
-                    >
-                      <path d="M4 10h12M11 5l5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </span>
+      <section aria-labelledby="titolo-altro" className={`${contenitore} pb-14`}>
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-panel border border-line bg-panel px-5 py-4">
+          <div className="flex min-w-0 flex-[1_1_420px] items-center gap-3.5">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-card bg-ink text-white">
+              <Icon name="bussola" size={24} />
+            </span>
+            <div>
+              <h2 id="titolo-altro" className="text-[19px] leading-[26px] font-bold">
+                Non è tra questi?
+              </h2>
+              <p className="text-base leading-6 text-ink-soft">
+                Chiedi lo stesso: l&apos;agente ti indica la pagina ufficiale giusta e da dove viene l&apos;informazione.
+              </p>
+            </div>
+          </div>
+          <ul className="flex flex-wrap gap-2">
+            {ALTRI.map((a) => (
+              <li key={a}>
+                <Link href={`/chiedi?q=${encodeURIComponent(a)}`} className="inline-flex min-h-11 items-center rounded-full border border-line px-3.5 text-[15px] font-semibold hover:bg-bg-sink">
+                  {a}
                 </Link>
               </li>
             ))}
           </ul>
-        </nav>
-      </main>
-
-      <footer className="relative border-t border-line">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-5 py-6 text-sm text-muted sm:flex-row sm:justify-between sm:px-8">
-          <p>Prototipo per l&apos;Agentic Hack Rome. Dati da fonti pubbliche, citate in ogni sezione.</p>
-          <p>Sfide approvate dalla Commissione Statuto e Innovazione Tecnologica di Roma Capitale.</p>
         </div>
-      </footer>
-    </div>
+      </section>
+    </main>
   );
 }

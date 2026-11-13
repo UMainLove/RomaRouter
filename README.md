@@ -1,15 +1,15 @@
 # RomaRouter
 
-Servizi per chi vive a Roma, nati dalle quattro sfide dell'Agentic Hack Rome (Urbe Hub). Niente chatbot: la home ha quattro pulsanti e ognuno porta direttamente ai dati della sua sezione. **Ogni sezione è un tool indipendente con il proprio database**, quindi i dati di una sezione non compaiono mai nelle altre.
+Servizi per chi vive a Roma, nati dalle quattro sfide dell'Agentic Hack Rome (Urbe Hub). L'interfaccia è quella del frontend del team (grafica RomaRouter, `src/lib/ambiti.ts`); ogni sezione porta ai dati del proprio ambito. **Ogni sezione è un tool indipendente con il proprio database**, quindi i dati di una sezione non compaiono mai nelle altre.
 
 | Sezione | Percorso | Database |
 | --- | --- | --- |
-| Artisti di strada: dove esibirsi e come prenotare | `/artisti-di-strada` | `rr_artisti_strada` |
+| Arte di strada: dove esibirsi e come prenotare | `/arte` | `rr_artisti_strada` |
 | Antenne di telefonia mobile: impianti, misure, contesto | `/antenne` | `rr_antenne` |
-| Oggetti smarriti: catalogo ricercabile, inserimento, restituzione | `/oggetti-smarriti` | `rr_oggetti_smarriti` |
-| Impianti sportivi: mappa per disciplina, Municipio e accessibilità | `/impianti-sportivi` | `rr_impianti_sportivi` |
+| Oggetti smarriti: catalogo ricercabile, inserimento, restituzione | `/oggetti` | `rr_oggetti_smarriti` |
+| Impianti sportivi: mappa per disciplina, Municipio e accessibilità | `/sport` | `rr_impianti_sportivi` |
 
-L'elenco delle sezioni sta in [src/lib/sezioni.ts](src/lib/sezioni.ts), unica fonte per home, pagine e connessioni. Nel codice server usate `querySezione("oggetti-smarriti", sql, params)` da [src/lib/db.ts](src/lib/db.ts): legge la variabile `DATABASE_URL_*` della sezione.
+I database delle sezioni sono elencati in [src/lib/sezioni.ts](src/lib/sezioni.ts) (lo slug è anche la cartella `db/<slug>/migrations`); gli ambiti dell'interfaccia in [src/lib/ambiti.ts](src/lib/ambiti.ts). Nel codice server usate `querySezione("oggetti-smarriti", sql, params)` da [src/lib/db.ts](src/lib/db.ts): legge la variabile `DATABASE_URL_*` della sezione.
 
 ## Stack
 
@@ -35,9 +35,9 @@ Poi apri http://localhost:3000. Se http://localhost:3000/api/health risponde `"o
 | --- | --- |
 | `src/app/` | Pagine e rotte API (App Router) |
 | `src/app/api/health/` | Controllo della connessione al DB e delle estensioni |
-| `src/app/<sezione>/` | Pagina di ciascuna sezione |
-| `src/components/` | Componenti condivisi: guscio delle sezioni, icone, stato dei dati |
-| `src/lib/sezioni.ts` | Elenco delle quattro sezioni |
+| `src/app/{arte,antenne,oggetti,sport}/` | Pagina di ciascuna sezione |
+| `src/components/` | Componenti dell'interfaccia (header, mappa, ambiti, antenne, filtri) |
+| `src/lib/sezioni.ts` | Database delle quattro sezioni |
 | `src/lib/db.ts` | Pool di connessioni Postgres, uno per sezione (solo lato server) |
 | `db/init.sql` | Crea ruolo, database ed estensioni |
 | `db/<sezione>/migrations/` | Tabelle di ciascuna sezione |

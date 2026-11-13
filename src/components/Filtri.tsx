@@ -2,7 +2,7 @@
 
 export function BarraFiltri({ children, azzera }: { children: React.ReactNode; azzera: string }) {
   return (
-    <form method="get" role="search" className="flex flex-wrap items-end gap-3 rounded-3xl border border-line bg-surface p-4 sm:p-5">
+    <form method="get" role="search" className="flex flex-wrap items-end gap-3 rounded-panel border border-line bg-surface p-4 sm:p-5">
       {children}
       <div className="flex w-full gap-2 sm:w-auto">
         <button
@@ -65,7 +65,7 @@ export function Conteggio({ n, singolare, plurale, limite }: { n: number; singol
 
 export function Vuoto({ filtrato, cosa }: { filtrato: boolean; cosa: string }) {
   return (
-    <div className="rounded-3xl border border-dashed border-line bg-surface px-6 py-12 text-center">
+    <div className="rounded-panel border border-dashed border-line bg-surface px-6 py-12 text-center">
       <p className="text-lg font-bold text-ink">{filtrato ? `Nessun risultato per questi filtri` : `Ancora nessun ${cosa} nel database`}</p>
       <p className="mx-auto mt-2 max-w-md text-muted">
         {filtrato
