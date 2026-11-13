@@ -314,32 +314,41 @@ export interface Oggetto {
   colore: string | null;
   data: string;
   luogo: LuogoRitrovamento;
+  /** Zona di ritrovamento, solo per i conteggi sulla mappa (mai il punto esatto). */
+  zona: string;
   stato: "custodia" | "ritiro";
 }
 
 export const OGGETTI: Oggetto[] = [
-  { codice: "OR-26-04812", categoria: "borse", descrizione: "Zaino nero con tasca frontale", colore: "nero", data: "2026-11-12", luogo: "mezzi", stato: "custodia" },
-  { codice: "OR-26-04797", categoria: "borse", descrizione: "Zaino nero con logo sportivo", colore: "nero", data: "2026-11-12", luogo: "strada", stato: "custodia" },
-  { codice: "OR-26-04760", categoria: "borse", descrizione: "Zainetto nero da bambino", colore: "nero", data: "2026-11-13", luogo: "mezzi", stato: "ritiro" },
-  { codice: "OR-26-04755", categoria: "documenti", descrizione: "Documento d'identità", colore: null, data: "2026-11-11", luogo: "strada", stato: "custodia" },
-  { codice: "OR-26-04731", categoria: "elettronica", descrizione: "Smartphone con cover rossa", colore: "rosso", data: "2026-11-10", luogo: "taxi", stato: "custodia" },
-  { codice: "OR-26-04702", categoria: "chiavi", descrizione: "Mazzo di tre chiavi con portachiavi a forma di gatto", colore: null, data: "2026-11-09", luogo: "mezzi", stato: "custodia" },
-  { codice: "OR-26-04688", categoria: "ombrelli", descrizione: "Ombrello pieghevole blu", colore: "blu", data: "2026-11-08", luogo: "mezzi", stato: "custodia" },
-  { codice: "OR-26-04655", categoria: "abbigliamento", descrizione: "Giacca a vento verde", colore: "verde", data: "2026-11-06", luogo: "strada", stato: "custodia" },
-  { codice: "OR-26-04640", categoria: "borse", descrizione: "Borsa a tracolla marrone", colore: "marrone", data: "2026-11-05", luogo: "taxi", stato: "custodia" },
-  { codice: "OR-26-04612", categoria: "elettronica", descrizione: "Auricolari bianchi nella custodia", colore: "bianco", data: "2026-11-04", luogo: "mezzi", stato: "custodia" },
+  { codice: "OR-26-04812", categoria: "borse", descrizione: "Zaino nero con tasca frontale", colore: "nero", data: "2026-11-12", luogo: "mezzi", zona: "trastevere", stato: "custodia" },
+  { codice: "OR-26-04797", categoria: "borse", descrizione: "Zaino nero con logo sportivo", colore: "nero", data: "2026-11-12", luogo: "strada", zona: "testaccio", stato: "custodia" },
+  { codice: "OR-26-04760", categoria: "borse", descrizione: "Zainetto nero da bambino", colore: "nero", data: "2026-11-13", luogo: "mezzi", zona: "ostiense", stato: "ritiro" },
+  { codice: "OR-26-04755", categoria: "documenti", descrizione: "Documento d'identità", colore: null, data: "2026-11-11", luogo: "strada", zona: "aventino", stato: "custodia" },
+  { codice: "OR-26-04731", categoria: "elettronica", descrizione: "Smartphone con cover rossa", colore: "rosso", data: "2026-11-10", luogo: "taxi", zona: "trastevere", stato: "custodia" },
+  { codice: "OR-26-04702", categoria: "chiavi", descrizione: "Mazzo di tre chiavi con portachiavi a forma di gatto", colore: null, data: "2026-11-09", luogo: "mezzi", zona: "testaccio", stato: "custodia" },
+  { codice: "OR-26-04688", categoria: "ombrelli", descrizione: "Ombrello pieghevole blu", colore: "blu", data: "2026-11-08", luogo: "mezzi", zona: "ostiense", stato: "custodia" },
+  { codice: "OR-26-04655", categoria: "abbigliamento", descrizione: "Giacca a vento verde", colore: "verde", data: "2026-11-06", luogo: "strada", zona: "testaccio", stato: "custodia" },
+  { codice: "OR-26-04640", categoria: "borse", descrizione: "Borsa a tracolla marrone", colore: "marrone", data: "2026-11-05", luogo: "taxi", zona: "aventino", stato: "custodia" },
+  { codice: "OR-26-04612", categoria: "elettronica", descrizione: "Auricolari bianchi nella custodia", colore: "bianco", data: "2026-11-04", luogo: "mezzi", zona: "trastevere", stato: "custodia" },
 ];
 
 export const UFFICIO_OGGETTI = {
   nome: "Ufficio Oggetti Rinvenuti",
   indirizzo: "Circonvallazione Ostiense 191",
   nota: "Indirizzo e orari da verificare con il Comune prima della demo.",
+  // posizione indicativa, per la mappa
+  lat: 41.8668,
+  lon: 12.4873,
 };
 
 /* ---------- Fiume, per le anteprime schematiche della mappa ---------- */
 
 /** Tracciato approssimato del Tevere nella zona della demo (solo per l'anteprima schematica). */
 export const TEVERE: Punto[] = [
+  { lat: 41.9180, lon: 12.4700 },
+  { lat: 41.9110, lon: 12.4672 },
+  { lat: 41.9045, lon: 12.4655 },
+  { lat: 41.8995, lon: 12.4662 },
   { lat: 41.8952, lon: 12.4686 },
   { lat: 41.8925, lon: 12.4706 },
   { lat: 41.8908, lon: 12.4752 },
@@ -351,4 +360,8 @@ export const TEVERE: Punto[] = [
   { lat: 41.8722, lon: 12.4683 },
   { lat: 41.8676, lon: 12.4712 },
   { lat: 41.8630, lon: 12.4728 },
+  { lat: 41.8575, lon: 12.4752 },
+  { lat: 41.8520, lon: 12.4721 },
+  { lat: 41.8460, lon: 12.4640 },
+  { lat: 41.8400, lon: 12.4580 },
 ];

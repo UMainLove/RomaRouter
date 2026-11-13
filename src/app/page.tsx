@@ -1,137 +1,58 @@
 import Link from "next/link";
-import { CampoRichiesta } from "@/components/agente/CampoRichiesta";
 import { Icon } from "@/components/Icon";
-import { AnteprimaMappa } from "@/components/mappa/AnteprimaMappa";
 import { CampioneForma, TesseraAmbito } from "@/components/ui/Varie";
-import { contenitore } from "@/components/ui/stili";
-import { AMBITI, LIVELLI_MAPPA, ORDINE_AMBITI } from "@/lib/ambiti";
+import { ALTRO, AMBITI, ORDINE_AMBITI } from "@/lib/ambiti";
 
-const ESEMPI = [
-  { testo: "Dove gioco a basket vicino a Testaccio? Meglio se gratis", ambito: "sport" as const },
-  { testo: "Ho perso lo zaino sul tram 8 ieri sera", ambito: "oggetti" as const },
-  { testo: "Ci sono antenne vicino alla scuola di Piazza Testaccio?", ambito: "antenne" as const },
-  { testo: "Voglio suonare a Trastevere sabato", ambito: "arte" as const },
-];
-
-const ALTRI = ["Segnalazioni", "Mobilità e ZTL", "Anagrafe", "Tributi"];
-
+// Home minimale: quattro ambiti e "Non è tra questi?". Ogni voce apre la sua mappa con la barra dell'assistente.
 export default function Home() {
   return (
-    <main>
-      <section className={`${contenitore} flex flex-wrap items-stretch gap-10 pt-12 pb-10 sm:pt-14`}>
-        <div className="flex min-w-0 flex-[999_1_560px] flex-col gap-5">
-          <p className="flex items-center gap-3 text-sm font-bold tracking-[0.08em] text-amaranto uppercase">
-            <span aria-hidden="true" className="h-[3px] w-8 rounded-sm bg-oro" />
-            Tutte le strade portano al servizio giusto
+    <main className="flex flex-1 flex-col items-center justify-center px-4 py-12 sm:px-8 sm:py-16">
+      <div className="flex w-full max-w-[1040px] flex-col gap-8 sm:gap-10">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <h1 className="text-[34px] leading-[40px] font-bold tracking-[-0.02em] sm:text-[48px] sm:leading-[54px]">Scegli un ambito</h1>
+          <p className="max-w-[560px] text-base leading-6 text-ink-soft sm:text-lg sm:leading-7">
+            Per ognuno trovi la mappa e una barra dove chiedere quello che ti serve, a parole tue.
           </p>
-          <h1 className="max-w-[680px] text-[40px] leading-[46px] font-bold tracking-[-0.02em] sm:text-[56px] sm:leading-[60px]">
-            Cosa ti serve, oggi, a Roma?
-          </h1>
-          <p className="max-w-[620px] text-lg leading-7 text-ink-soft sm:text-xl sm:leading-[30px]">
-            Scrivi o parla come faresti allo sportello. L&apos;agente capisce la richiesta, ti fa al massimo una domanda e ti
-            porta al servizio giusto con i filtri già pronti.
-          </p>
-          <CampoRichiesta />
-          <div className="flex flex-col gap-2.5">
-            <p className="text-sm font-bold text-muted">Prova con</p>
-            <ul className="flex flex-wrap gap-2">
-              {ESEMPI.map((e) => (
-                <li key={e.testo}>
-                  <Link
-                    href={`/chiedi?q=${encodeURIComponent(e.testo)}`}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-panel px-3.5 text-[15px] font-semibold hover:bg-bg-sink"
-                  >
-                    <span aria-hidden="true" className={`size-2.5 rounded-full ${AMBITI[e.ambito].classi.segno}`} />
-                    {e.testo}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
 
-        <aside aria-labelledby="titolo-mappa" className="flex min-w-0 flex-[1_1_380px] flex-col gap-3 rounded-[20px] border border-line bg-panel p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 id="titolo-mappa" className="text-xl leading-[26px] font-bold">
-                Mappa comune
-              </h2>
-              <p className="text-[15px] leading-[22px] text-ink-soft">Sport, antenne e arte di strada su un&apos;unica mappa</p>
-            </div>
-            <Link href="/mappa" className="inline-flex min-h-11 shrink-0 items-center gap-1.5 font-bold">
-              Apri
-              <Icon name="freccia" size={18} strokeWidth={2} />
-            </Link>
-          </div>
-          <AnteprimaMappa />
-          <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm font-semibold text-ink-soft">
-            {LIVELLI_MAPPA.map((id) => (
-              <li key={id} className="flex items-center gap-1.5">
-                <CampioneForma id={id} />
-                {AMBITI[id].nome}
-              </li>
-            ))}
-          </ul>
-        </aside>
-      </section>
-
-      <section aria-labelledby="titolo-ambiti" className={`${contenitore} pb-10`}>
-        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 id="titolo-ambiti" className="text-[28px] leading-9 font-bold">
-            Oppure scegli un ambito
-          </h2>
-          <p className="text-base text-muted">Le quattro sfide di Roma Capitale, in un solo posto</p>
-        </div>
-        <div className="flex flex-wrap gap-4">
+        <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {ORDINE_AMBITI.map((id) => {
             const a = AMBITI[id];
             return (
-              <article key={id} className="flex min-w-0 flex-[1_1_260px] flex-col gap-3 rounded-panel border border-line bg-panel p-5">
-                <div className="flex items-center gap-3">
-                  <TesseraAmbito id={id} />
-                  <h3 className="text-[21px] leading-[26px] font-bold">{a.nome}</h3>
-                </div>
-                <p className="text-base leading-6 text-ink-soft">{a.descrizione}</p>
-                <div className="mt-auto flex flex-col border-t border-line-soft pt-1.5">
-                  {a.azioni.map((az) => (
-                    <Link key={az.href} href={az.href} className="flex min-h-11 items-center justify-between text-base font-semibold text-ink hover:text-amaranto">
-                      {az.etichetta}
-                      <Icon name="avanti" size={18} className="text-muted" />
-                    </Link>
-                  ))}
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      </section>
-
-      <section aria-labelledby="titolo-altro" className={`${contenitore} pb-14`}>
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-panel border border-line bg-panel px-5 py-4">
-          <div className="flex min-w-0 flex-[1_1_420px] items-center gap-3.5">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-card bg-ink text-white">
-              <Icon name="bussola" size={24} />
-            </span>
-            <div>
-              <h2 id="titolo-altro" className="text-[19px] leading-[26px] font-bold">
-                Non è tra questi?
-              </h2>
-              <p className="text-base leading-6 text-ink-soft">
-                Chiedi lo stesso: l&apos;agente ti indica la pagina ufficiale giusta e da dove viene l&apos;informazione.
-              </p>
-            </div>
-          </div>
-          <ul className="flex flex-wrap gap-2">
-            {ALTRI.map((a) => (
-              <li key={a}>
-                <Link href={`/chiedi?q=${encodeURIComponent(a)}`} className="inline-flex min-h-11 items-center rounded-full border border-line px-3.5 text-[15px] font-semibold hover:bg-bg-sink">
-                  {a}
+              <li key={id}>
+                <Link
+                  href={a.href}
+                  className="group flex h-full flex-col items-center gap-3 rounded-[20px] border border-line bg-panel px-3 pt-6 pb-5 text-center transition-[border-color,box-shadow] hover:border-campo hover:shadow-[0_12px_32px_rgba(37,29,28,.10)] sm:px-5 sm:pt-8 sm:pb-6"
+                >
+                  <span className="transition-transform group-hover:-translate-y-0.5">
+                    <TesseraAmbito id={id} size={64} />
+                  </span>
+                  <span className="text-[17px] leading-[22px] font-bold sm:text-lg">{a.nome}</span>
+                  <span className="hidden text-sm leading-5 text-ink-soft sm:block">{a.breve}</span>
+                  <span className="mt-auto flex items-center gap-1.5 pt-1 text-[13px] font-semibold text-muted">
+                    <CampioneForma id={id} />
+                    Mappa e assistente
+                  </span>
                 </Link>
               </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+            );
+          })}
+        </ul>
+
+        <Link
+          href={ALTRO.href}
+          className="group flex min-h-16 items-center gap-3 rounded-full border-[1.5px] border-campo bg-panel py-2 pr-2 pl-5 shadow-[0_6px_20px_rgba(37,29,28,.06)] hover:border-ink"
+        >
+          <Icon name="cerca" size={22} className="shrink-0 text-muted" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-[17px] leading-6 font-bold">{ALTRO.nome}</span>
+            <span className="block truncate text-sm leading-5 text-ink-soft">{ALTRO.breve}</span>
+          </span>
+          <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-amaranto text-white group-hover:bg-amaranto-scuro">
+            <Icon name="freccia" size={20} strokeWidth={2} />
+          </span>
+        </Link>
+      </div>
     </main>
   );
 }

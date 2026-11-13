@@ -30,6 +30,7 @@ const PAROLE: Record<AmbitoId, RegExp[]> = {
   arte: [
     /suonar/,
     /esibir/,
+    /esibisc/,
     /\bartist/,
     /\bbusker/,
     /giocolier/,
@@ -378,7 +379,7 @@ function rispostaArte(t: string, risposte: Record<string, string>, adesso: Date)
   if (!ruolo) {
     return {
       ambito: "arte",
-      messaggio: "Arte di strada, ok.",
+      messaggio: "Artisti di strada, ok.",
       entita,
       domanda: {
         chiave: "ruolo",
@@ -396,11 +397,11 @@ function rispostaArte(t: string, risposte: Record<string, string>, adesso: Date)
   if (ruolo === "pubblico") {
     return {
       ambito: "arte",
-      messaggio: "Ti mostro le postazioni attive sulla mappa comune.",
+      messaggio: "Ti mostro chi si esibisce e dove.",
       entita,
       perche: perche(t, "arte"),
       fonte: FONTI.arte,
-      destinazione: { base: "/mappa", parametri: { livelli: "arte", ...parametri }, etichetta: "Apri la mappa" },
+      destinazione: { base: "/arte", parametri: { per: "pubblico", ...parametri }, etichetta: "Vedi chi si esibisce" },
     };
   }
   return {
@@ -424,7 +425,10 @@ export function instrada(richiesta: RichiestaAgente, adesso: Date = new Date()):
     const punteggi = ORDINE_AMBITI.map((id) => ({ id, n: PAROLE[id].filter((r) => r.test(t)).length }));
     const massimo = Math.max(...punteggi.map((p) => p.n));
     const primi = punteggi.filter((p) => p.n === massimo);
-    if (massimo === 0) ambito = "altro";
+    // Dentro la vista di un ambito si resta lì, a meno che la richiesta non porti chiaramente altrove.
+    const corrente = richiesta.ambitoCorrente;
+    if (massimo === 0) ambito = corrente ?? "altro";
+    else if (corrente && primi.some((p) => p.id === corrente)) ambito = corrente;
     else if (primi.length > 1) {
       return {
         ambito: null,

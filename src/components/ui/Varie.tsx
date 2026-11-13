@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { AMBITI, type AmbitoId } from "@/lib/ambiti";
+import { AMBITI, voce, type AmbitoId, type Forma, type VoceId } from "@/lib/ambiti";
 import { Icon, type IconName } from "../Icon";
 
 /** Tessera quadrata con l'icona dell'ambito (colore + icona, mai solo colore). */
@@ -15,11 +15,37 @@ export function TesseraAmbito({ id, size = 44 }: { id: AmbitoId; size?: number }
   );
 }
 
-/** Campione della forma usata sulla mappa (cerchio, quadrato, goccia). */
+/** Come TesseraAmbito, ma anche per "Non è tra questi?" (neutra, con la lente). */
+export function TesseraVoce({ id, size = 44 }: { id: VoceId; size?: number }) {
+  if (id !== "altro") return <TesseraAmbito id={id} size={size} />;
+  return (
+    <span
+      className="flex shrink-0 items-center justify-center rounded-card border-[1.5px] border-campo bg-panel text-ink"
+      style={{ width: size, height: size }}
+    >
+      <Icon name={voce(id).icona} size={Math.round(size * 0.5)} strokeWidth={2} />
+    </span>
+  );
+}
+
+export const CLASSI_FORMA: Record<Forma, { esterno: string; interno: string }> = {
+  cerchio: { esterno: "rounded-full", interno: "" },
+  quadrato: { esterno: "rounded-[7px]", interno: "" },
+  rombo: { esterno: "rotate-45 rounded-[6px] scale-[0.86]", interno: "-rotate-45" },
+  goccia: { esterno: "rounded-[50%_50%_50%_4px] -rotate-45", interno: "rotate-45" },
+};
+
+/** Campione della forma usata sulla mappa (rombo, cerchio, quadrato, goccia). */
 export function CampioneForma({ id, pieno = true }: { id: AmbitoId; pieno?: boolean }) {
   const a = AMBITI[id];
   const forma =
-    a.forma === "cerchio" ? "rounded-full" : a.forma === "quadrato" ? "rounded-[3px]" : "rounded-[50%_50%_50%_2px] -rotate-45";
+    a.forma === "cerchio"
+      ? "rounded-full"
+      : a.forma === "quadrato"
+        ? "rounded-[3px]"
+        : a.forma === "rombo"
+          ? "rotate-45 rounded-[2px] scale-[0.85]"
+          : "rounded-[50%_50%_50%_2px] -rotate-45";
   const riempimento = pieno ? a.classi.segno : `border-2 ${a.classi.bordo} bg-panel`;
   return <span aria-hidden="true" className={`inline-block size-3 shrink-0 ${forma} ${riempimento}`} />;
 }
@@ -62,25 +88,5 @@ export function Etichetta({
       {icona && <Icon name={icona} size={14} strokeWidth={2.4} />}
       {children}
     </span>
-  );
-}
-
-export function IntestazionePagina({
-  ambito,
-  titolo,
-  sottotitolo,
-}: {
-  ambito?: AmbitoId;
-  titolo: string;
-  sottotitolo?: string;
-}) {
-  return (
-    <div className="flex items-center gap-3.5">
-      {ambito && <TesseraAmbito id={ambito} size={48} />}
-      <div>
-        <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em] sm:text-[32px] sm:leading-10">{titolo}</h1>
-        {sottotitolo && <p className="mt-0.5 text-base leading-6 text-ink-soft">{sottotitolo}</p>}
-      </div>
-    </div>
   );
 }

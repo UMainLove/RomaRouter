@@ -15,11 +15,11 @@ export default function NonTrovata() {
         giusto.
       </p>
       <div className="flex flex-wrap gap-3">
-        <Link href="/chiedi" className={btnPrimario}>
+        <Link href="/altro" className={btnPrimario}>
           Chiedi a RomaRouter
         </Link>
         <Link href="/" className={btnSecondario}>
-          Torna alla home
+          Scegli un ambito
         </Link>
       </div>
     </main>
