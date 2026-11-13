@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="oggetti-rinvenuti-t">
+  <title id="oggetti-rinvenuti-t">Ufficio oggetti rinvenuti</title>
+  <defs>
+    <linearGradient id="oggetti-rinvenuti-fondo" x1="0.3" y1="0" x2="0.7" y2="1"><stop offset="0" stop-color="#C5B0F5"/><stop offset="1" stop-color="#6A45C2"/></linearGradient>
+    <linearGradient id="oggetti-rinvenuti-luce" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.32"/><stop offset="0.55" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14.5" fill="url(#oggetti-rinvenuti-fondo)"/>
+  <rect width="64" height="64" rx="14.5" fill="url(#oggetti-rinvenuti-luce)"/>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="14.0" fill="none" stroke="#3A2420" stroke-opacity="0.12"/>
+  <path d="M21 33.6 Q19 22 30 15" fill="none" stroke="#C9A24A" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M23 24 H43 Q47 24 47 28 V44 Q47 48 43 48 H23 L15 36 Z" fill="#F7F0E4" stroke="#3A2420" stroke-width="1.4" stroke-linejoin="round"/>
+  <circle cx="21.5" cy="36" r="2.5" fill="#FFFFFF" stroke="#3A2420" stroke-width="1.2"/>
+  <path d="M31 32 Q31 28 35 28 Q39 28 39 31.5 Q39 34 36.2 35 Q35 35.5 35 38" fill="none" stroke="#8E001C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="35" cy="42.4" r="1.5" fill="#8E001C"/>
+</svg>
