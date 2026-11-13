@@ -1,0 +1,37 @@
+# Dati elaborati
+
+Dati già importati e puliti, così chi fa `git pull` non deve rilanciare gli import (richiedono diversi minuti e qualche migliaio di richieste ai server del Comune e di OpenStreetMap). Aggiornati al 13/11/2026.
+
+| Cartella | Contenuto |
+| --- | --- |
+| `seed/rr_antenne.dump` | Copia completa del database antenne: schemi `antenne` e `opendata` (formato `pg_dump -Fc`) |
+| `geojson/` | I layer della sezione antenne in GeoJSON (WGS84, lon/lat, RFC 7946), pronti per qualunque mappa |
+| `raw/` | Copie dei file scaricati dalle fonti. **Fuori da git**: si rigenerano con `npm run antenne:import` |
+
+## Ripristinare il database antenne
+
+Prerequisito: il database `rr_antenne` creato da `db/init.sql` (vedi `docs/SETUP.md`). Dalla cartella del progetto, in PowerShell:
+
+```powershell
+& "C:\Program Files\PostgreSQL\17\bin\pg_restore.exe" -U romarouter -h localhost -d rr_antenne --no-owner --clean --if-exists data/seed/rr_antenne.dump
+```
+
+Poi `npm run db:migrate -- antenne` allinea la tabella delle migrazioni. La migrazione si può rieseguire senza danni sui dati già presenti.
+
+## GeoJSON per la mappa
+
+| File | Elementi | Cosa sono |
+| --- | --- | --- |
+| `geojson/antenne_istanze_srb.geojson` | 192 | Istanze di installazione o modifica delle Stazioni Radio Base pubblicate da Roma Capitale, con operatori, indirizzo, Municipio, quartiere, qualità della posizione e sito sensibile più vicino |
+| `geojson/antenne_siti_sensibili.geojson` | 2.519 | Scuole, asili nido, ospedali, RSA, carceri, parchi giochi (art. 4 DAC 78/2024). `ufficiale: false` indica che il dato viene da OpenStreetMap |
+| `geojson/antenne_aree_vincolate.geojson` | 37 | Sito UNESCO e aree naturali protette (poligoni semplificati) |
+| `geojson/antenne_monitoraggio.geojson` | 2 | Centraline ARPA Lazio di monitoraggio dei campi elettromagnetici |
+
+Per caricarli si può usare per esempio `fetch("/data/...")` dopo averli copiati in `public/`, oppure le API live `/api/antenne/*` (vedi `docs/ANTENNE.md`), che restituiscono gli stessi dati sempre aggiornati.
+
+## Avvertenze da mostrare con i dati
+
+- Le istanze **non provano** che un impianto sia attivo e non sono il catasto completo. ARPA Lazio conta circa 3.538 impianti nel Comune di Roma, ma il catasto non è pubblico.
+- Le distanze dai siti sensibili sono solo informative: il regolamento di Roma non fissa distanze minime.
+- **Attribuzioni obbligatorie**: «Roma Capitale – GeoRoma», «ARPA Lazio», «© OpenStreetMap contributors (ODbL)» per i dati non ufficiali e per il geocoding.
+- I dati di Roma Capitale non dichiarano una licenza. Le linee guida AgID indicano CC BY 4.0 come riferimento per i dati della PA.

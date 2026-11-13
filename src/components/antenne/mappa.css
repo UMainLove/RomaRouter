@@ -1,0 +1,30 @@
+/* Ritocchi ai controlli MapLibre per seguire i colori del sito (chiaro e scuro) */
+.popup-sensibile .maplibregl-popup-content {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.35;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+}
+.popup-sensibile .maplibregl-popup-content span {
+  color: var(--muted);
+}
+.popup-sensibile.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--surface); }
+.popup-sensibile.maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: var(--surface); }
+.popup-sensibile.maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: var(--surface); }
+.popup-sensibile.maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--surface); }
+
+.maplibregl-ctrl-group {
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+@media (prefers-color-scheme: dark) {
+  .maplibregl-ctrl-group { background: var(--surface) !important; }
+  .maplibregl-ctrl-group button .maplibregl-ctrl-icon { filter: invert(1); }
+  .maplibregl-ctrl-attrib, .maplibregl-ctrl-scale { background: rgb(23 20 46 / 0.8) !important; color: var(--muted) !important; }
+  .maplibregl-ctrl-attrib a { color: var(--muted) !important; }
+}

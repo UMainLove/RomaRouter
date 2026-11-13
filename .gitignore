@@ -20,6 +20,9 @@
 # production
 /build
 
+# dati scaricati dagli importatori (si rigenerano con npm run antenne:import)
+/data/raw/
+
 # misc
 .DS_Store
 *.pem
