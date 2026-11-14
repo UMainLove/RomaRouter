@@ -53,9 +53,10 @@ export function assicuraSpille(map: MapLibre, nomi: Iterable<string>, colori: Re
       (nome) =>
         new Promise<void>((ok) => {
           const m = nome.match(/^pin-(\w+)-(\w+)-(\d+)$/);
-          if (!m || map.hasImage(nome)) return ok();
+          if (!m || (map as MapLibre & { _removed?: boolean })._removed || map.hasImage(nome)) return ok();
           const img = new Image(W * PR, H * PR);
           img.onload = () => {
+            if ((map as MapLibre & { _removed?: boolean })._removed || !(map as unknown as { style?: unknown }).style) return ok();
             if (!map.hasImage(nome)) map.addImage(nome, img, { pixelRatio: PR });
             ok();
           };

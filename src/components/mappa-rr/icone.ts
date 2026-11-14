@@ -14,6 +14,7 @@ export function caricaIcone(map: MapLibre, icone: Record<string, { svg: string; 
           if (map.hasImage(nome)) return ok();
           const img = new Image(w * PR, h * PR);
           img.onload = () => {
+            if ((map as MapLibre & { _removed?: boolean })._removed || !(map as unknown as { style?: unknown }).style) return ok();
             if (!map.hasImage(nome)) map.addImage(nome, img, { pixelRatio: PR });
             ok();
           };

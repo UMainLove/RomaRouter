@@ -1,10 +1,10 @@
 "use client";
 
-import type { ExpressionSpecification, GeoJSONSource, Map as MapLibre } from "maplibre-gl";
+import type { ExpressionSpecification, Map as MapLibre } from "maplibre-gl";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Cerca, type Luogo } from "../mappa-rr/Cerca";
 import { caricaIcone, GLIFI, punto, spilla } from "../mappa-rr/icone";
-import { inquadra, MappaVettoriale, vola, type ML } from "../mappa-rr/MappaVettoriale";
+import { dati, inquadra, MappaVettoriale, type ML, viva, vola } from "../mappa-rr/MappaVettoriale";
 import { Azione, Azioni, Fatti, Scheda, Schermo, Strumenti, Tondo } from "../mappa-rr/Schermo";
 import { primoTesto } from "../mappa-rr/stile";
 
@@ -91,7 +91,8 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
   const [carica, setCarica] = useState(false);
   const [errore, setErrore] = useState<string | null>(null);
   const [guidaAperta, setGuidaAperta] = useState(false);
-  const [pronto, setPronto] = useState(false);
+  // conta le mappe nate: con Next 16 una pagina nascosta e poi riaperta ricrea la mappa
+  const [pronto, setPronto] = useState(0);
   const m = useRef<{ map: MapLibre; ml: ML; sens?: () => void } | null>(null);
   const flag = useRef({ sensibili });
   useEffect(() => {
@@ -116,9 +117,8 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
     if (!k) return;
     if (volaLi || !window.matchMedia("(min-width: 1024px)").matches) inquadra(k.map, [[lon - 0.0075, lat - 0.0055], [lon + 0.0075, lat + 0.0055]]);
     setSel({ tipo: "radar", lon, lat, etichetta, c: null });
-    const src = k.map.getSource("rr-radar") as GeoJSONSource;
     const disegna = (f: number) =>
-      src.setData({
+      dati(k.map, "rr-radar", {
         type: "FeatureCollection",
         features: ANELLI.flatMap((r, i) => {
           const rr = r * Math.min(1, f * (1 + i * 0.12));
@@ -152,7 +152,7 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
   }, []);
 
   const togliRadar = useCallback(() => {
-    (m.current?.map.getSource("rr-radar") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: [] });
+    dati(m.current?.map, "rr-radar", { type: "FeatureCollection", features: [] });
   }, []);
 
   const apriAntenna = useCallback(
@@ -285,7 +285,7 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
       caricaDati<{ features: FImpianto[] }>("/api/antenne/impianti", "/dati/antenne/impianti-osm.json")
         .then((fc) => {
           setImpianti(fc.features);
-          (map.getSource("rr-osm") as GeoJSONSource).setData(fc as never);
+          dati(map, "rr-osm", fc as never);
         })
         .catch(() => {});
 
@@ -301,7 +301,7 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
           .then((fc: { features: { type: "Feature"; geometry: { type: string }; properties: { nome: string | null; categoria: string } }[] }) => {
             if (b !== ultimo) return;
             const features = fc.features.filter((f) => f.geometry.type === "Point").map((f) => ({ ...f, properties: { nome: f.properties.nome ?? CATEGORIE[f.properties.categoria] ?? "" } }));
-            (map.getSource("rr-sens") as GeoJSONSource).setData({ type: "FeatureCollection", features } as never);
+            dati(map, "rr-sens", { type: "FeatureCollection", features } as never);
           })
           .catch(() => {});
       };
@@ -342,7 +342,7 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
         map.on("mouseenter", l, () => (map.getCanvas().style.cursor = "pointer"));
         map.on("mouseleave", l, () => (map.getCanvas().style.cursor = ""));
       });
-      setPronto(true);
+      setPronto((n) => n + 1);
     },
     [radar],
   );
@@ -350,7 +350,7 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
   // 1. i simboli (forma, colore, anello) dai dati
   useEffect(() => {
     const k = m.current;
-    if (!k || !pronto) return;
+    if (!k || !pronto || !viva(k.map)) return;
     const features = istanze.map((a) => {
       const p = a.properties;
       return {
@@ -362,13 +362,13 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
         },
       };
     });
-    (k.map.getSource("rr-ant") as GeoJSONSource).setData({ type: "FeatureCollection", features });
+    dati(k.map, "rr-ant", { type: "FeatureCollection", features });
   }, [istanze, pronto]);
 
   // filtri: tipo, anno, operatore (sulla GPU, senza ricaricare)
   useEffect(() => {
     const k = m.current;
-    if (!k || !pronto) return;
+    if (!k || !pronto || !viva(k.map)) return;
     const f: ExpressionSpecification = [
       "all",
       ["in", ["get", "t"], ["literal", (Object.keys(tipi) as Tipo[]).filter((t) => tipi[t])]],
@@ -381,29 +381,29 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
 
   useEffect(() => {
     const k = m.current;
-    if (!k || !pronto) return;
+    if (!k || !pronto || !viva(k.map)) return;
     ["rr-osm", "rr-siti", "rr-siti-c"].forEach((l) => k.map.setLayoutProperty(l, "visibility", esistenti ? "visible" : "none"));
   }, [esistenti, pronto]);
 
   // antenne in funzione: i grappoli si rifanno sui siti dell'operatore scelto
   useEffect(() => {
     const k = m.current;
-    if (!k || !pronto) return;
+    if (!k || !pronto || !viva(k.map)) return;
     const features = operatore ? siti.filter((f) => f.properties.o.split("|").includes(operatore)) : siti;
-    (k.map.getSource("rr-siti") as GeoJSONSource).setData({ type: "FeatureCollection", features } as never);
+    dati(k.map, "rr-siti", { type: "FeatureCollection", features } as never);
   }, [siti, operatore, pronto]);
 
   useEffect(() => {
     const k = m.current;
-    if (!k || !pronto) return;
+    if (!k || !pronto || !viva(k.map)) return;
     if (sensibili) k.sens?.();
-    else (k.map.getSource("rr-sens") as GeoJSONSource).setData({ type: "FeatureCollection", features: [] });
+    else dati(k.map, "rr-sens", { type: "FeatureCollection", features: [] });
   }, [sensibili, pronto]);
 
   useEffect(() => {
     const k = m.current;
-    if (k?.map.getLayer("rr-ant-sel")) k.map.setFilter("rr-ant-sel", ["==", ["get", "id"], sel?.tipo === "antenna" ? sel.a.id : -1]);
-  }, [sel]);
+    if (viva(k?.map) && k.map.getLayer("rr-ant-sel")) k.map.setFilter("rr-ant-sel", ["==", ["get", "id"], sel?.tipo === "antenna" ? sel.a.id : -1]);
+  }, [sel, pronto]);
 
   // "Mappa" nell'elenco della Guida: si torna sulla mappa sull'antenna
   useEffect(() => {

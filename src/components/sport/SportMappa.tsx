@@ -1,9 +1,9 @@
 "use client";
 
-import type { ExpressionSpecification, GeoJSONSource, Map as MapLibre } from "maplibre-gl";
+import type { ExpressionSpecification, Map as MapLibre } from "maplibre-gl";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Cerca, type Luogo } from "../mappa-rr/Cerca";
-import { inquadra, MappaVettoriale, vola, type ML } from "../mappa-rr/MappaVettoriale";
+import { dati, inquadra, MappaVettoriale, type ML, viva, vola } from "../mappa-rr/MappaVettoriale";
 import { Azione, Azioni, Fatti, Scheda, Schermo, Strumenti, Tondo } from "../mappa-rr/Schermo";
 import { primoTesto } from "../mappa-rr/stile";
 import { assicuraSpille } from "./spille";
@@ -99,7 +99,8 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
   const [sel, setSel] = useState<Sel>(null);
   const [errore, setErrore] = useState<string | null>(null);
   const [guidaAperta, setGuidaAperta] = useState(false);
-  const [pronto, setPronto] = useState(false);
+  // conta le mappe nate: con Next 16 una pagina nascosta e poi riaperta ricrea la mappa
+  const [pronto, setPronto] = useState(0);
   const m = useRef<{ map: MapLibre; ml: ML } | null>(null);
 
   // ------------------------------------------------------------------ dati derivati
@@ -125,16 +126,15 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
 
   // ------------------------------------------------------------------ il piu' vicino (anelli)
   const togliAnelli = useCallback(() => {
-    (m.current?.map.getSource("rr-anelli") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: [] });
+    dati(m.current?.map, "rr-anelli", { type: "FeatureCollection", features: [] });
   }, []);
   const vicino = useCallback((lon: number, lat: number, etichetta: string | null, volaLi: boolean) => {
     const k = m.current;
     if (!k) return;
     if (volaLi || !window.matchMedia("(min-width: 1024px)").matches) inquadra(k.map, [[lon - 0.0068, lat - 0.0051], [lon + 0.0068, lat + 0.0051]]);
     setSel({ tipo: "vicino", lon, lat, etichetta });
-    const src = k.map.getSource("rr-anelli") as GeoJSONSource;
     const disegna = (f: number) =>
-      src.setData({
+      dati(k.map, "rr-anelli", {
         type: "FeatureCollection",
         features: ANELLI.flatMap((r, i) => {
           const rr = r * Math.min(1, f * (1 + i * 0.12));
@@ -192,7 +192,7 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
         if (campi || map.getZoom() < 13.3) return;
         campi = true;
         caricaDati<{ type: "FeatureCollection"; features: unknown[] }>("/api/sport/campi", "/dati/sport/campi.json", (d) => !!d.features?.length)
-          .then((fc) => (map.getSource("rr-campi") as GeoJSONSource).setData(fc as never))
+          .then((fc) => dati(map, "rr-campi", fc as never))
           .catch(() => (campi = false));
       };
       map.on("moveend", caricaCampi);
@@ -307,7 +307,7 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
       });
       m.current = { map, ml };
       if (process.env.NODE_ENV !== "production") (window as unknown as { __rrSport?: MapLibre }).__rrSport = map;
-      setPronto(true);
+      setPronto((n) => n + 1);
     },
     [apri, vicino],
   );
@@ -315,7 +315,7 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
   // i simboli: lo sport scelto decide il glifo, i filtri cosa si vede
   useEffect(() => {
     const k = m.current;
-    if (!k || !pronto) return;
+    if (!k || !pronto || !viva(k.map)) return;
     const RANGO: Record<Accesso, number> = { comunale: 0, libero: 1, scuola: 2, club: 3 };
     const features = visibili.map((f) => {
       const p = f.properties;
@@ -326,7 +326,7 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
     const colori = Object.fromEntries(ACCESSI.map((a) => [a, ACCESSO[a].c]));
     let vivo = true;
     assicuraSpille(k.map, features.map((x) => `pin-${x.properties.k}-${x.properties.a}-${x.properties.b}`), colori).then(() => {
-      if (vivo) (k.map.getSource("rr-luoghi") as GeoJSONSource).setData({ type: "FeatureCollection", features } as never);
+      if (vivo) dati(k.map, "rr-luoghi", { type: "FeatureCollection", features } as never);
     });
     return () => {
       vivo = false;
@@ -335,7 +335,7 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
 
   useEffect(() => {
     const k = m.current;
-    if (!k?.map.getLayer("rr-luoghi-sel")) return;
+    if (!viva(k?.map) || !k.map.getLayer("rr-luoghi-sel")) return;
     const id = sel?.tipo === "luogo" ? sel.f.id : -1;
     k.map.setFilter("rr-luoghi-sel", ["==", ["get", "id"], id]);
     k.map.setFilter("rr-alone", ["==", ["get", "id"], id]);
@@ -351,7 +351,7 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
     };
     raf = requestAnimationFrame(onda);
     return () => cancelAnimationFrame(raf);
-  }, [sel]);
+  }, [sel, pronto]);
 
   // "Mappa" nell'elenco della Guida: si torna sulla mappa sul luogo
   useEffect(() => {

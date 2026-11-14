@@ -1,12 +1,12 @@
 "use client";
 
-import type { GeoJSONSource, Map as MapLibre, MapGeoJSONFeature } from "maplibre-gl";
+import type { Map as MapLibre, MapGeoJSONFeature } from "maplibre-gl";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { orologio, type AttivitaArte } from "@/lib/orari-arte";
 import type { VerificaLuogo } from "@/lib/artisti";
 import { Cerca, type Luogo } from "../mappa-rr/Cerca";
 import { avatar, caricaIcone, GLIFI, palco, piazza, righe } from "../mappa-rr/icone";
-import { inquadra, MappaVettoriale, vola, type ML } from "../mappa-rr/MappaVettoriale";
+import { dati, inquadra, MappaVettoriale, type ML, viva, vola } from "../mappa-rr/MappaVettoriale";
 import { Azione, Azioni, Fatti, Scheda, Schermo, Strumenti, Tondo } from "../mappa-rr/Schermo";
 import { primoTesto } from "../mappa-rr/stile";
 import { ATT, att } from "./attivita";
@@ -85,7 +85,8 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
   const [palchi, setPalchi] = useState<FPalco[]>([]);
   const [zone, setZone] = useState<FZona[] | null>(null);
   const [piazze, setPiazze] = useState<FPiazza[]>([]);
-  const [pronto, setPronto] = useState(false);
+  // conta le mappe nate: con Next 16 una pagina nascosta e poi riaperta ricrea la mappa
+  const [pronto, setPronto] = useState(0);
   // il Pass dell'artista (registrazione una volta, poi «Ci sarò» con un tocco)
   const { stato: passStato, setStato: setPassStato, ricarica: ricaricaPass } = usePass();
   const ciSaro = (lon: number, lat: number, luogo: string) =>
@@ -161,8 +162,7 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
   }, []);
 
   const segnaPunto = useCallback((lon: number | null, lat?: number) => {
-    const src = m.current?.map.getSource("rr-punto") as GeoJSONSource | undefined;
-    src?.setData({ type: "FeatureCollection", features: lon == null ? [] : [{ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: [lon, lat!] } }] });
+        dati(m.current?.map, "rr-punto", { type: "FeatureCollection", features: lon == null ? [] : [{ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: [lon, lat!] } }] });
   }, []);
 
   const tocca = useCallback(
@@ -288,7 +288,7 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
       }
 
       caricaDati<{ features: FZona[] }>("/api/artisti/zone?leggero=1&fuse=1", "/dati/artisti/zone.json").then((fc) => setZone(fc.features)).catch(() => setErrore("Le zone non si sono caricate"));
-      caricaDati<{ features: unknown[] }>("/api/artisti/copertura", "/dati/artisti/copertura.json").then((fc) => (map.getSource("rr-copertura") as GeoJSONSource).setData(fc as never)).catch(() => {});
+      caricaDati<{ features: unknown[] }>("/api/artisti/copertura", "/dati/artisti/copertura.json").then((fc) => dati(map, "rr-copertura", fc as never)).catch(() => {});
       caricaDati<{ features: FPiazza[] }>("/api/artisti/piazze", "/dati/artisti/piazze.json").then((fc) => setPiazze(fc.features)).catch(() => {});
       caricaDati<{ features: FPalco[] }>("/api/artisti/postazioni", "/dati/artisti/postazioni.json").then((fc) => setPalchi(fc.features)).catch(() => {});
       caricaDati<{ features: FEsib[] }>("/api/artisti/esibizioni?giorni=2", "/dati/artisti/esibizioni.json").then((fc) => setEsib(fc.features)).catch(() => {});
@@ -308,7 +308,7 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
             condGrezze.current = fc.features;
             const a = stato.current.attivita;
             const features = fc.features.filter((f) => f.properties.v.length === 0 || f.properties.v.includes(a));
-            (map.getSource("rr-cond") as GeoJSONSource).setData({ type: "FeatureCollection", features } as never);
+            dati(map, "rr-cond", { type: "FeatureCollection", features } as never);
           })
           .catch(() => {});
       };
@@ -337,7 +337,7 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
         map.on("mouseenter", l, () => (map.getCanvas().style.cursor = "pointer"));
         map.on("mouseleave", l, () => (map.getCanvas().style.cursor = ""));
       });
-      setPronto(true);
+      setPronto((n) => n + 1);
       return () => cancelAnimationFrame(raf);
     },
     [segnaPunto, tocca],
@@ -346,7 +346,7 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
   // 1. la citta' si colora per l'attivita' scelta
   useEffect(() => {
     const k = m.current;
-    if (!k || !pronto || !zone) return;
+    if (!k || !pronto || !viva(k.map) || !zone) return;
     const dedicate = attivita === "figurativa" || attivita === "esoterica";
     const features = zone
       .map((f) => {
@@ -360,9 +360,9 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
         return s ? { ...f, properties: { ...f.properties, s } } : null;
       })
       .filter(Boolean);
-    (k.map.getSource("rr-zone") as GeoJSONSource).setData({ type: "FeatureCollection", features } as never);
+    dati(k.map, "rr-zone", { type: "FeatureCollection", features } as never);
     const cond = condGrezze.current.filter((f) => f.properties.v.length === 0 || f.properties.v.includes(attivita));
-    (k.map.getSource("rr-cond") as GeoJSONSource).setData({ type: "FeatureCollection", features: cond } as never);
+    dati(k.map, "rr-cond", { type: "FeatureCollection", features: cond } as never);
     const guarda = modo === "guardare";
     // ritratti e tarocchi: la citta' resta "non qui" (rosa), si accendono solo le aree dedicate
     k.map.setLayoutProperty("rr-adatta", "visibility", dedicate && !guarda ? "none" : "visible");
@@ -371,7 +371,7 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
     // piazze consigliate: quelle dove l'attivita' scelta non e' vietata
     const bloccata = (z: { e: string; v: string[] }) => (z.v.length === 0 || z.v.includes(attivita)) && (z.e === "no" || (z.e === "solo_silenzio") || z.e === "solo_postazioni");
     const libere = dedicate && !guarda ? [] : piazze.filter((f) => !f.properties.z.some(bloccata));
-    (k.map.getSource("rr-piazze") as GeoJSONSource).setData({ type: "FeatureCollection", features: libere } as never);
+    dati(k.map, "rr-piazze", { type: "FeatureCollection", features: libere } as never);
     k.map.setPaintProperty("rr-zone", "fill-opacity", guarda ? 0.05 : ["match", ["get", "s"], "no", 0.16, "dedicata", 0.3, 0.17]);
     k.map.setPaintProperty("rr-zone-righe", "fill-opacity", guarda ? 0 : 1);
     k.map.setPaintProperty("rr-zone-l", "line-opacity", guarda ? 0.22 : 0.9);
@@ -382,12 +382,12 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
   // 2 e 3. palchi (liberi, occupati, chiusi) e artisti
   useEffect(() => {
     const k = m.current;
-    if (!k || !pronto) return;
+    if (!k || !pronto || !viva(k.map)) return;
     const tipi = PALCHI_PER[attivita];
     const fp = palchi
       .filter((f) => modo === "guardare" || tipi.includes(f.properties.tipo))
       .map((f) => ({ ...f, properties: { ...f.properties, s: statoPalco(f).s, breve: breve(f.properties.nome) } }));
-    (k.map.getSource("rr-palchi") as GeoJSONSource).setData({ type: "FeatureCollection", features: fp } as never);
+    dati(k.map, "rr-palchi", { type: "FeatureCollection", features: fp } as never);
     const restantiOggi = esib.filter((f) => ROMA(new Date(f.properties.inizio)) === oggi && new Date(f.properties.fine) > adesso);
     const perChiSuona = restantiOggi.length ? restantiOggi : esib.filter((f) => ROMA(new Date(f.properties.inizio)) === domani);
     const fa = (modo === "guardare" ? visibili : perChiSuona).map((f) => {
@@ -396,15 +396,14 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
       const altroGiorno = ROMA(new Date(p.inizio)) !== oggi;
       return { ...f, properties: { ...p, ora: vivo, c: att(p.attivita).c, quando: vivo ? `in scena fino alle ${ora(p.fine)}` : `${altroGiorno ? "domani " : ""}${ora(p.inizio)}` } };
     });
-    (k.map.getSource("rr-artisti") as GeoJSONSource).setData({ type: "FeatureCollection", features: fa } as never);
+    dati(k.map, "rr-artisti", { type: "FeatureCollection", features: fa } as never);
     k.map.setLayoutProperty("rr-palchi", "icon-size", modo === "guardare" ? ["interpolate", ["linear"], ["zoom"], 11, 0.4, 16, 0.65] : ["interpolate", ["linear"], ["zoom"], 11, 0.55, 14, 0.8, 17, 1]);
   }, [palchi, esib, visibili, modo, attivita, statoPalco, inScena, pronto, oggi, domani, adesso]);
 
   // l'anello sul simbolo scelto (palco o artista)
   useEffect(() => {
-    const src = m.current?.map.getSource("rr-sel") as GeoJSONSource | undefined;
     const c = sel?.tipo === "palco" || sel?.tipo === "artista" ? sel.f.geometry.coordinates : null;
-    src?.setData({ type: "FeatureCollection", features: c ? [{ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: c } }] : [] });
+    dati(m.current?.map, "rr-sel", { type: "FeatureCollection", features: c ? [{ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: c } }] : [] });
   }, [sel, pronto]);
 
   // ------------------------------------------------------------------ comandi

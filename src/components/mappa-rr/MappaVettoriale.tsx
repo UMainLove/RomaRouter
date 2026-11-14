@@ -2,7 +2,7 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./mappa.css";
-import type { Map as MapLibre } from "maplibre-gl";
+import type { GeoJSONSource, Map as MapLibre } from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
 import { stileRoma } from "./stile";
 
@@ -84,14 +84,27 @@ export function MappaVettoriale({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // la mappa sta dentro un contenitore che occupa tutto lo spazio: MapLibre mette position: relative sul suo
+  // elemento (CSS fuori dai livelli di Tailwind, quindi vince sempre) e senza contenitore la mappa resterebbe alta 0
   return (
-    <div
-      ref={div}
-      role="region"
-      aria-label={titolo}
-      className={`absolute inset-0 z-0 bg-[#F3EEE4] transition-opacity duration-500 ${vista ? "opacity-100" : "opacity-0"}`}
-    />
+    <div className={`absolute inset-0 z-0 bg-[#F3EEE4] transition-opacity duration-500 ${vista ? "opacity-100" : "opacity-0"}`}>
+      <div ref={div} role="region" aria-label={titolo} className="h-full w-full" />
+    </div>
   );
+}
+
+/**
+ * La mappa c'e' ancora? Cambiando pagina la mappa viene chiusa, ma dati, icone e animazioni possono arrivare
+ * dopo: scriverli su una mappa chiusa fa crollare la pagina («Cannot read properties of undefined»).
+ */
+export function viva(map?: MapLibre | null): map is MapLibre {
+  return !!map && !(map as MapLibre & { _removed?: boolean })._removed && !!(map as unknown as { style?: unknown }).style;
+}
+
+/** Aggiorna una sorgente GeoJSON solo se la mappa e la sorgente esistono ancora. */
+export function dati(map: MapLibre | null | undefined, id: string, data: unknown) {
+  if (!viva(map)) return;
+  (map.getSource(id) as GeoJSONSource | undefined)?.setData(data as never);
 }
 
 /** Spazio occupato dai pannelli: il "centro" della mappa e' quello della parte libera. */
@@ -106,6 +119,7 @@ const fermo = () => typeof window !== "undefined" && window.matchMedia("(prefers
 
 /** Porta un punto al centro della parte libera; sul telefono lascia posto alla scheda in basso. */
 export function vola(map: MapLibre, lat: number, lon: number, zoom?: number, conScheda = true) {
+  if (!viva(map)) return;
   const p = margini(map);
   if ((map as MapLibre & { rrSenzaPannelli?: boolean }).rrSenzaPannelli) conScheda = false;
   const largo = p.left > 0;
@@ -120,6 +134,7 @@ export function vola(map: MapLibre, lat: number, lon: number, zoom?: number, con
 
 /** Inquadra un'area. Il margine dei pannelli e' gia' nella mappa (setPadding): qui solo un po' d'aria in piu'. */
 export function inquadra(map: MapLibre, b: [[number, number], [number, number]], conScheda = true) {
+  if (!viva(map)) return;
   const senza = (map as MapLibre & { rrSenzaPannelli?: boolean }).rrSenzaPannelli;
   const largo = senza || margini(map).left > 0;
   map.setPadding(margini(map));

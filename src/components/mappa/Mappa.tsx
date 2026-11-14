@@ -1,10 +1,10 @@
 "use client";
 
-import type { GeoJSONSource, Map as MapLibre } from "maplibre-gl";
+import type { Map as MapLibre } from "maplibre-gl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AMBITI, ORDINE_AMBITI, type AmbitoId } from "@/lib/ambiti";
 import { caricaIcone, GLIFI, segno } from "../mappa-rr/icone";
-import { MappaVettoriale } from "../mappa-rr/MappaVettoriale";
+import { dati, MappaVettoriale, viva } from "../mappa-rr/MappaVettoriale";
 import { primoTesto } from "../mappa-rr/stile";
 import type { PropsMappa } from "./MappaSchematica";
 
@@ -28,7 +28,8 @@ function cerchio(lon: number, lat: number, r: number, n = 72) {
 
 export function Mappa({ titolo, punti, selezionato, onSeleziona, centro, raggioMetri, extra = [] }: PropsMappa & { titolo: string }) {
   const m = useRef<MapLibre | null>(null);
-  const [pronta, setPronta] = useState(false);
+  // conta le mappe nate: con Next 16 una pagina nascosta e poi riaperta ricrea la mappa
+  const [pronta, setPronta] = useState(0);
   const seleziona = useRef(onSeleziona);
   const inquadrato = useRef("");
   useEffect(() => {
@@ -107,14 +108,14 @@ export function Mappa({ titolo, punti, selezionato, onSeleziona, centro, raggioM
     });
     map.on("mouseenter", "rr-punti", () => (map.getCanvas().style.cursor = "pointer"));
     map.on("mouseleave", "rr-punti", () => (map.getCanvas().style.cursor = ""));
-    setPronta(true);
+    setPronta((n) => n + 1);
   }, []);
 
   // punti, scelta, cerchio e segni extra
   useEffect(() => {
     const map = m.current;
-    if (!map || !pronta) return;
-    (map.getSource("rr-punti") as GeoJSONSource).setData({
+    if (!map || !pronta || !viva(map)) return;
+    dati(map, "rr-punti", {
       type: "FeatureCollection",
       features: punti.map((p) => ({
         type: "Feature",
@@ -122,11 +123,11 @@ export function Mappa({ titolo, punti, selezionato, onSeleziona, centro, raggioM
         properties: { id: p.id, ambito: p.ambito, nome: p.nome, sel: p.id === selezionato, ...(p.conteggio != null ? { conteggio: p.conteggio } : {}) },
       })),
     });
-    (map.getSource("rr-extra") as GeoJSONSource).setData({
+    dati(map, "rr-extra", {
       type: "FeatureCollection",
       features: extra.map((x) => ({ type: "Feature", geometry: { type: "Point", coordinates: [x.lon, x.lat] }, properties: { testo: x.valore ?? x.etichetta } })),
     });
-    (map.getSource("rr-centro") as GeoJSONSource).setData(
+    dati(map, "rr-centro", 
       centro
         ? {
             type: "FeatureCollection",
@@ -153,7 +154,7 @@ export function Mappa({ titolo, punti, selezionato, onSeleziona, centro, raggioM
   useEffect(() => {
     const map = m.current;
     const p = punti.find((x) => x.id === selezionato);
-    if (!map || !pronta || !p) return;
+    if (!map || !pronta || !viva(map) || !p) return;
     if (!map.getBounds().contains([p.lon, p.lat])) map.easeTo({ center: [p.lon, p.lat], duration: 600 });
   }, [selezionato, punti, pronta]);
 
