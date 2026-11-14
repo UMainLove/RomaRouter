@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
-import { VerificaArte } from "@/components/arte/VerificaArte";
-import { MappaSezione } from "@/components/mappe/MappaSezione";
-import { VistaAmbito } from "@/components/vista/VistaAmbito";
+import { ArteMappa } from "@/components/arte/ArteMappa";
 import { queryArtisti } from "@/lib/artisti";
 
 export const metadata: Metadata = {
@@ -13,55 +11,14 @@ export const metadata: Metadata = {
 };
 
 /*
- * Sezione arte di strada nell'impaginazione comune (VistaAmbito): a destra la mappa della sezione
- * (public/mappe/artisti-di-strada, zone e postazioni da rr_artisti_strada), a sinistra la verifica di un
- * indirizzo (artista: posso esibirmi qui?; cittadino: chi si esibisce qui?), poi regole, contatti e fonti.
- * La vecchia vista con dati di esempio (components/arte/VistaArte) resta nel repo ma non e' piu' usata qui.
+ * Arte di strada a tutta mappa: la mappa e la domanda "posso esibirmi qui?" (o "chi si esibisce qui?")
+ * occupano lo schermo; regole, contatti e fonti stanno nel pannello e si aprono solo se servono.
+ * Sono scritte qui sul server e passate al pannello gia' pronte.
  */
-
-const fmt = (n: number) => n.toLocaleString("it-IT", { useGrouping: "always" } as Intl.NumberFormatOptions);
-
-async function Cifre() {
-  await connection();
-  const { rows } = await queryArtisti<{ postazioni: number; divieti: number; dedicate: number; esibizioni: number }>(
-    `SELECT (SELECT count(*)::int FROM artisti.postazioni WHERE tipo = 'postazione_allegatoB') AS postazioni,
-            (SELECT count(*)::int FROM artisti.zone WHERE esito IN ('no', 'solo_silenzio')) AS divieti,
-            (SELECT count(*)::int FROM artisti.postazioni WHERE tipo <> 'postazione_allegatoB') AS dedicate,
-            (SELECT count(*)::int FROM artisti.v_esibizioni WHERE fine > now() AND inizio < now() + interval '7 days') AS esibizioni`,
-  );
-  const r = rows[0];
-  const voci = [
-    { valore: fmt(r.postazioni), testo: "postazioni ufficiali in centro", fonte: "DAC 24/2012, All. B" },
-    { valore: fmt(r.divieti), testo: "zone con divieti", fonte: "Municipio I + stampa" },
-    { valore: fmt(r.dedicate), testo: "aree dedicate", fonte: "Mun. X, art. 13, DAC 304/2025" },
-    { valore: fmt(r.esibizioni), testo: "esibizioni nei prossimi 7 giorni", fonte: "annunci degli artisti" },
-  ];
-  return (
-    <ul className="grid grid-cols-2 gap-2.5">
-      {voci.map((v) => (
-        <li key={v.testo} className="rounded-card border border-line bg-surface px-3.5 py-3">
-          <p className="text-2xl font-bold tracking-tight text-accent tabular-nums">{v.valore}</p>
-          <p className="mt-0.5 text-[13px] leading-snug text-ink">{v.testo}</p>
-          <p className="mt-1 text-[11px] font-semibold tracking-wide text-muted uppercase">{v.fonte}</p>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function CifreAttesa() {
-  return (
-    <ul className="grid grid-cols-2 gap-2.5" aria-hidden="true">
-      {[0, 1, 2, 3].map((i) => (
-        <li key={i} className="h-[92px] rounded-card border border-line bg-surface-2" />
-      ))}
-    </ul>
-  );
-}
 
 function Blocco({ id, titolo, testo, children }: { id: string; titolo: string; testo?: string; children: ReactNode }) {
   return (
-    <section aria-labelledby={id} className="flex flex-col gap-2.5 border-t border-line pt-5">
+    <section aria-labelledby={id} className="flex flex-col gap-2.5 border-t border-line pt-4 first:border-0 first:pt-0">
       <h2 id={id} className="text-lg font-bold text-ink">
         {titolo}
       </h2>
@@ -166,42 +123,34 @@ async function Fonti() {
 
 export default function PaginaArte() {
   return (
-    <VistaAmbito
-      voceId="arte"
-      barra={
-        <Suspense fallback={<CifreAttesa />}>
-          <Cifre />
-        </Suspense>
+    <ArteMappa
+      info={
+        <div className="flex flex-col gap-5">
+          <Blocco
+            id="regole"
+            titolo="Le regole in breve"
+            testo="Il regolamento di Roma Capitale (DAC 24/2012, come risulta dopo la sentenza del TAR Lazio n. 5494/2013) vale in tutto il Comune; i Municipi aggiungono divieti in zone precise."
+          >
+            <Suspense fallback={<Attesa cosa="le regole" />}>
+              <Regole />
+            </Suspense>
+          </Blocco>
+          <Blocco id="contatti" titolo="A chi mandare il preavviso" testo="Almeno 3 giorni prima, al Gruppo di Polizia Locale del Municipio dove ti esibisci (art. 10).">
+            <Suspense fallback={<Attesa cosa="i contatti" />}>
+              <Contatti />
+            </Suspense>
+          </Blocco>
+          <Blocco
+            id="fonti"
+            titolo="Fonti"
+            testo="Atti di Roma Capitale e dei Municipi raccolti nel dataset Art Spot. Le posizioni delle postazioni sono stimate dalle planimetrie; i divieti noti solo dalla stampa sono segnati «da verificare»."
+          >
+            <Suspense fallback={<Attesa cosa="le fonti" />}>
+              <Fonti />
+            </Suspense>
+          </Blocco>
+        </div>
       }
-      mappa={<MappaSezione sezione="artisti-di-strada" titolo="Mappa dell'arte di strada a Roma: dove ci si può esibire e dove no" pieno />}
-    >
-      <VerificaArte />
-
-      <Blocco
-        id="regole"
-        titolo="Le regole in breve"
-        testo="Il regolamento di Roma Capitale (DAC 24/2012) vale ovunque nel Comune; i Municipi aggiungono divieti in zone precise. Quelle annullate dal TAR Lazio nel 2013 sono segnate."
-      >
-        <Suspense fallback={<Attesa cosa="le regole" />}>
-          <Regole />
-        </Suspense>
-      </Blocco>
-
-      <Blocco id="contatti" titolo="A chi mandare il preavviso" testo="Almeno 3 giorni prima, al Gruppo di Polizia Locale del Municipio dove ti esibisci (art. 10).">
-        <Suspense fallback={<Attesa cosa="i contatti" />}>
-          <Contatti />
-        </Suspense>
-      </Blocco>
-
-      <Blocco
-        id="fonti"
-        titolo="Fonti"
-        testo="Atti di Roma Capitale e dei Municipi, raccolti nel dataset Art Spot (novembre 2026). Le posizioni delle postazioni sono stimate dalle planimetrie; i divieti noti solo dalla stampa sono segnati «da verificare»."
-      >
-        <Suspense fallback={<Attesa cosa="le fonti" />}>
-          <Fonti />
-        </Suspense>
-      </Blocco>
-    </VistaAmbito>
+    />
   );
 }

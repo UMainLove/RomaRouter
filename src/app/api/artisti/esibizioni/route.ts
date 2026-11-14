@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
         'type', 'Feature', 'id', e.id,
         'geometry', ST_AsGeoJSON(e.geom, 6)::json,
         'properties', json_build_object('nome_arte', e.nome_arte, 'disciplina', e.disciplina, 'descrizione', e.descrizione,
-          'link', e.link, 'inizio', e.inizio, 'fine', e.fine, 'luogo', e.luogo, 'postazione', e.postazione, 'attivita', e.attivita, 'stato', e.stato)
+          'link', e.link, 'inizio', e.inizio, 'fine', e.fine, 'luogo', e.luogo, 'postazione', e.postazione, 'attivita', e.attivita, 'stato', e.stato, 'demo', e.demo)
       ) ORDER BY e.inizio), '[]'::json)) AS fc
      FROM artisti.v_esibizioni e
      WHERE e.geom IS NOT NULL AND e.fine > now() AND e.inizio < now() + make_interval(days => $1)`,
@@ -27,6 +27,20 @@ export async function GET(req: NextRequest) {
 const VIETATI = new Set(["no", "probabilmente_no", "solo_area_dedicata", "solo_silenzio"]);
 const testo = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
+// Contro lo spam finche' non c'e' SPID: al massimo 5 annunci l'ora per connessione (in memoria del server),
+// un campo trappola che le persone non vedono e niente doppioni dello stesso nome nello stesso posto e giorno.
+const LIMITE_ORA = 5;
+const invii = new Map<string, number[]>();
+function troppi(chi: string) {
+  const ora = Date.now();
+  const recenti = (invii.get(chi) ?? []).filter((t) => ora - t < 3_600_000);
+  if (recenti.length >= LIMITE_ORA) return true;
+  recenti.push(ora);
+  invii.set(chi, recenti);
+  if (invii.size > 5000) invii.clear();
+  return false;
+}
+
 export async function POST(req: NextRequest) {
   await connection();
   let b: Record<string, unknown>;
@@ -35,6 +49,9 @@ export async function POST(req: NextRequest) {
   } catch {
     return Response.json({ errore: "Richiesta non valida" }, { status: 400 });
   }
+  if (testo(b.sito_web, 10)) return Response.json({ errore: "Richiesta non valida" }, { status: 400 });
+  const chi = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "locale";
+  if (troppi(chi)) return Response.json({ errore: "Troppi annunci in poco tempo: riprova tra un'ora." }, { status: 429 });
   const lat = Number(b.lat), lon = Number(b.lon);
   const attivita = b.attivita;
   const nome = testo(b.nome_arte, 60), disciplina = testo(b.disciplina, 60) || "arte di strada";
@@ -59,6 +76,13 @@ export async function POST(req: NextRequest) {
   if (v.esito.codice === "solo_postazioni" && !postazione) {
     return Response.json({ errore: "Qui ci si esibisce solo nelle postazioni numerate: scegli una postazione sulla mappa.", esito: v.esito }, { status: 422 });
   }
+
+  const doppio = await queryArtisti(
+    `SELECT 1 FROM artisti.v_esibizioni WHERE lower(nome_arte) = lower($1) AND inizio::date = $2::timestamptz::date
+       AND ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint($3, $4), 4326)::geography, 100) LIMIT 1`,
+    [nome, inizio, lon, lat],
+  );
+  if (doppio.rowCount) return Response.json({ errore: "Hai già annunciato un'esibizione qui per quel giorno." }, { status: 409 });
 
   const { rows } = await queryArtisti<{ id: string }>(
     `WITH p AS (

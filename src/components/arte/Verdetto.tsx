@@ -1,27 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useState } from "react";
 import type { VerificaLuogo } from "@/lib/artisti";
 
 /*
- * Arte di strada: un indirizzo, una risposta. L'artista scrive dove vuole esibirsi e sa se puo', perche'
- * e a quali condizioni; il cittadino scrive lo stesso indirizzo e vede chi si esibira' li' e dove
- * trovare artisti vicino. La mappa accanto (iframe, mappe/artisti-di-strada) si sposta sul punto e, se
- * si tocca la mappa, il verdetto arriva anche qui (eventi rr:alla-mappa / rr:dalla-mappa di MappaSezione).
+ * Il verdetto di un punto per l'arte di strada (pannello della mappa di /arte): per l'artista se puo'
+ * esibirsi, perche', a quali condizioni e cosa fare prima; per il cittadino chi si esibisce li'.
  */
+export type Modo = "artista" | "cittadino";
+export type Risultato = VerificaLuogo & { luogo: { etichetta: string } | null };
 
-type Modo = "artista" | "cittadino";
-type Suggerimento = { etichetta: string; municipio: string | null; lat: number; lon: number };
-type Risultato = VerificaLuogo & { luogo: { etichetta: string } | null };
-
-const ATTIVITA = [
+export const ATTIVITA = [
   ["musica", "Musica o canto"],
-  ["silenziosa", "Esibizione silenziosa (statue viventi, mimi…)"],
+  ["silenziosa", "Esibizione silenziosa"],
   ["fuoco", "Spettacolo col fuoco"],
   ["figurativa", "Ritratti e caricature"],
   ["esoterica", "Cartomanzia"],
 ] as const;
-type Attivita = (typeof ATTIVITA)[number][0];
+export type Attivita = (typeof ATTIVITA)[number][0];
 
 const TIPI: Record<string, string> = {
   postazione_allegatoB: "Postazione ufficiale (Allegato B)",
@@ -30,252 +26,25 @@ const TIPI: Record<string, string> = {
   arti_figurative_area: "Area arti figurative",
 };
 const TONI = {
-  ok: "border-[#0C7A3E]/30 bg-[#E6F4EC] text-[#0C5E31]",
-  attenzione: "border-[#B87200]/30 bg-[#FFF4DD] text-[#6E4200]",
-  errore: "border-[#B3261E]/30 bg-[#FBE9E7] text-[#8C1D16]",
+  ok: "bg-ok-tint text-ok",
+  attenzione: "bg-attenzione-tint text-attenzione",
+  errore: "bg-errore-tint text-errore",
 };
 const SEGNI = { ok: "✓", attenzione: "!", errore: "✕" };
 const metri = (m: number) => (m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1).replace(".", ",")} km`);
 const quando = (d: string) =>
   new Date(d).toLocaleString("it-IT", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" });
-const allaMappa = (dati: Record<string, unknown>) =>
-  window.dispatchEvent(new CustomEvent("rr:alla-mappa", { detail: { sezione: "artisti-di-strada", dati } }));
 
-export function VerificaArte() {
-  const [modo, setModo] = useState<Modo>("artista");
-  const [attivita, setAttivita] = useState<Attivita>("musica");
-  const [testo, setTesto] = useState("");
-  const [suggeriti, setSuggeriti] = useState<Suggerimento[]>([]);
-  const [evidenziato, setEvidenziato] = useState(-1);
-  const [aperto, setAperto] = useState(false);
-  const [risultato, setRisultato] = useState<Risultato | null>(null);
-  const [errore, setErrore] = useState<string | null>(null);
-  const [carica, setCarica] = useState(false);
-  const scelto = useRef<Suggerimento | null>(null);
-  const ultimo = useRef<{ lat: number; lon: number } | null>(null);
-  const idLista = useId();
-  const esito = useRef<HTMLDivElement>(null);
-
-  // suggerimenti dallo stradario ufficiale (con un attimo di pausa mentre si scrive)
-  useEffect(() => {
-    const q = testo.trim();
-    if (q.length < 3 || scelto.current?.etichetta === testo) return;
-    const ctl = new AbortController();
-    const t = setTimeout(() => {
-      fetch(`/api/artisti/indirizzo?q=${encodeURIComponent(q)}`, { signal: ctl.signal })
-        .then((r) => r.json())
-        .then((d: { risultati: Suggerimento[] }) => {
-          setSuggeriti(d.risultati.slice(0, 6));
-          setEvidenziato(-1);
-          setAperto(d.risultati.length > 0);
-        })
-        .catch(() => {});
-    }, 250);
-    return () => {
-      clearTimeout(t);
-      ctl.abort();
-    };
-  }, [testo]);
-
-  const verifica = useCallback(
-    async (dove: { lat: number; lon: number; etichetta?: string } | { indirizzo: string }, opz: { muoviMappa: boolean; att?: Attivita; m?: Modo }) => {
-      const att = opz.att ?? attivita;
-      const q = new URLSearchParams({ attivita: att });
-      if ("indirizzo" in dove) q.set("indirizzo", dove.indirizzo);
-      else {
-        q.set("lat", dove.lat.toFixed(6));
-        q.set("lon", dove.lon.toFixed(6));
-      }
-      setCarica(true);
-      setErrore(null);
-      try {
-        const r = await fetch(`/api/artisti/verifica?${q}`);
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.errore ?? "Verifica non riuscita");
-        const v = d as Risultato;
-        if (!v.luogo && "etichetta" in dove && dove.etichetta) v.luogo = { etichetta: dove.etichetta };
-        ultimo.current = { lat: v.punto.lat, lon: v.punto.lon };
-        setRisultato(v);
-        if (opz.muoviMappa) {
-          allaMappa({ tipo: "rr:verifica", lat: v.punto.lat, lon: v.punto.lon, attivita: att, modo: opz.m ?? modo, etichetta: v.luogo?.etichetta ?? null });
-        }
-        requestAnimationFrame(() => esito.current?.focus({ preventScroll: false }));
-      } catch (e) {
-        setRisultato(null);
-        setErrore((e as Error).message);
-      } finally {
-        setCarica(false);
-      }
-    },
-    [attivita, modo],
-  );
-
-  // un punto toccato sulla mappa: il verdetto arriva anche qui (se non e' quello appena chiesto da qui)
-  useEffect(() => {
-    function dallaMappa(e: Event) {
-      const d = (e as CustomEvent<{ sezione: string; dati: { tipo: string; lat: number; lon: number } }>).detail;
-      if (d?.sezione !== "artisti-di-strada" || d.dati.tipo !== "rr:verdetto") return;
-      const u = ultimo.current;
-      if (u && Math.abs(u.lat - d.dati.lat) < 1e-5 && Math.abs(u.lon - d.dati.lon) < 1e-5) return;
-      scelto.current = null;
-      setTesto("");
-      verifica({ lat: d.dati.lat, lon: d.dati.lon, etichetta: "Punto scelto sulla mappa" }, { muoviMappa: false });
-    }
-    window.addEventListener("rr:dalla-mappa", dallaMappa);
-    return () => window.removeEventListener("rr:dalla-mappa", dallaMappa);
-  }, [verifica]);
-
-  function scegli(s: Suggerimento) {
-    scelto.current = s;
-    setTesto(s.etichetta);
-    setAperto(false);
-    verifica({ lat: s.lat, lon: s.lon, etichetta: s.etichetta }, { muoviMappa: true });
-  }
-  function invia(e: React.FormEvent) {
-    e.preventDefault();
-    setAperto(false);
-    if (evidenziato >= 0 && suggeriti[evidenziato]) return scegli(suggeriti[evidenziato]);
-    const s = scelto.current;
-    if (s && s.etichetta === testo) return verifica({ lat: s.lat, lon: s.lon, etichetta: s.etichetta }, { muoviMappa: true });
-    if (testo.trim().length < 3) return setErrore("Scrivi un indirizzo di Roma, per esempio «Piazza Navona».");
-    verifica({ indirizzo: testo.trim() }, { muoviMappa: true });
-  }
-  function tasti(e: React.KeyboardEvent) {
-    if (!aperto || !suggeriti.length) return;
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setEvidenziato((i) => (i + 1) % suggeriti.length);
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setEvidenziato((i) => (i <= 0 ? suggeriti.length - 1 : i - 1));
-    } else if (e.key === "Escape") setAperto(false);
-  }
-  // cambiare modo o attivita' rifa' la verifica dello stesso punto
-  function cambia(m: Modo, a: Attivita) {
-    setModo(m);
-    setAttivita(a);
-    if (risultato) {
-      verifica({ lat: risultato.punto.lat, lon: risultato.punto.lon, etichetta: risultato.luogo?.etichetta }, { muoviMappa: true, att: a, m });
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div role="group" aria-label="Chi sei" className="grid grid-cols-2 rounded-card bg-bg-sink p-[3px]">
-        {(
-          [
-            ["artista", "Sono un artista"],
-            ["cittadino", "Voglio vedere artisti"],
-          ] as const
-        ).map(([v, t]) => (
-          <button
-            key={v}
-            type="button"
-            aria-pressed={modo === v}
-            onClick={() => cambia(v, attivita)}
-            className={`min-h-11 rounded-[9px] text-[15px] ${modo === v ? "bg-panel font-bold text-ink shadow-[0_1px_3px_rgba(37,29,28,.14)]" : "font-semibold text-ink-soft"}`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-
-      <form onSubmit={invia} className="flex flex-col gap-3" role="search" aria-label="Verifica un indirizzo">
-        <div className="relative">
-          <label htmlFor={`${idLista}-in`} className="mb-1 block text-sm font-bold text-ink">
-            {modo === "artista" ? "Dove vuoi esibirti?" : "Dove sei, o dove vuoi andare?"}
-          </label>
-          <div className="flex gap-2">
-            <input
-              id={`${idLista}-in`}
-              type="text"
-              inputMode="search"
-              autoComplete="off"
-              role="combobox"
-              aria-expanded={aperto}
-              aria-controls={`${idLista}-lista`}
-              aria-autocomplete="list"
-              aria-activedescendant={evidenziato >= 0 ? `${idLista}-${evidenziato}` : undefined}
-              placeholder="Es. Piazza Navona, Via del Pigneto 100"
-              value={testo}
-              onChange={(e) => {
-                scelto.current = null;
-                setTesto(e.target.value);
-              }}
-              onKeyDown={tasti}
-              onBlur={() => setTimeout(() => setAperto(false), 150)}
-              onFocus={() => suggeriti.length && !scelto.current && setAperto(true)}
-              className="min-h-12 w-full min-w-0 rounded-card border border-line bg-panel px-3.5 text-[16px] text-ink placeholder:text-muted focus:border-ink focus:outline-none"
-            />
-            <button type="submit" disabled={carica} className="min-h-12 shrink-0 rounded-card bg-ink px-4 text-[15px] font-bold text-white disabled:opacity-60">
-              {carica ? "…" : "Verifica"}
-            </button>
-          </div>
-          {aperto && suggeriti.length > 0 && (
-            <ul
-              id={`${idLista}-lista`}
-              role="listbox"
-              className="absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-card border border-line bg-panel shadow-[0_8px_24px_rgba(37,29,28,.16)]"
-            >
-              {suggeriti.map((s, i) => (
-                <li
-                  key={`${s.etichetta}-${i}`}
-                  id={`${idLista}-${i}`}
-                  role="option"
-                  aria-selected={i === evidenziato}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    scegli(s);
-                  }}
-                  className={`cursor-pointer px-3.5 py-2.5 text-[15px] ${i === evidenziato ? "bg-bg-sink" : ""}`}
-                >
-                  <span className="font-semibold text-ink">{s.etichetta}</span>
-                  {s.municipio && <span className="ml-1.5 text-sm text-muted">Municipio {s.municipio}</span>}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        {modo === "artista" && (
-          <label className="flex flex-col gap-1 text-sm font-bold text-ink">
-            Cosa fai
-            <select
-              value={attivita}
-              onChange={(e) => cambia(modo, e.target.value as Attivita)}
-              className="min-h-12 rounded-card border border-line bg-panel px-3 text-[16px] font-semibold text-ink"
-            >
-              {ATTIVITA.map(([v, t]) => (
-                <option key={v} value={v}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        <p className="text-sm text-ink-soft">Oppure tocca un punto sulla mappa.</p>
-      </form>
-
-      {errore && (
-        <p role="alert" className="rounded-card border border-[#B3261E]/30 bg-[#FBE9E7] px-3.5 py-3 text-[15px] text-[#8C1D16]">
-          {errore}
-        </p>
-      )}
-
-      {risultato && <Verdetto v={risultato} modo={modo} rif={esito} onVai={(p) => verifica(p, { muoviMappa: true })} />}
-    </div>
-  );
-}
-
-function Verdetto({
+export function Verdetto({
   v,
   modo,
-  rif,
   onVai,
+  onAnnunciato,
 }: {
   v: Risultato;
   modo: Modo;
-  rif: React.RefObject<HTMLDivElement | null>;
   onVai: (p: { lat: number; lon: number; etichetta: string }) => void;
+  onAnnunciato: () => void;
 }) {
   const tono = v.esito.tono;
   const titolo =
@@ -290,21 +59,18 @@ function Verdetto({
 
   return (
     <section aria-labelledby="verdetto-titolo" className="flex flex-col gap-3.5">
-      <div>
-        <p className="text-xs font-bold tracking-wide text-muted uppercase">
-          {v.municipio ? `Municipio ${v.municipio.numero_romano}` : "Roma"}
-          {modo === "artista" ? ` · ${v.attivita.nome}` : ""}
-        </p>
-        <h2 id="verdetto-titolo" className="text-lg leading-6 font-bold text-ink">
-          {v.luogo?.etichetta ?? "Punto scelto"}
-        </h2>
-      </div>
-
-      <div ref={rif} tabIndex={-1} role="status" className={`flex items-start gap-3 rounded-card border px-3.5 py-3 outline-none ${TONI[tono]}`}>
-        <span aria-hidden="true" className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-current/15 text-sm font-black">
-          {SEGNI[tono]}
+      <div role="status" className={`flex items-center gap-3 rounded-[12px] px-3.5 py-3 ${TONI[tono]}`}>
+        <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-full bg-current text-[15px] font-black">
+          <span className="text-white">{SEGNI[tono]}</span>
         </span>
-        <span className="text-[17px] leading-6 font-bold">{titolo}</span>
+        <span className="min-w-0">
+          <span className="block text-[17px] leading-6 font-bold">{titolo}</span>
+          <span id="verdetto-titolo" className="block truncate text-[13px] font-semibold opacity-80">
+            {v.luogo?.etichetta ?? "Punto scelto sulla mappa"}
+            {v.municipio ? ` · Mun. ${v.municipio.numero_romano}` : ""}
+            {modo === "artista" ? ` · ${v.attivita.nome.toLowerCase()}` : ""}
+          </span>
+        </span>
       </div>
 
       {modo === "cittadino" && (
@@ -325,6 +91,9 @@ function Verdetto({
             <p className="text-[15px] text-ink-soft">
               Nessuna esibizione annunciata qui. Gli artisti si trovano più spesso nelle postazioni ufficiali qui sotto.
             </p>
+          )}
+          {v.esibizioni.some((e) => e.demo) && (
+            <p className="mt-1.5 text-[12px] text-muted">Esibizioni di esempio per provare il servizio: quelle vere le annunciano gli artisti da qui.</p>
           )}
         </Blocco>
       )}
@@ -382,7 +151,7 @@ function Verdetto({
         </Blocco>
       )}
 
-      {puoAnnunciare && <Annuncia v={v} />}
+      {puoAnnunciare && <Annuncia v={v} onFatto={onAnnunciato} />}
 
       <ul className="flex flex-col gap-1 border-t border-line pt-3 text-[13px] leading-5 text-muted">
         {v.avvertenze.map((a) => (
@@ -408,7 +177,7 @@ function Motivi({ lista }: { lista: Risultato["motivi"] }) {
       {lista.map((m, i) => (
         <li key={`${m.luogo}-${i}`} className="text-[15px] leading-snug text-ink">
           {m.testo}
-          {!m.ufficiale && <span className="ml-1.5 rounded-full bg-[#FFF4DD] px-2 py-px text-[11px] font-bold text-[#7A4A00] uppercase">da verificare</span>}
+          {!m.ufficiale && <span className="ml-1.5 rounded-full bg-attenzione-tint px-2 py-px text-[11px] font-bold text-attenzione uppercase">da verificare</span>}
           {m.approssimata && <span className="ml-1.5 rounded-full bg-bg-sink px-2 py-px text-[11px] font-bold text-ink-soft uppercase">confine stimato</span>}
           <span className="mt-0.5 block text-[13px] text-muted">
             {m.luogo}
@@ -474,7 +243,7 @@ function Preavviso({ v }: { v: Risultato }) {
 }
 
 // L'artista annuncia l'esibizione: i cittadini la vedono sulla mappa e cercando lo stesso indirizzo
-function Annuncia({ v }: { v: Risultato }) {
+function Annuncia({ v, onFatto }: { v: Risultato; onFatto: () => void }) {
   const [aperto, setAperto] = useState(false);
   const [stato, setStato] = useState<{ ok: boolean; testo: string } | null>(null);
   const [invio, setInvio] = useState(false);
@@ -499,12 +268,13 @@ function Annuncia({ v }: { v: Risultato }) {
           link: f.get("link"),
           inizio: new Date(`${giorno}T${ora}`).toISOString(),
           durata_min: Number(f.get("durata")),
+          sito_web: f.get("sito_web"),
         }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.errore ?? "Annuncio non riuscito");
       setStato({ ok: true, testo: "Fatto: la tua esibizione è sulla mappa. Ricordati il preavviso alla Polizia Locale." });
-      allaMappa({ tipo: "rr:esibizioni-aggiorna" });
+      onFatto();
     } catch (err) {
       setStato({ ok: false, testo: (err as Error).message });
     } finally {
@@ -525,6 +295,8 @@ function Annuncia({ v }: { v: Risultato }) {
       <p className="text-sm text-ink-soft">
         Nome d&apos;arte e disciplina saranno visibili a tutti. Non serve il tuo nome vero. L&apos;annuncio resta «non verificato» finché non arriva l&apos;accesso con SPID.
       </p>
+      {/* campo trappola contro i bot: le persone non lo vedono */}
+      <input name="sito_web" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 opacity-0" />
       <label className="text-sm font-semibold text-ink">
         Nome d&apos;arte
         <input name="nome" required minLength={2} maxLength={60} className={campo} />

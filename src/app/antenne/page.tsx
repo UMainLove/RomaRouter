@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { Badge, BarraFiltri, CampoScelta, CampoTesto, Conteggio, MUNICIPI, Vuoto, parametro } from "@/components/Filtri";
-import { MappaSezione } from "@/components/mappe/MappaSezione";
+import { AntenneMappa } from "@/components/antenne/AntenneMappa";
 import { VediSuMappa } from "@/components/mappe/VediSuMappa";
-import { VistaAmbito } from "@/components/vista/VistaAmbito";
 import { queryAntenne } from "@/lib/antenne";
 
 export const metadata: Metadata = {
@@ -13,54 +12,15 @@ export const metadata: Metadata = {
 };
 
 /*
- * Sezione antenne nell'impaginazione comune delle viste (VistaAmbito): a destra la mappa della
- * sezione (public/mappe/antenne, dati veri da rr_antenne), a sinistra cifre, elenco, limiti,
- * regole e fonti. Niente assistente: in questa sezione si arriva ai dati con mappa e filtri.
+ * Antenne a tutta mappa: la mappa delle richieste di antenne e la domanda "cosa c'e' vicino a casa mia?"
+ * occupano lo schermo. Elenco, limiti, regole e fonti stanno nel pannello e si aprono solo se servono
+ * (sono scritti qui sul server). Il tasto "Mappa" dell'elenco riporta all'antenna sulla mappa.
  */
 
 // useGrouping "always": in italiano anche 3538 diventa 3.538 (più leggibile per i cittadini)
 const fmt = (n: number | string) => Number(n).toLocaleString("it-IT", { useGrouping: "always" } as Intl.NumberFormatOptions);
 const dataIt = (d: string | Date | null) => (d ? new Date(d).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" }) : "—");
 
-// ---------------------------------------------------------------------------
-// Cifre chiave (nella barra della vista)
-// ---------------------------------------------------------------------------
-async function Cifre() {
-  await connection();
-  const { rows } = await queryAntenne<{ impianti_roma: string | null; istanze: number; sensibili: number }>(
-    `SELECT (SELECT valore FROM antenne.statistiche WHERE indicatore = 'impianti_srb' AND ambito = 'comune:Roma' LIMIT 1) AS impianti_roma,
-            (SELECT count(*)::int FROM antenne.istanze_srb WHERE geom IS NOT NULL) AS istanze,
-            (SELECT count(*)::int FROM antenne.siti_sensibili) AS sensibili`,
-  );
-  const r = rows[0];
-  const voci = [
-    { valore: fmt(r.istanze), testo: "richieste di antenne in mappa", fonte: "Roma Capitale" },
-    { valore: r.impianti_roma ? fmt(r.impianti_roma) : "—", testo: "impianti nel Comune di Roma", fonte: "ARPA Lazio" },
-    { valore: fmt(r.sensibili), testo: "siti sensibili", fonte: "GeoRoma + OSM" },
-    { valore: "15 V/m", testo: "valore di attenzione", fonte: "L. 214/2023" },
-  ];
-  return (
-    <ul className="grid grid-cols-2 gap-2.5">
-      {voci.map((v) => (
-        <li key={v.testo} className="rounded-card border border-line bg-surface px-3.5 py-3">
-          <p className="text-2xl font-bold tracking-tight text-accent tabular-nums">{v.valore}</p>
-          <p className="mt-0.5 text-[13px] leading-snug text-ink">{v.testo}</p>
-          <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted">{v.fonte}</p>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function CifreAttesa() {
-  return (
-    <ul className="grid grid-cols-2 gap-2.5" aria-hidden="true">
-      {[0, 1, 2, 3].map((i) => (
-        <li key={i} className="h-[92px] rounded-card border border-line bg-surface-2" />
-      ))}
-    </ul>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Elenco delle richieste (stessi dati della mappa, ricercabile; funziona senza JavaScript)
@@ -380,37 +340,23 @@ const Attesa = ({ cosa }: { cosa: string }) => (
 
 export default function Antenne(props: PageProps<"/antenne">) {
   return (
-    <VistaAmbito
-      voceId="antenne"
-      barra={<Suspense fallback={<CifreAttesa />}><Cifre /></Suspense>}
-      mappa={<MappaSezione sezione="antenne" titolo="Mappa delle antenne di telefonia mobile a Roma" pieno />}
-    >
-      <nav aria-label="In questa sezione" className="flex flex-wrap gap-2">
-        {[["#elenco", "Elenco"], ["#misure", "Limiti e misure"], ["#contesto", "Regole"], ["#fonti", "Fonti"]].map(([h, t]) => (
-          <a key={h} href={h} className="inline-flex min-h-9 items-center rounded-full border border-line bg-surface px-3.5 text-sm font-semibold text-muted transition hover:border-accent hover:text-accent">
-            {t}
-          </a>
-        ))}
-      </nav>
-      <p className="text-sm text-muted">
-        Sulla mappa cerca una via per vedere le antenne lungo la via, o apri un quartiere per sapere quante ce ne sono.
-      </p>
-
-      <Blocco id="elenco" titolo="Tutte le richieste" testo="Le richieste di nuove antenne o di modifiche pubblicate da Roma Capitale.">
-        <Suspense fallback={<Attesa cosa="dell'elenco" />}><Elenco searchParams={props.searchParams} /></Suspense>
-      </Blocco>
-
-      <Blocco id="misure" titolo="Campi elettromagnetici: limiti e controlli" testo="Cosa dice la legge, chi misura e come chiedere una verifica a casa tua.">
-        <Suspense fallback={<Attesa cosa="delle misure" />}><Misure /></Suspense>
-      </Blocco>
-
-      <Blocco id="contesto" titolo="Le regole, dall'Italia al tuo Municipio" testo="Come si autorizza un'antenna, dove è vietata e quali norme valgono.">
-        <Suspense fallback={<Attesa cosa="delle regole" />}><Contesto /></Suspense>
-      </Blocco>
-
-      <Blocco id="fonti" titolo="Da dove vengono i dati" testo="Ogni dato ha una fonte pubblica. Dove i dati mancano, lo diciamo.">
-        <Suspense fallback={<Attesa cosa="delle fonti" />}><Fonti /></Suspense>
-      </Blocco>
-    </VistaAmbito>
+    <AntenneMappa
+      info={
+        <div className="flex flex-col gap-8">
+          <Blocco id="elenco" titolo="Tutte le richieste" testo="Le richieste di nuove antenne o di modifiche pubblicate da Roma Capitale.">
+            <Suspense fallback={<Attesa cosa="dell'elenco" />}><Elenco searchParams={props.searchParams} /></Suspense>
+          </Blocco>
+          <Blocco id="misure" titolo="Limiti e misure" testo="Cosa dice la legge, chi misura e come chiedere una verifica a casa tua.">
+            <Suspense fallback={<Attesa cosa="delle misure" />}><Misure /></Suspense>
+          </Blocco>
+          <Blocco id="contesto" titolo="Le regole, dall'Italia al tuo Municipio" testo="Come si autorizza un'antenna, dove è vietata e quali norme valgono.">
+            <Suspense fallback={<Attesa cosa="delle regole" />}><Contesto /></Suspense>
+          </Blocco>
+          <Blocco id="fonti" titolo="Da dove vengono i dati" testo="Ogni dato ha una fonte pubblica. Dove i dati mancano, lo diciamo.">
+            <Suspense fallback={<Attesa cosa="delle fonti" />}><Fonti /></Suspense>
+          </Blocco>
+        </div>
+      }
+    />
   );
 }

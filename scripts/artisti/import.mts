@@ -110,7 +110,10 @@ async function postazioni() {
   await db.query("DELETE FROM artisti.fasce_orarie WHERE postazione_id IN (SELECT id FROM artisti.postazioni WHERE chiave IS NOT NULL)");
   await db.query("DELETE FROM artisti.postazioni WHERE chiave IS NOT NULL AND id NOT IN (SELECT postazione_id FROM artisti.prenotazioni WHERE postazione_id IS NOT NULL)");
   let n = 0;
-  for (const layer of ["postazioni_allegatoB", "aree_consentite_munX", "esoterici", "arti_figurative_aree_2018"]) {
+  const importate: string[] = [];
+  // arti figurative: l'elenco ufficiale 2026 (DGC 154/2026, scripts/artisti/arti_figurative_geo.mts) sostituisce quello del 2018
+  const figurative = existsSync(path.join(DATI, "geo/arti_figurative_2026.geojson")) ? "arti_figurative_2026" : "arti_figurative_aree_2018";
+  for (const layer of ["postazioni_allegatoB", "aree_consentite_munX", "esoterici", figurative]) {
     for (const f of leggiGeo(layer)) {
       const p = f.properties;
       const { rows } = await db.query<{ id: number }>(
@@ -121,7 +124,7 @@ async function postazioni() {
          ON CONFLICT (chiave) DO UPDATE SET nome=EXCLUDED.nome, municipio=EXCLUDED.municipio, geom=EXCLUDED.geom, tipo=EXCLUDED.tipo,
            scheda=EXCLUDED.scheda, raggio_m=EXCLUDED.raggio_m, localizzazioni=EXCLUDED.localizzazioni, regole_testo=EXCLUDED.regole_testo,
            fasce_testo=EXCLUDED.fasce_testo, fonte_testo=EXCLUDED.fonte_testo, fonte_url=EXCLUDED.fonte_url, verifica=EXCLUDED.verifica,
-           nota_posizione=EXCLUDED.nota_posizione, posizione_stimata=EXCLUDED.posizione_stimata, attributi=EXCLUDED.attributi, aggiornato_il=now()
+           nota_posizione=EXCLUDED.nota_posizione, posizione_stimata=EXCLUDED.posizione_stimata, attributi=EXCLUDED.attributi, attiva=true, aggiornato_il=now()
          RETURNING id`,
         [
           // codice e' UNIQUE: solo il codice d'area delle arti figurative (es. "1.a") e' univoco
@@ -135,6 +138,7 @@ async function postazioni() {
         ],
       );
       n++;
+      importate.push(String(p.id));
       // Fasce orarie strutturate (art. 6 DAC 24/2012): servono per controllare le prenotazioni
       const fasce = p.type === "area_esoterici"
         ? [["01-01", "12-31", "16:00", "20:00"], ["01-01", "12-31", "20:00", "24:00"]]
@@ -151,24 +155,35 @@ async function postazioni() {
       }
     }
   }
-  log(`postazioni e aree: ${n}`);
+  // quelle non piu' negli elenchi (es. arti figurative 2018) restano solo se legate a esibizioni, ma spente
+  const spente = await db.query("UPDATE artisti.postazioni SET attiva = false WHERE chiave IS NOT NULL AND NOT (chiave = ANY($1)) AND attiva", [importate]);
+  log(`postazioni e aree: ${n} (${figurative}; spente ${spente.rowCount} non piu' in elenco)`);
 }
 
+// Metri per lato della fascia attorno alle vie vietate (strada + marciapiedi); le altre usano il default
+// di artisti.ricalcola_zone(). Via dei Fori Imperiali e' larga con l'area pedonale.
+const LARGHEZZE: [RegExp, number][] = [[/fori imperiali/i, 40]];
 async function divieti() {
   await db.query("DELETE FROM artisti.divieti");
   const feats = leggiGeo("divieti");
+  // atti ufficiali trovati nel registro di Roma Capitale (novembre 2026): sostituiscono le fonti di stampa
+  const agg = new Map(leggiCsv("tabelle/divieti_aggiornamenti_2026-11.csv").map((r) => [r.id, r]));
   for (const f of feats) {
+    const a = agg.get(String(f.properties.id));
+    if (a) Object.assign(f.properties, { act: a.act, valid_to: a.valid_to || null, verification_status: a.verification_status, source_url: a.source_url, source: a.act, salva_allegato_b: a.salva_allegato_b === "true", nota_atto: a.note || null });
     const p = f.properties, ver = String(p.verification_status ?? "");
+    const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(p.valid_to ?? ""));
+    if (iso) p.valid_to = `fino al ${iso[3]}/${iso[2]}/${iso[1]}`;
     await db.query(
       `INSERT INTO artisti.divieti (chiave, municipio, nome, tipo, regole_testo, fasce_testo, atto, valido_fino, fonte_testo, fonte_url,
-         verifica, ufficiale, vigente, nota_posizione, geom)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14, ${geomSql(15)})`,
+         verifica, ufficiale, vigente, nota_posizione, larghezza_m, salva_allegato_b, geom)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$16,$17, ${geomSql(15)})`,
       [p.id, numeroMunicipio(p.municipio), testo(p.name), testo(p.type), testo(p.rules), testo(p.time_slots), testo(p.act),
        testo(p.valid_to), testo(p.source), testo(p.source_url), ver, /^ufficiale/i.test(ver), p.type !== "divieto_richiesto" && !/NON in vigore/i.test(ver),
-       testo(p.coord_note), JSON.stringify(f.geometry)],
+       testo(p.coord_note), JSON.stringify(f.geometry), LARGHEZZE.find(([re]) => re.test(testo(p.name) ?? ""))?.[1] ?? null, p.salva_allegato_b === true],
     );
   }
-  log(`divieti: ${feats.length}`);
+  log(`divieti: ${feats.length} (${agg.size} aggiornati con gli atti ufficiali)`);
 }
 
 const CONTESTO = [
@@ -203,6 +218,25 @@ async function contesto() {
     }
   }
   log(`luoghi di contesto: ${n}`);
+
+  // Luoghi di culto di tutto il Comune (OpenStreetMap, scripts/artisti/culto_osm.mts): Art Spot copre solo
+  // il centro storico. Si aggiungono quelli a piu' di 25 m da uno gia' presente.
+  const osm = path.join(DATI, "geo/luoghi_culto_roma_osm.geojson");
+  if (existsSync(osm)) {
+    const feats = (JSON.parse(readFileSync(osm, "utf8")) as { features: { geometry: unknown; properties: Record<string, string | null> }[] }).features;
+    const r = await db.query(
+      `INSERT INTO artisti.contesto (chiave, layer, tipo, nome, municipio, verifica, fonte_testo, fonte_url, attributi, geom)
+       SELECT x->>'id', 'luoghi_culto', x->>'type', x->>'name', m.numero, x->>'verification_status', 'OpenStreetMap', x->>'source_url',
+              jsonb_build_object('denominazione', x->>'denominazione', 'origine', 'osm_tutta_roma'), g.geom
+       FROM jsonb_array_elements($1::jsonb) x
+       CROSS JOIN LATERAL (SELECT ST_SetSRID(ST_GeomFromGeoJSON(x->>'geom'), 4326) AS geom) g
+       LEFT JOIN artisti.municipi m ON ST_Intersects(m.geom, g.geom)
+       WHERE NOT EXISTS (SELECT 1 FROM artisti.contesto c WHERE c.layer = 'luoghi_culto' AND ST_DWithin(c.geom::geography, g.geom::geography, 25))
+       ON CONFLICT DO NOTHING`,
+      [JSON.stringify(feats.map((f) => ({ ...f.properties, geom: JSON.stringify(f.geometry) })))],
+    );
+    log(`luoghi di culto da OSM (tutta Roma): +${r.rowCount}`);
+  }
 }
 
 async function contatti() {
@@ -231,12 +265,22 @@ async function regoleEBenchmark() {
       [r.tema, r.regola, r.riferimento, r.stato_verifica, `${r.riferimento}|${r.tema}`],
     );
   }
+  // testo vigente dopo la sentenza del TAR Lazio 5494/2013 e atti del 2024-2026 (art-spot-dati/RICERCA_FONTI_2026-11.md)
+  const agg = leggiCsv("tabelle/regole_aggiornamenti_2026-11.csv");
+  for (const r of agg) {
+    await db.query(
+      `INSERT INTO artisti.regole (postazione_id, categoria, testo, riferimento, url, verifica, chiave)
+       VALUES (NULL, $1, $2, $3, $4, $5, $6)
+       ON CONFLICT (chiave) DO UPDATE SET testo = EXCLUDED.testo, url = EXCLUDED.url, verifica = EXCLUDED.verifica`,
+      [r.tema, r.regola, r.riferimento, r.url || null, r.stato_verifica, `${r.riferimento}|${r.tema}`],
+    );
+  }
   await db.query("DELETE FROM artisti.benchmark");
   const bench = leggiCsv("tabelle/benchmark_citta.csv");
   for (const r of bench) {
     await db.query("INSERT INTO artisti.benchmark (citta, atto, regole, fonte_url) VALUES ($1,$2,$3,$4)", [r.citta, r.atto, r.regole_principali, r.fonte]);
   }
-  log(`regole generali: ${regole.length} · confronto con altre città: ${bench.length}`);
+  log(`regole generali: ${regole.length} (${agg.length} aggiornate o aggiunte) · confronto con altre città: ${bench.length}`);
 }
 
 if (!process.env.DATABASE_URL_ARTISTI) {

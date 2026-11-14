@@ -67,8 +67,8 @@ export async function verificaLuogo(lat: number, lon: number, attivita: Attivita
               round(ST_Distance(geom::geography, ${P}::geography))::int AS distanza_m, ST_Y(geom) AS lat, ST_X(geom) AS lon
        FROM artisti.postazioni WHERE attiva AND ST_DWithin(geom::geography, ${P}::geography, 600)
        ORDER BY geom <-> ${P} LIMIT 8`, [lon, lat]),
-    queryArtisti<{ id: string; inizio: string; fine: string; nome_arte: string; disciplina: string; descrizione: string | null; link: string | null; luogo: string | null; postazione: string | null; distanza_m: number }>(
-      `SELECT id, inizio, fine, nome_arte, disciplina, descrizione, link, luogo, postazione,
+    queryArtisti<{ id: string; inizio: string; fine: string; nome_arte: string; disciplina: string; descrizione: string | null; link: string | null; luogo: string | null; postazione: string | null; demo: boolean; distanza_m: number }>(
+      `SELECT id, inizio, fine, nome_arte, disciplina, descrizione, link, luogo, postazione, demo,
               round(ST_Distance(geom::geography, ${P}::geography))::int AS distanza_m
        FROM artisti.v_esibizioni
        WHERE geom IS NOT NULL AND fine > now() AND inizio < now() + interval '7 days' AND ST_DWithin(geom::geography, ${P}::geography, 500)
