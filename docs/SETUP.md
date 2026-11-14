@@ -101,6 +101,7 @@ npm run dev
 ```
 
 - http://localhost:3000 mostra l'app
+- Prima di partire `npm run dev` (e `npm start`) **aggiorna da solo il database**: applica le migrazioni che mancano e, se dopo un `git pull` nel repository c'è una copia nuova dei dati (`data/seed/`), la carica. Non serve lanciare altro. Se il database è spento il sito parte lo stesso. Per saltare l'aggiornamento: `$env:RR_NO_ALLINEA=1`.
 - http://localhost:3000/api/health deve rispondere `"ok": true` con l'elenco delle estensioni, tra cui `postgis` e `vector`
 
 ## Strumenti utili

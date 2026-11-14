@@ -3,25 +3,17 @@
 //   data/geojson/*.geojson      → i layer GeoJSON, letti dalle API della sezione (server Next avviato)
 // Uso: npm run antenne:esporta            (con `npm run dev` attivo su http://localhost:3000)
 //      ESPORTA_BASE_URL=http://localhost:3001 npm run antenne:esporta
-import { execFileSync } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { scriviCopia } from "../db/comune.mts";
 
 const radice = path.resolve(import.meta.dirname, "../../data");
 const base = process.env.ESPORTA_BASE_URL ?? "http://localhost:3000";
 const url = process.env.DATABASE_URL_ANTENNE;
 if (!url) throw new Error("DATABASE_URL_ANTENNE non impostata in .env.local");
 
-// 1) Dump del database (password passata via variabile d'ambiente, mai sulla riga di comando)
-const u = new URL(url);
-const pgDump = process.env.PG_DUMP ?? "C:\\Program Files\\PostgreSQL\\17\\bin\\pg_dump.exe";
-await mkdir(path.join(radice, "seed"), { recursive: true });
-execFileSync(pgDump, [
-  "-Fc", "--no-owner", "--no-privileges", "-n", "antenne", "-n", "opendata",
-  "-h", u.hostname, "-p", u.port || "5432", "-U", decodeURIComponent(u.username),
-  "-f", path.join(radice, "seed", "rr_antenne.dump"), u.pathname.slice(1),
-], { env: { ...process.env, PGPASSWORD: decodeURIComponent(u.password) }, stdio: "inherit" });
-console.log("seed/rr_antenne.dump aggiornato");
+// 1) Copia del database (schemi antenne + opendata; password passata via variabile d'ambiente)
+await scriviCopia("antenne", url);
 
 // 2) GeoJSON dei layer (stessi dati delle API, senza il blocco metadata che cambia a ogni richiesta)
 const LAYER: [string, string][] = [

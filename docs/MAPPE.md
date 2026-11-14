@@ -95,7 +95,7 @@ licenza SIAE se suona brani di altri, nulla osta del Municipio per gli spettacol
 
 Demo: le comunicazioni si generano complete in `artisti.invii` ma non partono (manca il collegamento PEC;
 basterà inviare lo stesso `.eml`). «Ricomincia la demo» rimette tutto in coda. Tabelle: migrazione
-`db/artisti-di-strada/migrations/009_pass_artista.sql` (`npm run db:migrate -- artisti-di-strada`).
+`db/artisti-di-strada/migrations/009_pass_artista.sql` (si applica da sola all'avvio del sito).
 API: `/api/artisti/pass` (GET, POST, DELETE), `/api/artisti/prenota`, `/api/operatori/arte` (GET, DELETE),
 `/api/operatori/arte/invia`, `/api/operatori/arte/invii/<id>` (.eml). Da fare prima di andare dal vero:
 SPID vero, accesso riservato all'area operatori, invio PEC e ricevute.

@@ -9,23 +9,17 @@ Dati già importati e puliti, così chi fa `git pull` non deve rilanciare gli im
 | `geojson/` | I layer della sezione antenne in GeoJSON (WGS84, lon/lat, RFC 7946), pronti per qualunque mappa |
 | `raw/` | Copie dei file scaricati dalle fonti. **Fuori da git**: si rigenerano con `npm run antenne:import` |
 
-## Ripristinare il database antenne
+## Caricare le copie: da solo
 
-Prerequisito: il database `rr_antenne` creato da `db/init.sql` (vedi `docs/SETUP.md`). Dalla cartella del progetto, in PowerShell:
+Non serve fare niente: `npm run dev` e `npm start` lanciano prima `scripts/db/allinea.mts`, che
 
-```powershell
-& "C:\Program Files\PostgreSQL\17\bin\pg_restore.exe" -U romarouter -h localhost -d rr_antenne --no-owner --clean --if-exists data/seed/rr_antenne.dump
-```
+1. applica a ogni database le migrazioni che mancano;
+2. se `rr_antenne.dump` o `rr_artisti_strada.dump` sono cambiati (per esempio dopo un `git pull`), li carica al posto degli schemi vecchi, in una transazione sola: se qualcosa va storto il database resta com'era. Poi riapplica le migrazioni più nuove della copia, se ce ne sono;
+3. si ricorda quale copia ha caricato (tabella `public.rr_copie`), quindi agli avvii successivi impiega mezzo secondo.
 
-Poi `npm run db:migrate -- antenne` allinea la tabella delle migrazioni. La migrazione si può rieseguire senza danni sui dati già presenti.
+Prerequisito: i database creati da `db/init.sql` (vedi `docs/SETUP.md`). Se il database è spento o manca `.env.local`, scrive una riga e il sito parte lo stesso. Attenzione: caricare una copia nuova sostituisce i dati locali di quella sezione (per esempio le prenotazioni di prova). Per saltarlo: `$env:RR_NO_ALLINEA=1`. A mano: `npm run db:allinea`.
 
-Allo stesso modo l'arte di strada:
-
-```powershell
-& "C:\Program Files\PostgreSQL\17\bin\pg_restore.exe" -U romarouter -h localhost -d rr_artisti_strada --no-owner --clean --if-exists data/seed/rr_artisti_strada.dump
-```
-
-e poi `npm run db:migrate -- artisti-di-strada`. La copia comprende anche i dati OpenStreetMap delle regole generali (suolo, superstrade, beni culturali, edifici e vie della città storica, © OpenStreetMap contributors, ODbL), che si rifanno con `node --env-file=.env.local scripts/artisti/vincoli_osm.mts --scarica`.
+Chi modifica i dati li rimette nel repository con `npm run artisti:esporta` o `npm run antenne:esporta` (con il sito avviato): la copia contiene anche l'elenco delle migrazioni applicate. La copia dell'arte di strada comprende i dati OpenStreetMap delle regole generali (suolo, superstrade, beni culturali, edifici e vie della città storica, © OpenStreetMap contributors, ODbL), che si rifanno con `node --env-file=.env.local scripts/artisti/vincoli_osm.mts --scarica`.
 
 **Senza database anche la mappa dell'arte di strada funziona**: legge `public/dati/artisti/` (copertura di tutta Roma, zone, postazioni, piazze, esibizioni), aggiornate da `npm run artisti:esporta` con il sito avviato.
 
