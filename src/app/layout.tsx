@@ -12,19 +12,29 @@ const montserrat = localFont({
   variable: "--font-montserrat",
   display: "swap",
 });
+// Titillium Web: il carattere dei siti della Pubblica Amministrazione italiana (Designers Italia), per il nome.
+// SIL OFL 1.1 (fonts/OFL-TitilliumWeb.txt), locale come Montserrat.
+const titillium = localFont({
+  src: [
+    { path: "./fonts/titillium-web-latin-600.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/titillium-web-latin-700.woff2", weight: "700", style: "normal" },
+  ],
+  variable: "--font-titillium",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: {
-    default: "RomaRouter · tutte le strade portano al servizio giusto",
-    template: "%s · RomaRouter",
+    default: "Roma Router · tutte le strade portano al servizio giusto",
+    template: "%s · Roma Router",
   },
   description:
-    "Chiedi a RomaRouter cosa ti serve: ti porta al servizio giusto di Roma Capitale, dagli oggetti smarriti agli impianti sportivi.",
+    "Chiedi a Roma Router cosa ti serve: ti porta al servizio giusto di Roma Capitale, dagli oggetti smarriti agli impianti sportivi.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="it" className={`${montserrat.variable} h-full antialiased`}>
+    <html lang="it" className={`${montserrat.variable} ${titillium.variable} h-full antialiased`}>
       {/* schermo singolo: la testata in alto, sotto la pagina che riempie lo spazio. Le sezioni con la mappa non
           scorrono mai; le pagine di testo (home, operatori) scorrono solo dentro il loro spazio. */}
       <body className="flex h-dvh flex-col overflow-hidden bg-bg font-sans text-ink">

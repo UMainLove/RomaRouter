@@ -9,7 +9,7 @@ export function Header() {
   return (
     <header className="border-b border-line bg-panel">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 sm:px-6 lg:h-16 lg:flex-nowrap lg:py-0">
-        <Link href="/" className="flex min-h-11 items-center gap-2.5" aria-label="RomaRouter, scegli un ambito">
+        <Link href="/" className="flex min-h-11 items-center gap-2.5" aria-label="Roma Router, scegli un ambito">
           <LogoMark />
           <Wordmark />
         </Link>

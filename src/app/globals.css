@@ -57,6 +57,7 @@
 
 @theme inline {
   --font-sans: var(--font-montserrat), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-istituzionale: var(--font-titillium), "Titillium Web", var(--font-montserrat), system-ui, sans-serif;
 }
 
 @layer base {
