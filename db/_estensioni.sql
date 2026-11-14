@@ -3,14 +3,31 @@
 
 CREATE EXTENSION IF NOT EXISTS postgis;        -- geometrie: postazioni, impianti, luoghi di ritrovamento
 CREATE EXTENSION IF NOT EXISTS postgis_raster; -- dati raster; richiesto da h3_postgis
-CREATE EXTENSION IF NOT EXISTS pgrouting;      -- percorsi su grafo stradale / trasporti
 CREATE EXTENSION IF NOT EXISTS h3;             -- griglia esagonale per aggregare dati sul territorio
 CREATE EXTENSION IF NOT EXISTS h3_postgis;
-CREATE EXTENSION IF NOT EXISTS ogr_fdw;        -- leggere GeoJSON/Shapefile/CSV degli open data come tabelle
 CREATE EXTENSION IF NOT EXISTS pg_trgm;        -- ricerca testuale "fuzzy" (descrizioni, vie, nomi)
 CREATE EXTENSION IF NOT EXISTS unaccent;       -- ricerca senza accenti
 CREATE EXTENSION IF NOT EXISTS pgcrypto;       -- gen_random_uuid(), hash
 CREATE EXTENSION IF NOT EXISTS citext;         -- email / codici case-insensitive
+
+-- Facoltative: oggi il sito non le usa, e alcuni Postgres in cloud non le hanno (Neon non ha ogr_fdw).
+--   pgrouting: percorsi su grafo stradale / trasporti
+--   ogr_fdw:   leggere GeoJSON/Shapefile/CSV degli open data come tabelle
+DO $$
+DECLARE e text;
+BEGIN
+  FOREACH e IN ARRAY ARRAY['pgrouting', 'ogr_fdw'] LOOP
+    IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = e) THEN
+      BEGIN
+        EXECUTE format('CREATE EXTENSION IF NOT EXISTS %I', e);
+      EXCEPTION WHEN OTHERS THEN
+        RAISE WARNING '% presente ma non caricabile: %', e, SQLERRM;
+      END;
+    ELSE
+      RAISE NOTICE '% non installata su questo server: non serve al sito', e;
+    END IF;
+  END LOOP;
+END $$;
 
 -- pgvector (ricerca per somiglianza, es. descrizioni di oggetti smarriti): se Smart App Control blocca la DLL (errore 4551)
 -- lo script prosegue senza. Vedi docs/SETUP.md.

@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Badge, BarraFiltri, CampoScelta, CampoTesto, Conteggio, MUNICIPI, Vuoto, parametro } from "@/components/Filtri";
 import { AntenneMappa } from "@/components/antenne/AntenneMappa";
 import { VediSuMappa } from "@/components/mappe/VediSuMappa";
+import { SeNonCarica } from "@/components/ui/SeNonCarica";
 import { queryAntenne } from "@/lib/antenne";
 
 export const metadata: Metadata = {
@@ -347,7 +348,7 @@ export default function Antenne(props: PageProps<"/antenne">) {
           nome: "Elenco",
           contenuto: (
             <Blocco id="elenco" titolo="Tutte le richieste" testo="Le richieste di nuove antenne o di modifiche pubblicate da Roma Capitale. «Mappa» ti riporta sull'antenna.">
-              <Suspense fallback={<Attesa cosa="dell'elenco" />}><Elenco searchParams={props.searchParams} /></Suspense>
+              <SeNonCarica cosa="l'elenco"><Suspense fallback={<Attesa cosa="dell'elenco" />}><Elenco searchParams={props.searchParams} /></Suspense></SeNonCarica>
             </Blocco>
           ),
         },
@@ -356,7 +357,7 @@ export default function Antenne(props: PageProps<"/antenne">) {
           nome: "Limiti e misure",
           contenuto: (
             <Blocco id="misure" titolo="Campi elettromagnetici: limiti e controlli" testo="Cosa dice la legge, chi misura e come chiedere una verifica a casa tua. Per vedere cosa hai intorno, tocca un punto della mappa: il radar mostra le antenne entro 500 m.">
-              <Suspense fallback={<Attesa cosa="delle misure" />}><Misure /></Suspense>
+              <SeNonCarica cosa="le misure"><Suspense fallback={<Attesa cosa="delle misure" />}><Misure /></Suspense></SeNonCarica>
             </Blocco>
           ),
         },
@@ -365,7 +366,7 @@ export default function Antenne(props: PageProps<"/antenne">) {
           nome: "Regole",
           contenuto: (
             <Blocco id="contesto" titolo="Le regole, dall'Italia al tuo Municipio" testo="Come si autorizza un'antenna, dove è vietata e quali norme valgono.">
-              <Suspense fallback={<Attesa cosa="delle regole" />}><Contesto /></Suspense>
+              <SeNonCarica cosa="le regole"><Suspense fallback={<Attesa cosa="delle regole" />}><Contesto /></Suspense></SeNonCarica>
             </Blocco>
           ),
         },
@@ -374,7 +375,7 @@ export default function Antenne(props: PageProps<"/antenne">) {
           nome: "Fonti",
           contenuto: (
             <Blocco id="fonti" titolo="Da dove vengono i dati" testo="Ogni dato ha una fonte pubblica. Dove i dati mancano, lo diciamo.">
-              <Suspense fallback={<Attesa cosa="delle fonti" />}><Fonti /></Suspense>
+              <SeNonCarica cosa="le fonti"><Suspense fallback={<Attesa cosa="delle fonti" />}><Fonti /></Suspense></SeNonCarica>
             </Blocco>
           ),
         },

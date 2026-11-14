@@ -14,7 +14,7 @@ I database delle sezioni sono elencati in [src/lib/sezioni.ts](src/lib/sezioni.t
 ## Stack
 
 - **Next.js 16** (App Router, TypeScript, Tailwind CSS 4)
-- **PostgreSQL 17** con PostGIS, pgRouting, H3, ogr_fdw, pg_trgm e unaccent; pgvector per gli embedding (vedi la nota su Smart App Control in [docs/SETUP.md](docs/SETUP.md))
+- **PostgreSQL 17** con PostGIS, H3, pg_trgm e unaccent (pgRouting e ogr_fdw facoltativi); pgvector per gli embedding (vedi la nota su Smart App Control in [docs/SETUP.md](docs/SETUP.md))
 - Driver `pg` con il pool in [src/lib/db.ts](src/lib/db.ts)
 
 ## Avvio rapido
@@ -42,6 +42,7 @@ Poi apri http://localhost:3000. Se http://localhost:3000/api/health risponde `"o
 | `db/init.sql` | Crea ruolo, database ed estensioni |
 | `db/<sezione>/migrations/` | Tabelle di ciascuna sezione |
 | `docs/SETUP.md` | Installazione completa su Windows |
+| `docs/DEPLOY.md` | Metterlo online: database su Neon, sito su Vercel |
 | `docs/ANTENNE.md` | Dati e API della sezione antenne |
 | `mappe/` | Le quattro mappe delle sezioni, basate su «Quartieri di Roma 2026» (vedi [mappe/README.md](mappe/README.md)) |
 | `public/mappe/` | Le mappe costruite (`npm run mappe:build -- tutte`), incorporate nelle pagine con `MappaSezione` |

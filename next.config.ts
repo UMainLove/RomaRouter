@@ -13,6 +13,9 @@ const nextConfig: NextConfig = {
     ];
   },
   partialPrefetching: true,
+  // se il database non risponde, la Guida dello Sport legge le copie in public/dati/sport (src/lib/sport.ts):
+  // su Vercel le funzioni non vedono public/ se non le portiamo dentro noi
+  outputFileTracingIncludes: { "/sport": ["./public/dati/sport/*.json"] },
   turbopack: {
     rules: {
       "*.css": {

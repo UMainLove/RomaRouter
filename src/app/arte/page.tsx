@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
 import { ArteMappa } from "@/components/arte/ArteMappa";
+import { SeNonCarica } from "@/components/ui/SeNonCarica";
 import { queryArtisti } from "@/lib/artisti";
 
 export const metadata: Metadata = {
@@ -131,9 +132,11 @@ export default function PaginaArte() {
           contenuto: (
             <>
               <Blocco id="regole" titolo="Le regole in breve" testo="Il regolamento di Roma Capitale (DAC 24/2012, come risulta dopo la sentenza del TAR Lazio n. 5494/2013) vale in tutto il Comune; i Municipi aggiungono divieti in zone precise.">
-                <Suspense fallback={<Attesa cosa="le regole" />}>
-                  <Regole />
-                </Suspense>
+                <SeNonCarica cosa="le regole">
+                  <Suspense fallback={<Attesa cosa="le regole" />}>
+                    <Regole />
+                  </Suspense>
+                </SeNonCarica>
               </Blocco>
               {/* su telefono queste righe non stanno nel riquadro della mappa: sono qui */}
               <Blocco id="legenda" titolo="Come leggere la mappa">
@@ -161,9 +164,11 @@ export default function PaginaArte() {
               titolo="Il Pass artista: il preavviso lo mandiamo noi"
               testo="Crea il Pass una volta sola (chi sei, cosa fai, tre risposte sì/no, la delega). Poi tocchi un punto verde o un palco e premi «Ci sarò»: controlliamo orari, zone e turni, e ogni sera lo sportello manda al Gruppo di Polizia Locale una sola comunicazione con tutte le esibizioni del suo territorio (art. 10), l'elenco SIAE per chi suona brani di altri e le richieste di nulla osta ai Municipi. Si prenota da 3 giorni a un mese prima. Versione dimostrativa: le comunicazioni si preparano ma non partono. Se preferisci farlo da te, questi sono i Gruppi di Polizia Locale."
             >
-              <Suspense fallback={<Attesa cosa="i contatti" />}>
-                <Contatti />
-              </Suspense>
+              <SeNonCarica cosa="i contatti">
+                <Suspense fallback={<Attesa cosa="i contatti" />}>
+                  <Contatti />
+                </Suspense>
+              </SeNonCarica>
             </Blocco>
           ),
         },
@@ -172,9 +177,11 @@ export default function PaginaArte() {
           nome: "Fonti",
           contenuto: (
             <Blocco id="fonti" titolo="Da dove vengono i dati" testo="Atti di Roma Capitale e dei Municipi (registro Deliberazioni e Atti), dataset Art Spot e OpenStreetMap. Le posizioni delle postazioni sono stimate dalle planimetrie.">
-              <Suspense fallback={<Attesa cosa="le fonti" />}>
-                <Fonti />
-              </Suspense>
+              <SeNonCarica cosa="le fonti">
+                <Suspense fallback={<Attesa cosa="le fonti" />}>
+                  <Fonti />
+                </Suspense>
+              </SeNonCarica>
             </Blocco>
           ),
         },
