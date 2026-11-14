@@ -82,9 +82,16 @@ export function MappaVettoriale({
         }
         attribuzione = new ml.AttributionControl({ compact: true, customAttribution: fonti && telefono.matches ? ["OpenFreeMap", fonti] : "OpenFreeMap" });
         m.addControl(attribuzione);
+        // MapLibre 6 apre anche il controllo compatto: nelle sezioni su telefono
+        // le fonti devono comparire solo dopo un tocco sulla «ⓘ», senza lampeggiare all'avvio.
+        if (conPannelli && telefono.matches) {
+          const controllo = m.getContainer().querySelector<HTMLDetailsElement>(".maplibregl-ctrl-attrib");
+          controllo?.classList.remove("maplibregl-compact-show");
+          controllo?.removeAttribute("open");
+        }
       };
       attribuisci();
-      if (fonti) telefono.addEventListener("change", attribuisci);
+      if (fonti || conPannelli) telefono.addEventListener("change", attribuisci);
       // per le riprese del video di presentazione (video/riprese): la regia muove la camera e aspetta le tessere
       const w = window as Window & { __rrRiprese?: boolean; __rrMappa?: MapLibre };
       if (w.__rrRiprese) w.__rrMappa = m;

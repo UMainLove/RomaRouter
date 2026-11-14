@@ -759,7 +759,7 @@ function Panoramica({ istanze, esistenti, anno, onAnno, conteggi }: { istanze: I
   const anni = [...new Set(mesi.map((x) => x.m.slice(0, 4)))];
   const senzaData = istanze.filter((a) => !a.properties.data_pubblicazione).length;
   return (
-    <div className="pointer-events-auto rounded-[20px] bg-panel/95 px-4 py-3.5 shadow-[0_6px_24px_rgba(37,29,28,.16)] ring-1 ring-black/5 backdrop-blur">
+    <div className="pointer-events-auto hidden rounded-[20px] bg-panel/95 px-4 py-3.5 shadow-[0_6px_24px_rgba(37,29,28,.16)] ring-1 ring-black/5 backdrop-blur lg:block">
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-[14px] font-bold text-ink">
           {esistenti ? esistenti.toLocaleString("it-IT", { useGrouping: "always" } as Intl.NumberFormatOptions) : "…"} antenne in funzione <span className="font-semibold text-muted">· {istanze.length || "…"} richieste</span>

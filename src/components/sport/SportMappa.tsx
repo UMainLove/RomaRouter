@@ -623,7 +623,7 @@ function Panoramica({ luoghi, gruppo, accessibili }: { luoghi: FLuogo[]; gruppo:
   const gratis = luoghi.filter((f) => f.properties.a === "libero").length;
   const acc = luoghi.filter((f) => f.properties.x === "si" || f.properties.x === "parziale").length;
   return (
-    <div className="pointer-events-auto rounded-[20px] bg-panel/95 px-4 py-3 shadow-[0_6px_24px_rgba(37,29,28,.16)] ring-1 ring-black/5 backdrop-blur">
+    <div className="pointer-events-auto hidden rounded-[20px] bg-panel/95 px-4 py-3 shadow-[0_6px_24px_rgba(37,29,28,.16)] ring-1 ring-black/5 backdrop-blur lg:block">
       <p className="text-[14px] font-bold text-ink">{gruppo === "tutti" ? "Dove fare sport a Roma" : `${sport.n} a Roma`}: tocca un posto o cerca il tuo indirizzo</p>
       {luoghi.length > 0 && (
         <p className="mt-0.5 text-[12.5px] text-ink-soft">
