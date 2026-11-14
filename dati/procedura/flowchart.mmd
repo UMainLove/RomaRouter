@@ -1,0 +1,23 @@
+%% Art Spot – procedura per esibirsi a Roma Capitale (regime vigente DAC 24/2012). Schema NON ufficiale.
+flowchart TD
+  A([Artista vuole esibirsi a Roma]) --> B{Iscritto al Registro<br/>artisti di strada?}
+  B -- No --> C[Compila e FIRMA il modulo ufficiale<br/>+ copia documento]
+  C --> D[Invia: email artistidistrada.cultura@comune.roma.it<br/>oppure a mano o raccomandata A/R]
+  D --> E[Attende conferma<br/>tempi non indicati]
+  E --> B
+  B -- Sì --> F[Sceglie luogo, data, fascia, tipo di spettacolo]
+  F --> G{Luogo vietato?<br/>delibere Municipio, Carnevale,<br/>culto, scuole, vie meno di 5 m}
+  G -- Sì --> F
+  G -- No --> H{Alto impatto?<br/>più di 5 artisti, amplificazione potente,<br/>scenografia oltre 1 m²}
+  H -- Sì --> I[Richiesta spazio al Municipio<br/>+ nulla-osta uffici capitolini<br/>OSP eventi: 60-45 gg prima]
+  I --> P
+  H -- No --> J{Postazione Allegato B?}
+  J -- Sì --> K[Richiesta all'ufficio capitolino<br/>ricevuta con postazione e orario<br/>NO amplificazione]
+  J -- No --> L[Richiesta al Municipio<br/>ricevuta con postazione e orario]
+  K --> M
+  L --> M
+  M[Preavviso al Gruppo di Polizia Locale<br/>con protocollo, almeno 3 giorni prima]
+  M --> N{Protocollo ricevuto<br/>entro D-3?}
+  N -- No --> X([Troppo tardi: cambiare data])
+  N -- Sì --> P[Permessi accessori:<br/>SIAE se cover, sicurezza fuoco,<br/>deroga acustica se serve]
+  P --> Q([Esibizione: max 2 h per fascia,<br/>turni 45/90/15 min, pulizia,<br/>documenti con sé])

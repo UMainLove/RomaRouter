@@ -1,0 +1,118 @@
+codice_area,municipio,area,n_postazioni
+01.01,I,Ponte della Musica,4
+01.02,I,Largo Brancaccio,3
+01.03,I,Largo Tassoni,2
+01.04,I,Piazza Trilussa,2
+01.05,I,Piazza del Catalone,3
+01.06,I,Piazza Navona,13
+02.01,II,Piazza Ledro,1
+02.02,II,Piazza Gimma,1
+02.03,II,Largo degli Osci,2
+02.04,II,Piazza Jan Palach,2
+02.05,II,Piazza Mancini,2
+03.01,III,Vigne Nuove,2
+03.02,III,Conca d'Oro,3
+03.03,III,Tufello,1
+03.04,III,Prati Fiscali,2
+03.05,III,Talenti,2
+03.06,III,Espero,2
+03.07,III,Città Giardino,2
+03.08,III,Nuovo Salario,3
+03.09,III,Colle Salario,1
+03.10,III,Fidene,3
+03.11,III,Villa Spada,1
+03.12,III,Casale Nei,2
+03.13,III,Porta di Roma,2
+03.14,III,Cinquina,2
+03.15,III,Settebagni,3
+03.16,III,Castel Giubileo,1
+03.17,III,Serpentara,3
+03.18,III,Monte Cervialto,2
+03.19,III,Antamoro,2
+03.20,III,Val Melaina,3
+04.01,IV,Piazza S. Maria Consolatrice (Casal Bertone),2
+04.02,IV,Largo di Pietralata (area pedonale),2
+04.03,IV,Via Filippo Meda (area interna mercato),1
+04.04,IV,Piazza Balsamo Crivelli,2
+04.05,IV,Via Casal Tidei (area mercato),2
+04.06,IV,Via Cercepiccola 53 (Case Rosse),1
+04.07,IV,Via Tiburtina (fronte galleria Shopping Center),1
+04.08,IV,via Tiburtina angolo via di Casal Bruciato,1
+04.09,IV,Largo Beltramelli,1
+04.10,IV,Piazza Santa Maria dell'Ulivo Settecamini,1
+05.01,V,Via Dameta,6
+05.02,V,Piazza dei Gerani,3
+05.03,V,Via dei Castani,4
+06.01,VI,Teatro Tor Bella Monaca,1
+06.02,VI,Mercato Torre Spaccata,1
+07.01,VII,Largo Appio Claudio,10
+07.02,VII,Piazza dei Re di Roma,8
+07.03,VII,Piazzale Appio,4
+07.04,VII,Via Libero Leonardi,6
+07.05,VII,Via Lemonia,4
+08.01,VIII,Metro Garbatella (via Pullino),3
+08.02,VIII,Metro S. Paolo,2
+08.03,VIII,Parco Schuster,4
+08.04,VIII,C.ne Ostiense angolo via Caffaro,2
+08.05,VIII,Piazza Biffi,2
+08.06,VIII,Piazza S. Eurosia,2
+08.07,VIII,"Parco Caduti del Mare – via David Salinieri, 20",1
+08.08,VIII,Piazza Caduti della Montagnola,3
+08.09,VIII,Via Ostiense in corrispondenza del Rettorato Università di Roma Tre,1
+08.10,VIII,Area interna Mercato di Grottaperfetta,2
+08.11,VIII,Via Baldovinetti,1
+08.12,VIII,Piazza Brin,4
+09.01,IX,Viale Europa,3
+09.02,IX,Viale Beethoven,2
+09.03,IX,Viale degli Astri,2
+09.04,IX,Via Carmelo Maestrini,1
+09.05,IX,Via Gustavo D'Arpe e parte di Via di Trigoria,2
+09.06,IX,Via Federico Alessandrini,1
+09.07,IX,Via Francesco Sapori,1
+09.08,IX,Via Andrea Meldola,1
+09.09,IX,Viale Caduti per la Resistenza,1
+09.10,IX,Via Vitaliano Rotellini,1
+09.11,IX,Largo Giuseppe Montanari,1
+09.12,IX,Viale Beata Vergine del Carmelo,2
+09.13,IX,Viale Bartolomeo Cavaceppi,1
+09.14,IX,Parco di Via Giuseppe Mendozza,1
+09.15,IX,Parco Via Carlo Emilio Gadda,1
+09.16,IX,Parco Via Matteo Bartoli ang. Via Laurentina,1
+09.17,IX,Parco Via Aldo della Rocca,1
+09.18,IX,Giardino Nils Erik Liedholm - Via Gustavo D'Arpe,1
+09.19,IX,Parco Molino Santa Felicola,1
+09.20,IX,Parco Piazza Giuliani e Dalmati - Giardino Ludovico Zeriav,1
+09.21,IX,Parco tra Via Riccardo Forster - Via Tommaso Arcidiacono,1
+09.22,IX,Parco di Via Salisburgo,1
+09.23,IX,Parco di Via Camillo Sabatini - Via Mario Mona,1
+09.24,IX,Giardino Riccardo Cino - Via Ignazio Silone,1
+09.25,IX,Parco Piazza Castello della Cecchignola,1
+09.26,IX,Parco Matteo di Fazio - Viale Pechino,1
+09.27,IX,Parco Eunice Kennedy Shriver - Via Carmelo Maestrini,1
+09.28,IX,Parco Via Sarsina - Vitinia,1
+09.29,IX,Giardino Giuseppe Lima - Via Guido Fubini,1
+09.30,IX,Parco degli Eroi - Viale Eroi di Cefalonia,1
+09.31,IX,Parco di Via Antonino Giuffrè,1
+09.32,IX,Parco Via Giacomo Dina,1
+09.33,IX,Parco Lupo Alberto - Torrino Mezzocammino area V1 - Viale Gianluigi Bonelli,1
+09.34,IX,Parco Martin Mystère - Torrino Mezzocammino area V6 - Viale Bartolomeo Cavaceppi,1
+09.35,IX,Parco della Cisterna – Torrino - Via Mar della Cina,1
+09.36,IX,Parco di Via Renzo Bertani - Via Vittorio Veltroni,1
+09.37,IX,Parco Las Palmas - Via di Spregamore - Via Felitto,1
+09.38,IX,Parco La Porta di Valentina - Torrino Mezzocammino area V7 - Via Andrea Cascella,1
+09.39,IX,Parco La Porta di Valentina - Torrino Mezzocammino area V8 - Via Andrea Cascella,1
+10.01,X,Piazza San Leonardo da Porto Maurizio,1
+10.02,X,Piazza Umberto I,3
+10.03,X,Lungomare Duca degli Abruzzi,7
+11.01,XI,Ponte della Scienza,3
+11.02,XI,Parco Fluviale Tevere Sud,3
+11.03,XI,Viale Ventimiglia,3
+12.01,XII,Largo Nostra Signora di Coromoto,3
+12.02,XII,Piazza Carlo Alberto Scotti,4
+12.03,XII,Piazza San Giovanni di Dio,1
+12.04,XII,Largo Ludovico Quaroni,4
+13.01,XIII,Piazza Imerio,1
+13.02,XIII,Largo Boccea,1
+13.03,XIII,Piazza Santa Maria alle Fornaci,1
+14.01,XIV,Via Federico Borromeo,6
+15.01,XV,Piazza Padella,1
