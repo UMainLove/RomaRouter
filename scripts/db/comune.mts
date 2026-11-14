@@ -42,6 +42,7 @@ export async function applicaMigrazioni(client: pg.Client, slug: string, log: (s
 export const COPIE = [
   { file: "rr_artisti_strada.dump", sezione: "artisti-di-strada", schemi: ["artisti"] },
   { file: "rr_antenne.dump", sezione: "antenne", schemi: ["antenne", "opendata"] },
+  { file: "rr_impianti_sportivi.dump", sezione: "impianti-sportivi", schemi: ["sport"] },
 ] as const;
 
 export const fileCopia = (file: string) => path.join(RADICE, "data", "seed", file);

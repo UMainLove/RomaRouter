@@ -6,6 +6,7 @@ Dati già importati e puliti, così chi fa `git pull` non deve rilanciare gli im
 | --- | --- |
 | `seed/rr_antenne.dump` | Copia completa del database antenne: schemi `antenne` e `opendata` (formato `pg_dump -Fc`), comprese le 74.735 celle radio e i 3.131 siti in funzione |
 | `seed/rr_artisti_strada.dump` | Copia completa del database dell'arte di strada: schema `artisti` (zone, postazioni, divieti con gli atti 2026, esibizioni dimostrative) |
+| `seed/rr_impianti_sportivi.dump` | Copia del database dello sport: schema `sport` (luoghi, campi, tariffe, fonti), vedi `docs/SPORT.md` |
 | `geojson/` | I layer della sezione antenne in GeoJSON (WGS84, lon/lat, RFC 7946), pronti per qualunque mappa |
 | `raw/` | Copie dei file scaricati dalle fonti. **Fuori da git**: si rigenerano con `npm run antenne:import` |
 
@@ -14,7 +15,7 @@ Dati già importati e puliti, così chi fa `git pull` non deve rilanciare gli im
 Non serve fare niente: `npm run dev` e `npm start` lanciano prima `scripts/db/allinea.mts`, che
 
 1. applica a ogni database le migrazioni che mancano;
-2. se `rr_antenne.dump` o `rr_artisti_strada.dump` sono cambiati (per esempio dopo un `git pull`), li carica al posto degli schemi vecchi, in una transazione sola: se qualcosa va storto il database resta com'era. Poi riapplica le migrazioni più nuove della copia, se ce ne sono;
+2. se `rr_antenne.dump`, `rr_artisti_strada.dump` o `rr_impianti_sportivi.dump` sono cambiati (per esempio dopo un `git pull`), li carica al posto degli schemi vecchi, in una transazione sola: se qualcosa va storto il database resta com'era. Poi riapplica le migrazioni più nuove della copia, se ce ne sono;
 3. si ricorda quale copia ha caricato (tabella `public.rr_copie`), quindi agli avvii successivi impiega mezzo secondo.
 
 Prerequisito: i database creati da `db/init.sql` (vedi `docs/SETUP.md`). Se il database è spento o manca `.env.local`, scrive una riga e il sito parte lo stesso. Attenzione: caricare una copia nuova sostituisce i dati locali di quella sezione (per esempio le prenotazioni di prova). Per saltarlo: `$env:RR_NO_ALLINEA=1`. A mano: `npm run db:allinea`.

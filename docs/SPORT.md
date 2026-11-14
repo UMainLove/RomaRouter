@@ -124,3 +124,24 @@ licenze, numeri per Municipio.
 - A **Roma Capitale**: la licenza dei livelli del GeoServer (oggi non dichiarata) e i centri municipali in formato aperto.
 - A **Sport e Salute** (censimentoimpianti@sportesalute.eu) o alla **Regione Lazio**, che è convenzionata:
   l'estratto del censimento nazionale per Roma, che ha anche l'accessibilità campo per campo.
+
+## Fatto (14/11/2026)
+
+- Import: `npm run sport:import`, script `scripts/sport/import.mts` (file scaricati in `data/raw/sport`, fuori da git). Esporta con
+  `npm run sport:esporta`, con il sito avviato: copia del database in `data/seed/rr_impianti_sportivi.dump` (si carica da sola
+  all'avvio del sito) e copie statiche in `public/dati/sport/`.
+- Risultato: **2.296 luoghi e 4.248 campi e spazi**. Per accesso: 268 impianti comunali (165 classificati 2025, 33 senza
+  posizione), 310 centri sportivi municipali, 242 luoghi liberi e gratis (94 aree sportive del Comune e i campetti nei parchi),
+  1.476 club o privati. Per sport: calcio 842, tennis 536, basket 262, palestra 248, nuoto 133, volley 113, padel 110, corsa 58,
+  altro 372. Accessibilità nota per 38 luoghi.
+- Regole di unione: campi dentro l'area di un centro o entro 70 m da un impianto diventano suoi spazi. Campi sparsi entro 50 m
+  diventano un luogo. Nei parchi o con accesso pubblico: libero. Nelle scuole: esclusi. Altrimenti: club o privato.
+- Pagina `/sport` (`src/components/sport/SportMappa.tsx`):
+  - tasselli degli sport con i numeri e «Gioca gratis»;
+  - filtri per accesso, accessibilità a tre stati;
+  - anelli di 500 m, 1 e 2 km dall'indirizzo;
+  - scheda con la tariffa massima per gli impianti comunali;
+  - Guida: come si entra con le tariffe, numeri per Municipio, cosa non sappiamo, fonti.
+- API: `/api/sport/luoghi`, `/api/sport/tariffe`, `/api/sport/indirizzo`.
+- Da fare: corsi e orari dei centri municipali dai 15 PDF; i 33 impianti classificati senza posizione; la pagina
+  `/sport/[id]` usa ancora i dati di esempio del frontend.
