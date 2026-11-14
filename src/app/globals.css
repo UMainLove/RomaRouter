@@ -528,19 +528,14 @@ html[data-copertina] .copertina,
 .copertina-scena {
   opacity: 1;
 }
-/* come il poster (background-size: cover); sugli schermi stretti la fetta segue la lupa */
+/* come il poster (background-size: cover); sugli schermi stretti la fetta segue la lupa
+   (object-position aggiornato a ogni fotogramma da Copertina.tsx) */
 .copertina-video {
   object-fit: cover;
   object-position: var(--fetta-iniziale, 30%) 50%;
 }
 .copertina[data-pronta] .copertina-video {
   opacity: 1;
-}
-.copertina[data-corsa] .copertina-video {
-  object-position: var(--fetta-finale, 40%) 50%;
-  transition:
-    opacity 0.3s ease,
-    object-position 1.6s cubic-bezier(0.45, 0, 0.25, 1);
 }
 /* velo scuro in basso: il testo chiaro resta leggibile anche sopra la strada e gli archi */
 .copertina-velo {
@@ -650,8 +645,7 @@ html[data-copertina] .copertina-salta:focus-visible {
   scale: 1.06;
   transition:
     scale 0.95s cubic-bezier(0.55, 0, 0.2, 1),
-    opacity 0.3s ease,
-    object-position 1.6s cubic-bezier(0.45, 0, 0.25, 1);
+    opacity 0.3s ease;
 }
 @keyframes copertina-apri {
   from {

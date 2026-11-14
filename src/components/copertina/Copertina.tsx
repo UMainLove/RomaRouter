@@ -1,13 +1,15 @@
 "use client";
 
 import { type CSSProperties, useEffect, useRef, useState } from "react";
-import { CHIAVE_VISTA, FETTA_FINALE, FETTA_INIZIALE, T_DISSOLVENZA, T_FERMA, VIDEO } from "./costanti";
+import { CHIAVE_VISTA, FETTA_INIZIALE, T_DISSOLVENZA, T_FERMA, VIDEO, fettaAl } from "./costanti";
 
 /*
  * Copertina della home, solo alla prima visita (o con ?copertina=1).
- * 0–2 s: il Colosseo al tramonto, fermo (il poster è il primo fotogramma del video), e il contatore.
- * 2–3,6 s: la lupa di bronzo fa lo slalom tra gli archi e la camera la segue con una panoramica che
- * parte piano. Poi la copertina si apre a cerchio dal Miliarium della home, con il bordo sfumato.
+ * 0–0,75 s: il Colosseo al tramonto, fermo (il poster è il primo fotogramma del video), e il contatore.
+ * 0,75–5,75 s: la lupa di bronzo fa lo slalom tra gli archi e la camera la segue con una panoramica che
+ * parte piano; poi salta verso di noi sul capitello dove la aspettano Romolo e Remo (la camera allarga
+ * l'inquadratura) e si ferma nella posa della Lupa Capitolina. Poi la copertina si apre a cerchio dal
+ * Miliarium della home, con il bordo sfumato.
  * Il video si scarica solo quando la copertina parte. La home è già sotto e completa: chi usa un
  * lettore di schermo non aspetta, e qualsiasi tasto, clic o scroll salta l'introduzione.
  */
@@ -136,6 +138,8 @@ export function Copertina() {
       if (!video || chiuso) return;
       const t = video.currentTime;
       if (t >= T_FERMA && !el.dataset.corsa) el.dataset.corsa = "1";
+      // sugli schermi stretti la fetta visibile segue la lupa (sul 16:9 e piu' larghi non cambia nulla)
+      video.style.objectPosition = `${(fettaAl(t) * 100).toFixed(2)}% 50%`;
       // su un dispositivo lentissimo la copertina non trattiene comunque la home oltre i 12 s
       if (t >= T_DISSOLVENZA || video.ended || secondi() > LIMITE_TOTALE) esci(false);
       raf = requestAnimationFrame(ciclo);
@@ -161,7 +165,7 @@ export function Copertina() {
       const pronto = () => {
         if (partito || uscita || chiuso) return;
         partito = true;
-        // il video riparte da dove sarebbe la copertina: fermo fino ai 2 s, poi lo slalom
+        // il video riparte da dove sarebbe la copertina: fermo fino a T_FERMA, poi lo slalom
         // (se arriva tardi la corsa parte subito)
         const t = Math.min(secondi(), T_FERMA);
         if (Math.abs(v.currentTime - t) > 0.15) v.currentTime = t;
@@ -207,7 +211,6 @@ export function Copertina() {
         style={
           {
             "--fetta-iniziale": `${FETTA_INIZIALE * 100}%`,
-            "--fetta-finale": `${FETTA_FINALE * 100}%`,
           } as CSSProperties
         }
       >

@@ -816,6 +816,126 @@ def pianta_alberi(col, C, F, R, alberi=ALBERI, distanza_minima=12.0):
 
 
 # ---------------------------------------------------------------------------------------------
+# Alberi sulla linea dell'orizzonte, come nella foto di riferimento: una fascia di chiome lontane ai
+# due lati del Colosseo (lecci tondi, qualche pino domestico piu' alto, a sinistra i cipressi). A
+# 120-380 m bastano le nuvole di foglie, senza il fogliame istanziato: un solo oggetto per tutti.
+
+
+def materiale_chioma_lontana(nome="Chioma lontana"):
+    """Verde diverso per ogni albero (attributo 'tinta'), macchie di luce e d'ombra nella chioma."""
+    m = bpy.data.materials.get(nome) or bpy.data.materials.new(nome)
+    nt, N, L = _nodi(m)
+    out = _n(N, "ShaderNodeOutputMaterial", 1100, 0)
+    bsdf = _n(N, "ShaderNodeBsdfPrincipled", 800, 0, Roughness=0.82)
+    L.new(bsdf.outputs[0], out.inputs[0])
+    tinta = _n(N, "ShaderNodeAttribute", -900, 250, attribute_name="tinta", attribute_type="GEOMETRY")
+    rampa = _n(N, "ShaderNodeValToRGB", -650, 250)
+    rampa.color_ramp.elements[0].color = (0.016, 0.026, 0.011, 1)
+    rampa.color_ramp.elements[1].color = (0.07, 0.085, 0.032, 1)
+    L.new(tinta.outputs["Fac"], rampa.inputs["Fac"])
+    tc = _n(N, "ShaderNodeTexCoord", -1100, -150)
+    macchie = _n(N, "ShaderNodeTexNoise", -850, -150)
+    macchie.inputs["Scale"].default_value = 0.45
+    macchie.inputs["Detail"].default_value = 5.0
+    macchie.inputs["Roughness"].default_value = 0.6
+    L.new(tc.outputs["Object"], macchie.inputs["Vector"])
+    luce = _n(N, "ShaderNodeMapRange", -600, -150)
+    luce.inputs["From Min"].default_value = 0.3
+    luce.inputs["From Max"].default_value = 0.7
+    luce.inputs["To Min"].default_value = 0.45
+    luce.inputs["To Max"].default_value = 1.35
+    L.new(macchie.outputs["Fac"], luce.inputs["Value"])
+    colore = _n(N, "ShaderNodeMix", -250, 150, data_type="RGBA", blend_type="MULTIPLY")
+    colore.inputs["Factor"].default_value = 1.0
+    L.new(rampa.outputs["Color"], colore.inputs["A"])
+    grigio = _n(N, "ShaderNodeCombineColor", -400, -100)
+    for canale in ("Red", "Green", "Blue"):
+        L.new(luce.outputs["Result"], grigio.inputs[canale])
+    L.new(grigio.outputs["Color"], colore.inputs["B"])
+    L.new(colore.outputs["Result"], bsdf.inputs["Base Color"])
+    foglie = _n(N, "ShaderNodeTexNoise", -850, -450)
+    foglie.inputs["Scale"].default_value = 4.0
+    foglie.inputs["Detail"].default_value = 4.0
+    L.new(tc.outputs["Object"], foglie.inputs["Vector"])
+    bump = _n(N, "ShaderNodeBump", 500, -300)
+    bump.inputs["Strength"].default_value = 0.7
+    bump.inputs["Distance"].default_value = 0.6
+    L.new(foglie.outputs["Fac"], bump.inputs["Height"])
+    L.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
+    return m
+
+
+def alberi_orizzonte(col, C, F, R, seme=31, zone=((-58.0, -29.0), (24.0, 58.0)), distanze=(100.0, 330.0), passo=6.0, staccati=18.0):
+    """Fascia di alberi lontani. zone: intervalli di angolo (gradi, positivo a destra) attorno alla
+    direzione della camera, dove dietro non c'e' il Colosseo; passo: distanza media tra le chiome lungo
+    la fascia (m); staccati: distanza minima dalla facciata (m)."""
+    rnd = random.Random(seme)
+    bm = bmesh.new()
+    tinta = bm.verts.layers.float.new("tinta")
+    contati = {"leccio": 0, "pino": 0, "cipresso": 0}
+    for th0, th1 in zone:
+        for fila, D0 in enumerate(distanze_file(distanze)):
+            n = int(math.radians(th1 - th0) * D0 / passo)
+            for i in range(n):
+                th = math.radians(th0 + (th1 - th0) * (i + rnd.uniform(0.1, 0.9)) / n)
+                D = D0 * rnd.uniform(0.9, 1.12)
+                p = C + F * (D * math.cos(th)) + R * (D * math.sin(th))
+                if locale(p.x, p.y)[1] < staccati:
+                    continue
+                x = rnd.random()
+                specie = "pino" if x < 0.22 else ("cipresso" if x < 0.36 and th < 0 else "leccio")
+                H = {"pino": rnd.uniform(16.0, 24.0), "cipresso": rnd.uniform(14.0, 21.0), "leccio": rnd.uniform(11.0, 18.0)}[specie]
+                s = rnd.randint(0, 10 ** 6)
+                rs = random.Random(s)
+                giro = Matrix.Rotation(rs.uniform(0, 2 * math.pi), 4, "Z")
+                giro.translation = Vector((p.x, p.y, -0.05))
+                if specie == "cipresso":
+                    (cv, cf), tronco, rt = _cipresso(rs, H, s % 997)
+                    rami = []
+                else:
+                    tronco, rt, rami, nuvole = (_forma_pino if specie == "pino" else _forma_leccio)(rs, H)
+                    cv, cf = _chioma(nuvole, s % 997, ampiezza=0.36 if specie == "leccio" else 0.28,
+                                     frequenza=0.75 if specie == "leccio" else 0.55, suddivisioni=2)
+                t = rnd.random()
+                vs = [bm.verts.new(giro @ Vector(c)) for c in cv]
+                for v in vs:
+                    v[tinta] = t
+                for f in cf:
+                    try:
+                        bm.faces.new([vs[k] for k in f]).smooth = True
+                    except ValueError:
+                        pass
+                if specie == "pino":  # il fusto alto e' la sagoma del pino domestico
+                    prima = len(bm.verts)
+                    _tubo(bm, [giro @ q for q in tronco], [rt * (1.2 - 0.4 * k / (len(tronco) - 1)) for k in range(len(tronco))], lati=6)
+                    bm.verts.ensure_lookup_table()
+                    for v in bm.verts[prima:]:
+                        v[tinta] = -1.0
+                contati[specie] += 1
+    me = bpy.data.meshes.new("Alberi orizzonte")
+    bm.to_mesh(me)
+    bm.free()
+    me.materials.append(materiale_chioma_lontana())
+    me.materials.append(materiale_corteccia("Corteccia pino lontano", (0.12, 0.07, 0.045), (0.035, 0.025, 0.02)))
+    # i fusti (tinta -1) prendono la corteccia
+    t = [0.0] * len(me.vertices)
+    me.attributes["tinta"].data.foreach_get("value", t)
+    mi = [1 if all(t[k] < -0.5 for k in poly.vertices) else 0 for poly in me.polygons]
+    me.polygons.foreach_set("material_index", mi)
+    ob = bpy.data.objects.new("Alberi orizzonte", me)
+    ob.visible_shadow = False  # col sole basso le ombre lunghe arriverebbero fino al Colosseo
+    col.objects.link(ob)
+    contati["vertici"] = len(me.vertices)
+    return contati
+
+
+def distanze_file(distanze, file=3):
+    """Distanze delle file della fascia, piu' fitte verso la camera."""
+    d0, d1 = distanze
+    return [d0 * (d1 / d0) ** (k / (file - 1)) for k in range(file)]
+
+
+# ---------------------------------------------------------------------------------------------
 # Foschia e camera
 
 
