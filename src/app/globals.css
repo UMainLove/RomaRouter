@@ -805,3 +805,68 @@ html[data-copertina] .copertina-salta:focus-visible {
   outline: 2px solid var(--color-amaranto);
   outline-offset: 3px;
 }
+
+/* Il film di presentazione sopra la home («Guarda il video») */
+.film {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: clamp(12px, 4vw, 56px);
+  background: rgba(18, 12, 10, 0.86);
+  backdrop-filter: blur(6px);
+  animation: film-entra 0.35s ease both;
+}
+.film-cornice {
+  width: min(100%, calc((100dvh - 2 * clamp(12px, 4vw, 56px)) * 16 / 9));
+  aspect-ratio: 16 / 9;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 40px 120px -30px rgba(0, 0, 0, 0.7);
+  animation: film-cresce 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.film-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+.film-chiudi {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  transition: background-color 0.2s;
+}
+.film-chiudi:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+.film-chiudi:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+@keyframes film-entra {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes film-cresce {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .film,
+  .film-cornice {
+    animation: none;
+  }
+}

@@ -4,6 +4,7 @@ import { Icon } from "@/components/Icon";
 import { Copertina } from "@/components/copertina/Copertina";
 import { CLASSI_FORMA } from "@/components/ui/Varie";
 import { Colosseo } from "@/components/home/Colosseo";
+import { GuardaVideo } from "@/components/home/GuardaVideo";
 import { AMBITI, ORDINE_AMBITI, type AmbitoId } from "@/lib/ambiti";
 
 /*
@@ -100,14 +101,7 @@ export default function Home() {
           </ol>
         </div>
 
-        {/* un link vero (ricarica la pagina): lo script nel <head> vede ?copertina=1 e rimette il video */}
-        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- serve la ricarica completa */}
-        <a href="/?copertina=1" className="mg-rivedi">
-          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-            <path d="M5 3.2v9.6c0 .5.5.8.9.5l7.1-4.8c.4-.3.4-.8 0-1L5.9 2.7c-.4-.3-.9 0-.9.5z" fill="currentColor" />
-          </svg>
-          Guarda il video
-        </a>
+        <GuardaVideo />
       </main>
     </>
   );

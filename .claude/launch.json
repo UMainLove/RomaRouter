@@ -12,6 +12,18 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["next", "start", "-p", "3001"],
       "port": 3001
+    },
+    {
+      "name": "riprese",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["video/riprese/server.mjs"],
+      "port": 3100
+    },
+    {
+      "name": "fotogrammi",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["video/riprese/fotogrammi.mjs"],
+      "port": 3399
     }
   ]
 }

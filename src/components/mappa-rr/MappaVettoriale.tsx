@@ -65,6 +65,9 @@ export function MappaVettoriale({
       (map as MapLibre & { rrSenzaPannelli?: boolean }).rrSenzaPannelli = !conPannelli;
       map.setPadding(margini(map));
       const m = map;
+      // per le riprese del video di presentazione (video/riprese): la regia muove la camera e aspetta le tessere
+      const w = window as Window & { __rrRiprese?: boolean; __rrMappa?: MapLibre };
+      if (w.__rrRiprese) w.__rrMappa = m;
       ro = new ResizeObserver(() => {
         m.resize();
         m.setPadding(margini(m));

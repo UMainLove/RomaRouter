@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     // Mappe delle sezioni: base di terzi e build (si rifanno con npm run mappe:build, vedi mappe/README.md).
     "mappe/base/**",
     "public/mappe/**",
+    // Il video di presentazione ha il suo progetto (video/package.json).
+    "video/**",
   ]),
 ]);
 

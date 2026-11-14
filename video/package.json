@@ -1,0 +1,24 @@
+{
+  "name": "romarouter-video",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepara": "node -e \"require('fs').mkdirSync('public/sorgenti',{recursive:true});require('fs').copyFileSync('../public/copertina/copertina.mp4','public/sorgenti/copertina.mp4')\"",
+    "riprese": "node riprese/scene.mjs",
+    "fotogrammi": "node riprese/fotogrammi.mjs",
+    "studio": "remotion studio src/index.ts --port=3300",
+    "render": "remotion render src/index.ts Lancio out/romarouter-master.mp4 --port=3300 --codec=h264 --crf=16 --audio-codec=aac --audio-bitrate=320k --concurrency=8",
+    "web": "node riprese/web.mjs"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.538",
+    "playwright-core": "1.64.1",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.538"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.2",
+    "typescript": "5.9.3"
+  }
+}
