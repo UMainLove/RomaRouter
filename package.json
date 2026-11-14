@@ -17,7 +17,8 @@
     "artisti:import": "node --env-file=.env.local scripts/artisti/import.mts",
     "artisti:demo": "node --env-file=.env.local scripts/artisti/esibizioni_demo.mts",
     "artisti:esporta": "node --env-file=.env.local scripts/artisti/esporta.mts",
-    "luoghi:indice": "node --env-file=.env.local scripts/luoghi/indice.mts"
+    "luoghi:indice": "node --env-file=.env.local scripts/luoghi/indice.mts",
+    "artisti:copertura": "node --env-file=.env.local scripts/artisti/copertura.mts"
   },
   "dependencies": {
     "maplibre-gl": "^6.18.0",

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { orologio, type AttivitaArte } from "@/lib/orari-arte";
 import type { VerificaLuogo } from "@/lib/artisti";
 import { Cerca, type Luogo } from "../mappa-rr/Cerca";
-import { caricaIcone, GLIFI, righe, spilla } from "../mappa-rr/icone";
+import { avatar, caricaIcone, GLIFI, palco, piazza, righe } from "../mappa-rr/icone";
 import { inquadra, MappaVettoriale, vola, type ML } from "../mappa-rr/MappaVettoriale";
 import { Azione, Azioni, Fatti, Scheda, Schermo, Strumenti, Tondo } from "../mappa-rr/Schermo";
 import { primoTesto } from "../mappa-rr/stile";
@@ -26,8 +26,17 @@ type FEsib = { type: "Feature"; geometry: { type: "Point"; coordinates: [number,
 type Palco = { chiave: string; nome: string; tipo: string; regole: string | null; posizione_stimata: boolean; localizzazioni: number | null };
 type FPalco = { type: "Feature"; geometry: { type: "Point"; coordinates: [number, number] }; properties: Palco };
 type FZona = { type: "Feature"; geometry: unknown; properties: { e: string; u: boolean; v: string[]; n: string } };
+type FPiazza = { type: "Feature"; geometry: { type: "Point"; coordinates: [number, number] }; properties: { nome: string; mun: number | null; z: { e: string; v: string[] }[] } };
 
-const COL = { no: "#D32F2F", limitato: "#EF7D00", palchi: "#6D3FD0", dedicata: "#12905F", cond: "#C9A227", libero: "#12905F", occupato: "#C2185B", chiuso: "#8A807E" };
+/** Dati della sezione: l'API legge il database; se non c'e' (progetto appena scaricato) le copie in public/dati/artisti. */
+function caricaDati<T>(api: string, copia: string): Promise<T> {
+  return fetch(api)
+    .then((r) => (r.ok ? (r.json() as Promise<T>) : Promise.reject(new Error(String(r.status)))))
+    .then((d) => ((d as { features?: unknown[] }).features?.length ? d : Promise.reject(new Error("vuoto"))))
+    .catch(() => fetch(copia).then((r) => r.json() as Promise<T>));
+}
+
+const COL = { no: "#D32F2F", limitato: "#EF7D00", palchi: "#6D3FD0", dedicata: "#0B7A47", cond: "#C9A227", libero: "#12905F", occupato: "#C2185B", chiuso: "#8A807E", si: "#22A35A", nonAdatto: "#C0584B", piazza: "#1B8A50" };
 const ATT: { k: AttivitaArte; n: string; g: string; c: string; verbo: string }[] = [
   { k: "musica", n: "Musica", g: GLIFI.chitarra, c: "#C2185B", verbo: "suonare" },
   { k: "silenziosa", n: "Silenziosa", g: GLIFI.maschera, c: "#7B4FD0", verbo: "esibirti" },
@@ -79,6 +88,7 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
   const [esib, setEsib] = useState<FEsib[]>([]);
   const [palchi, setPalchi] = useState<FPalco[]>([]);
   const [zone, setZone] = useState<FZona[] | null>(null);
+  const [piazze, setPiazze] = useState<FPiazza[]>([]);
   const [pronto, setPronto] = useState(false);
   // l'ora si legge solo nel browser (la pagina si prepara sul server senza orologio)
   const [oraVera, setOraVera] = useState<Date | null>(null);
@@ -172,19 +182,30 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
       m.current = { map, ml };
       const sotto = primoTesto(map);
       const icone: Record<string, { svg: string; w: number; h: number }> = {
-        "palco-libero": spilla(COL.libero, GLIFI.palco, 26),
-        "palco-occupato": spilla(COL.occupato, GLIFI.palco, 26),
-        "palco-chiuso": spilla(COL.chiuso, GLIFI.palco, 26),
+        "palco-libero": palco(COL.libero),
+        "palco-occupato": palco(COL.occupato),
+        "palco-chiuso": palco(COL.chiuso),
         "righe-no": righe(COL.no),
+        piazza: piazza(COL.piazza),
       };
-      ATT.forEach((a) => (icone[`art-${a.k}`] = spilla(a.c, a.g, 34)));
+      ATT.forEach((a) => {
+        icone[`art-${a.k}`] = avatar(a.c, a.g, 36);
+        icone[`art-${a.k}-vivo`] = avatar(a.c, a.g, 40, true);
+      });
       caricaIcone(map, icone);
 
       const vuoto = { type: "FeatureCollection" as const, features: [] };
-      ["rr-zone", "rr-cond", "rr-palchi", "rr-artisti", "rr-punto", "rr-sel"].forEach((s) => map.addSource(s, { type: "geojson", data: vuoto }));
-      // velo: per ritratti e tarocchi la citta' si spegne e si accendono solo le aree dedicate
-      map.addSource("rr-velo", { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[[11.9, 41.4], [13.1, 41.4], [13.1, 42.3], [11.9, 42.3], [11.9, 41.4]]] } } });
-      map.addLayer({ id: "rr-velo", type: "fill", source: "rr-velo", paint: { "fill-color": "#2B2321", "fill-opacity": 0 } }, sotto);
+      ["rr-zone", "rr-cond", "rr-palchi", "rr-artisti", "rr-punto", "rr-sel", "rr-copertura", "rr-piazze"].forEach((s) => map.addSource(s, { type: "geojson", data: vuoto }));
+      // TUTTA ROMA: il Comune non adatto (rosa) sotto, le zone con spazio pubblico (verde) sopra, poi le regole
+      map.addLayer({ id: "rr-roma", type: "fill", source: "rr-copertura", filter: ["==", ["get", "classe"], "roma"], paint: { "fill-color": COL.nonAdatto, "fill-opacity": 0.13 } }, sotto);
+      map.addLayer({ id: "rr-roma-l", type: "line", source: "rr-copertura", filter: ["==", ["get", "classe"], "roma"], paint: { "line-color": COL.nonAdatto, "line-width": 1.6, "line-opacity": 0.5 } }, sotto);
+      map.addLayer({
+        id: "rr-adatta",
+        type: "fill",
+        source: "rr-copertura",
+        filter: ["in", ["get", "classe"], ["literal", ["adatta", "parco"]]],
+        paint: { "fill-color": ["match", ["get", "classe"], "parco", "#3E9B6E", COL.si], "fill-opacity": ["interpolate", ["linear"], ["zoom"], 10, 0.3, 14, 0.2, 17, 0.12] },
+      }, sotto);
 
       const colore = ["match", ["get", "s"], "no", COL.no, "limitato", COL.limitato, "palchi", COL.palchi, "dedicata", COL.dedicata, COL.cond];
       map.addLayer({ id: "rr-cond", type: "fill", source: "rr-cond", minzoom: 15, paint: { "fill-color": COL.cond, "fill-opacity": 0.1 } }, sotto);
@@ -194,6 +215,24 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
       map.addLayer({ id: "rr-zone-l", type: "line", source: "rr-zone", paint: { "line-color": colore as never, "line-width": ["interpolate", ["linear"], ["zoom"], 12, 1, 17, 2.4], "line-opacity": 0.9 } }, sotto);
       map.addLayer({ id: "rr-zone-dubbio", type: "line", source: "rr-zone", filter: ["==", ["get", "u"], false], paint: { "line-color": "#fff", "line-width": 1.6, "line-dasharray": [2, 2] } }, sotto);
 
+      map.addLayer({
+        id: "rr-piazze",
+        type: "symbol",
+        source: "rr-piazze",
+        minzoom: 14,
+        layout: {
+          "icon-image": "piazza",
+          "icon-size": ["interpolate", ["linear"], ["zoom"], 14, 0.55, 17, 0.9],
+          "icon-allow-overlap": true,
+          "text-field": ["step", ["zoom"], "", 16, ["get", "nome"]],
+          "text-font": ["Noto Sans Bold"],
+          "text-size": 11,
+          "text-offset": [0, 0.9],
+          "text-anchor": "top",
+          "text-optional": true,
+        },
+        paint: { "text-color": COL.piazza, "text-halo-color": "#fff", "text-halo-width": 1.5 },
+      });
       map.addLayer({
         id: "rr-palchi",
         type: "symbol",
@@ -212,20 +251,21 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
         paint: { "text-color": "#3E3634", "text-halo-color": "#fff", "text-halo-width": 1.6 },
       });
       map.addLayer({ id: "rr-sel", type: "circle", source: "rr-sel", paint: { "circle-radius": 23, "circle-color": "#fff", "circle-opacity": 0.55, "circle-stroke-color": "#251D1C", "circle-stroke-width": 3 } });
-      map.addLayer({ id: "rr-onda", type: "circle", source: "rr-artisti", filter: ["==", ["get", "ora"], true], paint: { "circle-color": ["get", "c"], "circle-radius": 16, "circle-opacity": 0.3 } });
+      map.addLayer({ id: "rr-onda", type: "circle", source: "rr-artisti", filter: ["==", ["get", "ora"], true], paint: { "circle-color": ["get", "c"], "circle-radius": 16, "circle-opacity": 0.3, "circle-translate": [0, -22] } });
       map.addLayer({
         id: "rr-artisti",
         type: "symbol",
         source: "rr-artisti",
         layout: {
-          "icon-image": ["concat", "art-", ["get", "attivita"]],
-          "icon-size": ["interpolate", ["linear"], ["zoom"], 11, 0.6, 14, 0.85, 17, 1.05],
+          "icon-image": ["concat", "art-", ["get", "attivita"], ["case", ["get", "ora"], "-vivo", ""]],
+          "icon-anchor": "bottom",
+          "icon-size": ["interpolate", ["linear"], ["zoom"], 10, 0.55, 13, 0.75, 16, 1],
           "icon-allow-overlap": true,
           "symbol-sort-key": ["case", ["get", "ora"], 0, 1],
           "text-field": ["step", ["zoom"], "", 15, ["format", ["get", "nome_arte"], {}, "\n", {}, ["get", "quando"], { "font-scale": 0.85 }]],
           "text-font": ["Noto Sans Bold"],
           "text-size": 12.5,
-          "text-offset": [0, 1.7],
+          "text-offset": [0, 0.3],
           "text-anchor": "top",
           "text-optional": true,
         },
@@ -247,9 +287,11 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
         raf = requestAnimationFrame(giro);
       }
 
-      fetch("/api/artisti/zone?leggero=1").then((r) => r.json()).then((fc: { features: FZona[] }) => setZone(fc.features)).catch(() => setErrore("Le zone non si sono caricate"));
-      fetch("/api/artisti/postazioni").then((r) => r.json()).then((fc: { features: FPalco[] }) => setPalchi(fc.features)).catch(() => {});
-      fetch("/api/artisti/esibizioni?giorni=2").then((r) => r.json()).then((fc: { features: FEsib[] }) => setEsib(fc.features)).catch(() => {});
+      caricaDati<{ features: FZona[] }>("/api/artisti/zone?leggero=1&fuse=1", "/dati/artisti/zone.json").then((fc) => setZone(fc.features)).catch(() => setErrore("Le zone non si sono caricate"));
+      caricaDati<{ features: unknown[] }>("/api/artisti/copertura", "/dati/artisti/copertura.json").then((fc) => (map.getSource("rr-copertura") as GeoJSONSource).setData(fc as never)).catch(() => {});
+      caricaDati<{ features: FPiazza[] }>("/api/artisti/piazze", "/dati/artisti/piazze.json").then((fc) => setPiazze(fc.features)).catch(() => {});
+      caricaDati<{ features: FPalco[] }>("/api/artisti/postazioni", "/dati/artisti/postazioni.json").then((fc) => setPalchi(fc.features)).catch(() => {});
+      caricaDati<{ features: FEsib[] }>("/api/artisti/esibizioni?giorni=2", "/dati/artisti/esibizioni.json").then((fc) => setEsib(fc.features)).catch(() => {});
 
       // scuole, chiese, ospedali, monumenti: solo da vicino
       let ultimo = "";
@@ -272,7 +314,7 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
       };
       map.on("moveend", cond);
 
-      const cliccabili = ["rr-artisti", "rr-palchi"];
+      const cliccabili = ["rr-artisti", "rr-palchi", "rr-piazze"];
       map.on("click", (e) => {
         const f = map.queryRenderedFeatures(e.point, { layers: cliccabili })[0] as MapGeoJSONFeature | undefined;
         if (f) {
@@ -283,7 +325,10 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
           }
           const g = { type: "Feature" as const, geometry: f.geometry as FEsib["geometry"], properties: f.properties };
           if (f.layer.id === "rr-artisti") setSel({ tipo: "artista", f: g as unknown as FEsib });
-          else setSel({ tipo: "palco", f: g as unknown as FPalco });
+          else if (f.layer.id === "rr-piazze") {
+            const [x, y] = (f.geometry as unknown as { coordinates: [number, number] }).coordinates;
+            tocca(x, y, String(f.properties.nome), false);
+          } else setSel({ tipo: "palco", f: g as unknown as FPalco });
           return;
         }
         tocca(e.lngLat.lng, e.lngLat.lat, null, false);
@@ -319,13 +364,20 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
     const cond = condGrezze.current.filter((f) => f.properties.v.length === 0 || f.properties.v.includes(attivita));
     (k.map.getSource("rr-cond") as GeoJSONSource).setData({ type: "FeatureCollection", features: cond } as never);
     const guarda = modo === "guardare";
-    k.map.setPaintProperty("rr-velo", "fill-opacity", dedicate && !guarda ? 0.2 : 0);
+    // ritratti e tarocchi: la citta' resta "non qui" (rosa), si accendono solo le aree dedicate
+    k.map.setLayoutProperty("rr-adatta", "visibility", dedicate && !guarda ? "none" : "visible");
+    k.map.setPaintProperty("rr-roma", "fill-opacity", guarda ? 0.04 : dedicate ? 0.18 : 0.13);
+    k.map.setPaintProperty("rr-adatta", "fill-opacity", guarda ? 0.06 : ["interpolate", ["linear"], ["zoom"], 10, 0.3, 14, 0.2, 17, 0.12]);
+    // piazze consigliate: quelle dove l'attivita' scelta non e' vietata
+    const bloccata = (z: { e: string; v: string[] }) => (z.v.length === 0 || z.v.includes(attivita)) && (z.e === "no" || (z.e === "solo_silenzio") || z.e === "solo_postazioni");
+    const libere = dedicate && !guarda ? [] : piazze.filter((f) => !f.properties.z.some(bloccata));
+    (k.map.getSource("rr-piazze") as GeoJSONSource).setData({ type: "FeatureCollection", features: libere } as never);
     k.map.setPaintProperty("rr-zone", "fill-opacity", guarda ? 0.05 : ["match", ["get", "s"], "no", 0.16, "dedicata", 0.3, 0.17]);
     k.map.setPaintProperty("rr-zone-righe", "fill-opacity", guarda ? 0 : 1);
     k.map.setPaintProperty("rr-zone-l", "line-opacity", guarda ? 0.22 : 0.9);
     k.map.setPaintProperty("rr-zone-dubbio", "line-opacity", guarda ? 0 : 1);
     ["rr-cond", "rr-cond-l"].forEach((l) => k.map.setLayoutProperty(l, "visibility", guarda ? "none" : "visible"));
-  }, [zone, attivita, modo, pronto]);
+  }, [zone, piazze, attivita, modo, pronto]);
 
   // 2 e 3. palchi (liberi, occupati, chiusi) e artisti
   useEffect(() => {
@@ -572,12 +624,12 @@ function Legenda({ modo, attivita }: { modo: Modo; attivita: AttivitaArte }) {
             { c: COL.occupato, t: "Occupato ora", tondo: true },
           ]
         : [
+            { c: COL.si, t: "Si può" },
+            { c: COL.nonAdatto, t: "Non adatto" },
             { c: COL.no, t: "Vietato" },
             { c: COL.limitato, t: "Solo silenzio" },
             { c: COL.palchi, t: "Solo sui palchi" },
-            { c: COL.libero, t: "Palco libero", tondo: true },
-            { c: COL.occupato, t: "Occupato", tondo: true },
-            { c: COL.chiuso, t: "Chiuso ora", tondo: true },
+            { c: COL.piazza, t: "Piazze libere", tondo: true },
           ];
   return (
     <div className="pointer-events-auto rounded-[20px] bg-panel/95 px-4 py-3 shadow-[0_6px_24px_rgba(37,29,28,.16)] ring-1 ring-black/5 backdrop-blur">
@@ -591,7 +643,7 @@ function Legenda({ modo, attivita }: { modo: Modo; attivita: AttivitaArte }) {
           </li>
         ))}
       </ul>
-      {modo === "esibirmi" && !dedicate && <p className="mt-1.5 text-[12px] text-muted">Dove non c&apos;è colore valgono le regole generali: si può, con orari e preavviso.</p>}
+      {modo === "esibirmi" && !dedicate && <p className="mt-1.5 text-[12px] text-muted">Verde: strade e piazze dove valgono le regole generali (orari e preavviso). Rosa: campagna, ferrovie, autostrade.</p>}
     </div>
   );
 }
@@ -605,6 +657,7 @@ const TITOLI: Record<string, (verbo: string) => string> = {
   solo_silenzio: () => "Qui solo esibizioni silenziose",
   probabilmente_no: () => "Meglio di no: divieto da verificare",
   no: () => "No, qui è vietato",
+  non_adatto: () => "Qui non c'è spazio adatto",
 };
 const TONO: Record<string, { bg: string; fg: string }> = {
   ok: { bg: "bg-ok-tint", fg: "text-ok" },

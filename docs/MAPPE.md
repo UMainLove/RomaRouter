@@ -60,3 +60,20 @@ Il catasto ufficiale degli impianti (ARPA Lazio ne conta 3.538 a Roma) non e' pu
 | Richieste | Roma Capitale | 192 | nuove antenne e modifiche pubblicate |
 
 Rifare: `node --env-file=.env.local scripts/antenne/celle.mts data/raw/antenne/celle/roma_celle.csv "OpenCelliD maggio 2024 (CC BY-SA 4.0)"` (il CSV si ricava dal file di archive.org, che sta in `data/raw/`, fuori da git). Scartati: CellMapper, nPerf, OpenSignal e lteitaly.it, perche' le loro condizioni vietano copia e riuso. Il 5G non c'e' ancora nei dati aperti.
+
+## Arte di strada: tutta Roma coperta (novembre 2026)
+
+La mappa non mostra piu' solo le eccezioni del centro: tutto il Comune e' diviso in 80.041 esagoni H3
+(risoluzione 10, ~0,015 km²), classificati con le 17.548 vie dello stradario di Roma Capitale, le piazze
+pedonali e i 1.033 parchi di OpenStreetMap:
+
+| Classe | Esagoni | Superficie | Significato |
+| --- | --- | --- | --- |
+| adatta (verde) | 38.705 | 623 km² | strade percorribili a piedi o piazze: valgono le regole generali (orari, 2 ore, preavviso) |
+| parco | 512 | 8 km² | solo viali pavimentati, senza amplificazione (Allegato A) |
+| non adatta (rosa) | 40.824 | 657 km² | campagna, ferrovie, aeroporto, autostrade, fiume |
+
+Sopra: divieti (rosso a righe), solo silenzio (arancio), solo palchi (viola), fusi in forme pulite;
+le 1.556 piazze pedonali libere come luoghi consigliati; 58 artisti dimostrativi in tutti i 15 Municipi.
+La verifica di un punto usa gli esagoni esatti («Qui non c'e' spazio adatto»). Rifare:
+`node --env-file=.env.local scripts/artisti/copertura.mts`, poi `npm run artisti:esporta`.

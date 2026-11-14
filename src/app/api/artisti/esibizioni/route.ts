@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 // Si accetta solo dove la verifica non dice "no", dentro le fasce dell'art. 6 e per al massimo 2 ore.
 // Niente identita': nome d'arte e disciplina sono pubblici per scelta dell'artista. Senza SPID l'annuncio
 // resta "richiesta" (non verificato dal Comune) e lo dice anche la mappa.
-const VIETATI = new Set(["no", "probabilmente_no", "solo_area_dedicata", "solo_silenzio"]);
+const VIETATI = new Set(["no", "probabilmente_no", "solo_area_dedicata", "solo_silenzio", "non_adatto"]);
 const testo = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
 // Contro lo spam finche' non c'e' SPID: al massimo 5 annunci l'ora per connessione (in memoria del server),

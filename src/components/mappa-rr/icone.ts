@@ -95,3 +95,46 @@ export function segno(colore: string, glifo: string, forma: "rombo" | "cerchio" 
     </svg>`,
   };
 }
+
+/** Spilla a goccia con avatar: cerchio colorato col glifo bianco, bordo bianco, punta verso il luogo. */
+export function avatar(colore: string, glifo: string, d = 36, vivo = false) {
+  const w = d + 10, h = d + 18, c = w / 2, r = d / 2;
+  return {
+    w,
+    h,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}">
+      <defs><filter id="o" x="-40%" y="-30%" width="180%" height="170%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#251d1c" flood-opacity=".35"/></filter></defs>
+      <g filter="url(#o)">
+        <path d="M${c} ${h - 3} L${c - 7} ${r * 2 - 2} A${r} ${r} 0 1 1 ${c + 7} ${r * 2 - 2} Z" fill="#fff"/>
+        <circle cx="${c}" cy="${r + 3}" r="${r - 2.5}" fill="${colore}"/>
+        ${vivo ? `<circle cx="${c + r - 4}" cy="${8}" r="5" fill="#E53935" stroke="#fff" stroke-width="2"/>` : ""}
+      </g>
+      <g transform="translate(${c - r * 0.55} ${r + 3 - r * 0.55}) scale(${(r * 1.1) / 24})" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">${glifo}</g>
+    </svg>`,
+  };
+}
+
+/** Palco: riquadro arrotondato col microfono (libero, occupato, chiuso). */
+export function palco(colore: string, d = 28) {
+  const w = d + 6;
+  return {
+    w,
+    h: w,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${w}">
+      <defs><filter id="o" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="1.5" stdDeviation="1.5" flood-color="#251d1c" flood-opacity=".3"/></filter></defs>
+      <g filter="url(#o)"><rect x="3" y="3" width="${d}" height="${d}" rx="${d * 0.3}" fill="${colore}" stroke="#fff" stroke-width="2.4"/></g>
+      <g transform="translate(${w / 2 - d * 0.29} ${w / 2 - d * 0.29}) scale(${(d * 0.58) / 24})" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/>
+      </g>
+    </svg>`,
+  };
+}
+
+/** Piazza consigliata: pallino verde con il centro bianco. */
+export function piazza(colore: string) {
+  return {
+    w: 16,
+    h: 16,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2" fill="${colore}" stroke="#fff" stroke-width="2"/><circle cx="8" cy="8" r="2.2" fill="#fff"/></svg>`,
+  };
+}

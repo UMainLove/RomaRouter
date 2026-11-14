@@ -12,6 +12,22 @@ export async function GET(req: NextRequest) {
   const okBbox = bbox?.length === 4 && bbox.every(Number.isFinite);
   const esiti = sp.get("esiti")?.split(",").filter(Boolean) ?? null;
   const leggero = sp.get("leggero") === "1";
+  // fuse=1: zone con le stesse regole fuse in una forma sola (niente cerchi accavallati sulla mappa)
+  if (leggero && sp.get("fuse") === "1" && !okBbox) {
+    const { rows } = await queryArtisti<{ fc: unknown }>(
+      `SELECT json_build_object('type', 'FeatureCollection', 'features', COALESCE(json_agg(json_build_object(
+          'type', 'Feature', 'geometry', ST_AsGeoJSON(g, 5)::json, 'properties', json_build_object('e', e, 'u', u, 'v', v))), '[]'::json)) AS fc
+       FROM (
+         SELECT z.esito AS e, z.ufficiale AS u, z.vale_per AS v,
+                ST_SimplifyPreserveTopology(ST_Union(ST_MakeValid(z.geom)), 0.00002) AS g
+         FROM artisti.zone z
+         WHERE z.esito <> 'condizioni' AND ($1::text[] IS NULL OR z.esito = ANY($1))
+         GROUP BY z.esito, z.ufficiale, z.vale_per
+       ) x`,
+      [esiti],
+    );
+    return Response.json(rows[0].fc, { headers: { "Cache-Control": "public, max-age=300" } });
+  }
   const { rows } = await queryArtisti<{ fc: unknown }>(
     `SELECT json_build_object('type', 'FeatureCollection', 'features', COALESCE(json_agg(json_build_object(
         'type', 'Feature', 'id', z.id,

@@ -23,7 +23,7 @@ export const ATTIVITA = {
 export type Attivita = keyof typeof ATTIVITA;
 export const eAttivita = (v: unknown): v is Attivita => typeof v === "string" && v in ATTIVITA;
 
-export type CodiceEsito = "si" | "si_condizioni" | "solo_postazioni" | "solo_area_dedicata" | "solo_silenzio" | "probabilmente_no" | "no";
+export type CodiceEsito = "si" | "si_condizioni" | "solo_postazioni" | "solo_area_dedicata" | "solo_silenzio" | "probabilmente_no" | "no" | "non_adatto";
 
 export const ESITI: Record<CodiceEsito, { titolo: string; tono: "ok" | "attenzione" | "errore" }> = {
   si: { titolo: "Sì, puoi esibirti qui", tono: "ok" },
@@ -33,6 +33,7 @@ export const ESITI: Record<CodiceEsito, { titolo: string; tono: "ok" | "attenzio
   solo_silenzio: { titolo: "Qui solo esibizioni silenziose", tono: "attenzione" },
   probabilmente_no: { titolo: "Probabilmente no: verifica prima", tono: "errore" },
   no: { titolo: "No, qui non puoi esibirti", tono: "errore" },
+  non_adatto: { titolo: "Qui non c'è spazio adatto", tono: "errore" },
 };
 
 interface Zona {
@@ -50,7 +51,7 @@ export { fasciaArt6 };
 
 export async function verificaLuogo(lat: number, lon: number, attivita: Attivita, quando?: Date) {
   const P = "ST_SetSRID(ST_MakePoint($1, $2), 4326)";
-  const [zone, municipio, postazioni, esibizioni, contatti, pubblico] = await Promise.all([
+  const [zone, municipio, postazioni, esibizioni, contatti, pubblico, copertura] = await Promise.all([
     queryArtisti<Zona>("SELECT id, esito, categoria, nome, motivo, condizione, vale_per, riferimento, fonte_url, verifica, ufficiale, approssimata, priorita FROM artisti.zone_nel_punto($1, $2)", [lon, lat]),
     queryArtisti<{ numero: number; numero_romano: string }>(`SELECT numero, numero_romano FROM artisti.municipi WHERE ST_Intersects(geom, ${P}) LIMIT 1`, [lon, lat]),
     queryArtisti<{ id: number; nome: string; tipo: string; raggio_m: number | null; fasce_testo: string | null; regole_testo: string | null; verifica: string | null; posizione_stimata: boolean; distanza_m: number; lat: number; lon: number }>(
@@ -72,7 +73,10 @@ export async function verificaLuogo(lat: number, lon: number, attivita: Attivita
       `SELECT layer, count(*)::int AS n FROM artisti.contesto
        WHERE layer IN ('attrazioni', 'piazze_pedonali', 'stazioni', 'nightlife', 'venue_cultura') AND ST_DWithin(geom::geography, ${P}::geography, 300)
        GROUP BY layer`, [lon, lat]),
+    // tutta Roma coperta: in questo esagono c'e' spazio pubblico (strade, piazze), e' un parco o niente?
+    queryArtisti<{ classe: string }>(`SELECT classe FROM artisti.copertura WHERE cella = h3_lat_lng_to_cell(${P}, 10)`, [lon, lat]).catch(() => ({ rows: [] as { classe: string }[] })),
   ]);
+  const classe = copertura.rows[0]?.classe ?? "adatta";
 
   const tocca = (z: Zona) => z.vale_per.length === 0 || z.vale_per.includes(attivita);
   const pertinenti = zone.rows.filter(tocca);
@@ -111,11 +115,26 @@ export async function verificaLuogo(lat: number, lon: number, attivita: Attivita
     codice = "solo_postazioni";
     di("solo_postazioni").forEach((z) => motivi.push(motivo(z)));
   }
+  // Nessuno spazio pubblico qui (campagna, ferrovia, autostrada, fiume): si dice, anche senza divieti
+  if (classe === "non_adatta" && (codice === "si" || codice === "solo_area_dedicata") && !di("area_dedicata").length) {
+    codice = "non_adatto";
+    motivi.unshift({
+      testo: "Qui non ci sono strade percorribili a piedi né piazze: campagna, ferrovia, autostrada o fiume. Cerca una via o una piazza vicina.",
+      luogo: "Questa zona", riferimento: "DAC 24/2012, art. 2 (spazi pubblici)", fonte_url: null, ufficiale: true, verifica: "ufficiale; zona da stradario di Roma Capitale", approssimata: true,
+    });
+  }
+  if (classe === "parco") {
+    condizioni.push({
+      testo: "Nel parco: solo su viali pavimentati o brecciati, a basso impatto sonoro e senza amplificazione.",
+      luogo: "Parco", riferimento: "DAC 24/2012, Allegato A", fonte_url: null, ufficiale: true, verifica: "ufficiale", approssimata: true,
+    });
+  }
   // Regole in conflitto (es. divieto da stampa dentro un sito dell'Allegato B): si mostrano anche le altre
   if (codice === "probabilmente_no" || codice === "no") di("solo_postazioni").forEach((z) => motivi.push(motivo(z)));
 
   di("condizioni").forEach((z) => condizioni.push(motivo(z)));
   if (codice === "si" && condizioni.length) codice = "si_condizioni";
+  if (codice === "non_adatto") condizioni.length = 0;
   di("info").forEach((z) => condizioni.push(motivo(z)));
   // aree consentite per tutte le attivita' (Municipio X): buona notizia da mostrare
   di("area_dedicata").filter((z) => z.vale_per.length === 0).forEach((z) => condizioni.push(motivo(z)));

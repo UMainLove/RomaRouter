@@ -27,6 +27,8 @@ Allo stesso modo l'arte di strada:
 
 e poi `npm run db:migrate -- artisti-di-strada`.
 
+**Senza database anche la mappa dell'arte di strada funziona**: legge `public/dati/artisti/` (copertura di tutta Roma, zone, postazioni, piazze, esibizioni), aggiornate da `npm run artisti:esporta` con il sito avviato.
+
 **Senza database la mappa delle antenne funziona lo stesso**: se le API non rispondono legge le copie in `public/dati/antenne/` (richieste, antenne in funzione, impianti OpenStreetMap), aggiornate da `npm run antenne:esporta`.
 
 ## GeoJSON per la mappa

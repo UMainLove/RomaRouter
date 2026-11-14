@@ -57,10 +57,45 @@ const ARTISTI: { nome: string; disciplina: string; attivita: Attivita; descrizio
   { nome: "Acquerelli di Trastevere", disciplina: "acquerello", attivita: "figurativa", descrizione: "Vedute di Roma dipinte sul posto." },
   { nome: "Madame Tarocchi", disciplina: "cartomanzia", attivita: "esoterica", descrizione: "Lettura dei tarocchi, per gioco." },
   { nome: "Il Chiromante", disciplina: "lettura della mano", attivita: "esoterica", descrizione: "Un minuto per la vostra mano." },
+  // artisti di quartiere: si esibiscono nelle piazze di tutti i Municipi
+  { nome: "Banda del Quadraro", disciplina: "ottoni e percussioni", attivita: "musica", descrizione: "Marce e funk da strada." },
+  { nome: "Chiara e la Chitarra", disciplina: "cantautrice", attivita: "musica", descrizione: "Canzoni sue e di De André." },
+  { nome: "Duo Garbatella", disciplina: "violino e chitarra", attivita: "musica", descrizione: "Musica popolare e balcanica." },
+  { nome: "Mandolino di Testaccio", disciplina: "mandolino", attivita: "musica", descrizione: "Stornelli romani." },
+  { nome: "Centocelle Soul", disciplina: "voce e tastiera", attivita: "musica", descrizione: "Soul e R&B anni Settanta." },
+  { nome: "Fisarmonica di Tor Pignattara", disciplina: "fisarmonica", attivita: "musica", descrizione: "Musette e tango." },
+  { nome: "Rap di Primavalle", disciplina: "rap a cappella", attivita: "musica", descrizione: "Freestyle sulle parole del pubblico." },
+  { nome: "Quartetto Monteverde", disciplina: "quartetto d'archi", attivita: "musica", descrizione: "Vivaldi e colonne sonore." },
+  { nome: "Lucia Flauto Traverso", disciplina: "flauto", attivita: "musica", descrizione: "Barocco e jazz." },
+  { nome: "Batucada Portuense", disciplina: "percussioni brasiliane", attivita: "musica", descrizione: "Samba per strada." },
+  { nome: "Il Cantastorie di Ostia", disciplina: "cantastorie", attivita: "musica", descrizione: "Storie di mare con la chitarra." },
+  { nome: "Nico Blues", disciplina: "armonica e chitarra", attivita: "musica", descrizione: "Blues del Delta." },
+  { nome: "Coro Gospel EUR", disciplina: "coro gospel", attivita: "musica", descrizione: "Sei voci, spiritual e gospel." },
+  { nome: "Violinista di Monti", disciplina: "violino", attivita: "musica", descrizione: "Classica e pop arrangiato." },
+  { nome: "Steel Drum Tuscolano", disciplina: "steel drum", attivita: "musica", descrizione: "Suoni dei Caraibi." },
+  { nome: "Pino Organetto", disciplina: "organetto", attivita: "musica", descrizione: "Saltarelli e tarantelle." },
+  { nome: "Clown Bombetta", disciplina: "clownerie", attivita: "silenziosa", descrizione: "Spettacolo per bambini, senza parole." },
+  { nome: "La Donna d'Argento", disciplina: "statua vivente", attivita: "silenziosa", descrizione: "Si muove solo con una moneta." },
+  { nome: "Trampolieri di San Lorenzo", disciplina: "trampoli", attivita: "silenziosa", descrizione: "Giganti colorati tra la gente." },
+  { nome: "Il Mago Ottavio", disciplina: "illusionismo", attivita: "silenziosa", descrizione: "Magia da vicino con le carte." },
+  { nome: "Acrobati di Talenti", disciplina: "acrobatica", attivita: "silenziosa", descrizione: "Piramidi umane e salti." },
+  { nome: "Palloncini di Pietralata", disciplina: "sculture di palloncini", attivita: "silenziosa", descrizione: "Animali di palloncini in un minuto." },
+  { nome: "Mimo Pierrot", disciplina: "mimo", attivita: "silenziosa", descrizione: "Il classico mimo bianco." },
+  { nome: "Burattini di Prati", disciplina: "burattini", attivita: "silenziosa", descrizione: "Teatrino dei burattini." },
+  { nome: "Gessetti di Ostiense", disciplina: "madonnaro", attivita: "silenziosa", descrizione: "Disegni a gessetto sul marciapiede." },
+  { nome: "Hula Hoop Roma", disciplina: "hula hoop", attivita: "silenziosa", descrizione: "Cerchi e coreografie." },
+  { nome: "Fachiro di Casilino", disciplina: "fachirismo", attivita: "silenziosa", descrizione: "Letto di chiodi e vetri." },
+  { nome: "Bolle di Villa Ada", disciplina: "bolle di sapone", attivita: "silenziosa", descrizione: "Bolle per i più piccoli." },
+  { nome: "Contorsionista Elettra", disciplina: "contorsionismo", attivita: "silenziosa", descrizione: "Flessibilità da circo." },
+  { nome: "Statua di Bronzo", disciplina: "statua vivente", attivita: "silenziosa", descrizione: "Un poeta di bronzo che saluta." },
+  { nome: "Poeta di Strada", disciplina: "poesia su richiesta", attivita: "silenziosa", descrizione: "Una poesia scritta per voi a macchina." },
+  { nome: "Ritratti di Marco", disciplina: "ritratti a matita", attivita: "figurativa", descrizione: "Ritratti dal vero." },
+  { nome: "Caricature Sole", disciplina: "caricature", attivita: "figurativa", descrizione: "Caricature colorate in dieci minuti." },
+  { nome: "Pastelli di Laura", disciplina: "pastelli", attivita: "figurativa", descrizione: "Vedute e ritratti a pastello." },
 ];
 
 // Luoghi ammessi per attivita', dal database (le stesse regole della verifica)
-const luoghi = new Map<Attivita, { id: number | null; nome: string; lon: number; lat: number }[]>();
+const luoghi = new Map<Attivita, { id: number | null; nome: string; lon: number; lat: number; mun?: number | null }[]>();
 // zone nel punto: un posto e' ammesso se nessuna zona lo vieta per quell'attivita' (anche i divieti da stampa)
 type Z = { esito: string; vale_per: string[] };
 const blocca = (zone: Z[], a: Attivita, postazione: boolean) =>
@@ -81,14 +116,14 @@ for (const p of postazioni.rows) {
   per.filter((a) => !blocca(p.zone, a, true)).forEach((a) => luoghi.set(a, [...(luoghi.get(a) ?? []), posto]));
 }
 // piazze pedonali dove nessuna zona lo vieta o lo limita
-const piazze = await db.query<{ nome: string; lon: number; lat: number; esiti: string[] }>(
-  `SELECT c.nome, ST_X(ST_PointOnSurface(c.geom)) AS lon, ST_Y(ST_PointOnSurface(c.geom)) AS lat,
+const piazze = await db.query<{ nome: string; lon: number; lat: number; esiti: string[]; mun: number | null }>(
+  `SELECT c.nome, c.municipio AS mun, ST_X(ST_PointOnSurface(c.geom)) AS lon, ST_Y(ST_PointOnSurface(c.geom)) AS lat,
           ARRAY(SELECT z.esito FROM artisti.zone z WHERE ST_Intersects(z.geom, ST_PointOnSurface(c.geom))) AS esiti
    FROM artisti.contesto c WHERE c.layer = 'piazze_pedonali' AND c.nome IS NOT NULL`,
 );
 for (const p of piazze.rows) {
   if (p.esiti.some((e) => ["no", "solo_postazioni", "solo_silenzio", "info"].includes(e))) continue;
-  const posto = { id: null, nome: p.nome, lon: p.lon, lat: p.lat };
+  const posto = { id: null, nome: p.nome, lon: p.lon, lat: p.lat, mun: p.mun };
   const per: Attivita[] = p.esiti.includes("condizioni") ? ["silenziosa"] : ["musica", "silenziosa"];
   per.forEach((a) => luoghi.set(a, [...(luoghi.get(a) ?? []), posto]));
 }
@@ -132,7 +167,11 @@ try {
       for (const [da, a2] of fasce(giorno, a.attivita).sort(() => caso() - 0.5).slice(0, quante)) {
         // piu' spesso nelle postazioni e aree ufficiali, dove i cittadini cercano gli artisti
         const ufficiali = posti.filter((x) => x.id != null);
-        const posto = ufficiali.length && caso() < 0.6 ? uno(ufficiali) : uno(posti);
+        // prima il Municipio a caso, poi una piazza dentro: artisti in tutta Roma, non solo in centro
+        const perMun = posti.filter((x) => x.id == null && x.mun);
+        const municipi = [...new Set(perMun.map((x) => x.mun))];
+        const scelto = municipi.length ? uno(municipi) : null;
+        const posto = ufficiali.length && caso() < 0.3 ? uno(ufficiali) : scelto ? uno(perMun.filter((x) => x.mun === scelto)) : uno(posti);
         const durata = uno([60, 90, 120]);
         const inizioMin = da * 60 + Math.floor(caso() * Math.max(1, ((a2 - da) * 60 - durata) / 30)) * 30;
         const chiave = `${posto.nome}|${da}`;
