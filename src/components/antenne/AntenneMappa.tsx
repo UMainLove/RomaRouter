@@ -32,7 +32,9 @@ type Contesto = {
 };
 type Impianto = { osm: string; tipo: "traliccio" | "palo" | "antenna"; mobile: boolean; operatore: string | null; altezza_m: number | null; nome: string | null };
 type FImpianto = { geometry: { coordinates: [number, number] }; properties: Impianto };
-type Sel = { tipo: "antenna"; a: Istanza } | { tipo: "impianto"; f: FImpianto } | { tipo: "radar"; lon: number; lat: number; etichetta: string | null; c: Contesto | null } | null;
+type Sito = { id: number; o: string; t: string; n: number; p: number | null; a: string | null };
+type FSito = { type: "Feature"; geometry: { type: "Point"; coordinates: [number, number] }; properties: Sito };
+type Sel = { tipo: "antenna"; a: Istanza } | { tipo: "impianto"; f: FImpianto } | { tipo: "sito"; f: FSito } | { tipo: "radar"; lon: number; lat: number; etichetta: string | null; c: Contesto | null } | null;
 
 const COL: Record<Tipo, string> = { nuova: "#E4572E", potenziamento: "#E89B1A", modifica: "#3366CC" };
 const NOME: Record<Tipo, string> = { nuova: "Nuova antenna", potenziamento: "Potenziamento", modifica: "Modifica di un impianto" };
@@ -40,6 +42,7 @@ const PLURALE: Record<Tipo, string> = { nuova: "Nuove", potenziamento: "Potenzia
 const TAGLIA: Record<Taglia, string> = { macro: "Stazione radio base", piccola: "Piccola antenna" };
 const CONDIVISO = "#251D1C";
 const ESISTENTE = "#3F4A5C";
+const IN_FUNZIONE = "#0F7C80";
 const ANELLI = [100, 250, 500];
 const CATEGORIE: Record<string, string> = {
   scuola: "Scuola", asilo_nido: "Asilo nido", ospedale: "Ospedale", casa_di_cura: "Casa di cura", rsa: "RSA",
@@ -67,6 +70,7 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
   const [istanze, setIstanze] = useState<Istanza[]>([]);
   const [impianti, setImpianti] = useState<FImpianto[]>([]);
   const [esistenti, setEsistenti] = useState(true);
+  const [siti, setSiti] = useState<FSito[]>([]);
   const [tipi, setTipi] = useState<Record<Tipo, boolean>>({ nuova: true, potenziamento: true, modifica: true });
   const [anno, setAnno] = useState<string | null>(null);
   const [operatore, setOperatore] = useState<string>("");
@@ -90,8 +94,9 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
   const operatori = useMemo(() => {
     const o: Record<string, number> = {};
     istanze.forEach((a) => a.properties.gestori.forEach((g) => (o[g] = (o[g] ?? 0) + 1)));
+    siti.forEach((f) => f.properties.o.split("|").forEach((g) => g && g !== "Altro" && (o[g] = (o[g] ?? 0) + 1)));
     return Object.entries(o).sort((a, b) => b[1] - a[1]);
-  }, [istanze]);
+  }, [istanze, siti]);
 
   // ------------------------------------------------------------------ 2. il radar
   const radar = useCallback(async (lon: number, lat: number, etichetta: string | null, volaLi: boolean) => {
@@ -156,6 +161,7 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
         "osm-traliccio": spilla(ESISTENTE, GLIFI.traliccio, 24),
         "osm-palo": spilla(ESISTENTE, GLIFI.traliccio, 22),
         "osm-antenna": spilla(ESISTENTE, GLIFI.cella, 20),
+        sito: spilla(IN_FUNZIONE, GLIFI.cella, 22),
       };
       (Object.keys(COL) as Tipo[]).forEach((t) => {
         icone[`ant-macro-${t}`] = spilla(COL[t], GLIFI.traliccio, 32);
@@ -166,6 +172,48 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
       caricaIcone(map, icone);
       const vuoto = { type: "FeatureCollection" as const, features: [] };
       ["rr-ant", "rr-radar", "rr-sens", "rr-osm"].forEach((s) => map.addSource(s, { type: "geojson", data: vuoto }));
+      // antenne in funzione (siti stimati dalle misure dei telefoni): a grappoli finche' sono tante
+      map.addSource("rr-siti", { type: "geojson", data: vuoto, cluster: true, clusterRadius: 44, clusterMaxZoom: 14 });
+      map.addLayer({
+        id: "rr-siti-c",
+        type: "circle",
+        source: "rr-siti",
+        filter: ["has", "point_count"],
+        paint: {
+          "circle-color": IN_FUNZIONE,
+          "circle-opacity": 0.88,
+          "circle-radius": ["step", ["get", "point_count"], 13, 20, 17, 100, 22, 400, 28],
+          "circle-stroke-color": "#fff",
+          "circle-stroke-width": 2,
+        },
+      });
+      map.addLayer({
+        id: "rr-siti-cn",
+        type: "symbol",
+        source: "rr-siti",
+        filter: ["has", "point_count"],
+        layout: { "text-field": ["get", "point_count_abbreviated"], "text-font": ["Noto Sans Bold"], "text-size": 12, "text-allow-overlap": true },
+        paint: { "text-color": "#fff" },
+      });
+      map.addLayer({
+        id: "rr-siti",
+        type: "symbol",
+        source: "rr-siti",
+        filter: ["!", ["has", "point_count"]],
+        layout: {
+          "icon-image": "sito",
+          "icon-size": ["interpolate", ["linear"], ["zoom"], 12, 0.6, 15, 0.85, 17, 1],
+          "icon-allow-overlap": true,
+          "text-field": ["step", ["zoom"], "", 16.5, ["get", "o"]],
+          "text-font": ["Noto Sans Bold"],
+          "text-size": 11,
+          "text-offset": [0, 1.4],
+          "text-anchor": "top",
+          "text-optional": true,
+        },
+        paint: { "text-color": IN_FUNZIONE, "text-halo-color": "#fff", "text-halo-width": 1.6 },
+      });
+
       // impianti esistenti (OpenStreetMap): sotto le richieste, grigio ardesia
       map.addLayer({
         id: "rr-osm",
@@ -227,6 +275,10 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
         .then((r) => r.json())
         .then((fc: { features: Istanza[] }) => setIstanze(fc.features))
         .catch(() => setErrore("Le antenne non si sono caricate. Riprova tra poco."));
+      fetch("/api/antenne/siti")
+        .then((r) => r.json())
+        .then((fc: { features: FSito[] }) => setSiti(fc.features))
+        .catch(() => {});
       fetch("/api/antenne/impianti")
         .then((r) => r.json())
         .then((fc: { features: FImpianto[] }) => {
@@ -262,7 +314,21 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
       };
 
       map.on("click", (e) => {
+        const g = map.queryRenderedFeatures(e.point, { layers: ["rr-siti-c"] })[0];
+        if (g) {
+          const src = map.getSource("rr-siti") as GeoJSONSource;
+          Promise.resolve(src.getClusterExpansionZoom(Number(g.properties.cluster_id)))
+            .then((z) => map.easeTo({ center: (g.geometry as unknown as { coordinates: [number, number] }).coordinates, zoom: Math.min(Number(z) + 0.3, 17), duration: 500 }))
+            .catch(() => {});
+          return;
+        }
         const f = map.queryRenderedFeatures(e.point, { layers: ["rr-ant"] })[0];
+        const st = f ? null : map.queryRenderedFeatures(e.point, { layers: ["rr-siti"] })[0];
+        if (st) {
+          const coord = (st.geometry as unknown as { coordinates: [number, number] }).coordinates;
+          if (!window.matchMedia("(min-width: 1024px)").matches) vola(map, coord[1], coord[0], map.getZoom());
+          return void setSel({ tipo: "sito", f: { type: "Feature", geometry: { type: "Point", coordinates: coord }, properties: st.properties as unknown as Sito } });
+        }
         const o = f ? null : map.queryRenderedFeatures(e.point, { layers: ["rr-osm"] })[0];
         if (o) {
           const coord = (o.geometry as unknown as { coordinates: [number, number] }).coordinates;
@@ -276,7 +342,7 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
         if (f) return void setSel({ tipo: "antenna", a: { id: Number(f.properties.id), geometry: { coordinates: (f.geometry as unknown as { coordinates: [number, number] }).coordinates }, properties: JSON.parse(String(f.properties.json)) } });
         radar(e.lngLat.lng, e.lngLat.lat, null, false);
       });
-      ["rr-ant", "rr-osm"].forEach((l) => {
+      ["rr-ant", "rr-osm", "rr-siti", "rr-siti-c"].forEach((l) => {
         map.on("mouseenter", l, () => (map.getCanvas().style.cursor = "pointer"));
         map.on("mouseleave", l, () => (map.getCanvas().style.cursor = ""));
       });
@@ -319,8 +385,17 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
 
   useEffect(() => {
     const k = m.current;
-    if (k && pronto) k.map.setLayoutProperty("rr-osm", "visibility", esistenti ? "visible" : "none");
+    if (!k || !pronto) return;
+    ["rr-osm", "rr-siti", "rr-siti-c", "rr-siti-cn"].forEach((l) => k.map.setLayoutProperty(l, "visibility", esistenti ? "visible" : "none"));
   }, [esistenti, pronto]);
+
+  // antenne in funzione: i grappoli si rifanno sui siti dell'operatore scelto
+  useEffect(() => {
+    const k = m.current;
+    if (!k || !pronto) return;
+    const features = operatore ? siti.filter((f) => f.properties.o.split("|").includes(operatore)) : siti;
+    (k.map.getSource("rr-siti") as GeoJSONSource).setData({ type: "FeatureCollection", features } as never);
+  }, [siti, operatore, pronto]);
 
   useEffect(() => {
     const k = m.current;
@@ -382,15 +457,15 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
                 type="button"
                 aria-pressed={on}
                 onClick={() => setTipi((x) => ({ ...x, [t]: !x[t] }))}
-                className={`flex items-center gap-1.5 rounded-[12px] px-1.5 py-1.5 text-left transition sm:gap-2 sm:px-2 ${on ? "" : "opacity-45 grayscale hover:opacity-70"}`}
+                className={`grid grid-cols-[auto_1fr] items-center gap-x-1.5 gap-y-0.5 rounded-[12px] px-2 py-1.5 text-left transition ${on ? "" : "opacity-45 grayscale hover:opacity-70"}`}
                 style={on ? { background: `${COL[t]}12` } : undefined}
               >
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full sm:size-8" style={{ background: COL[t], boxShadow: on ? `0 3px 10px ${COL[t]}55` : undefined }}>
-                  <svg viewBox="0 0 24 24" className="size-[17px]" fill="none" stroke="#fff" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: GLIFI.traliccio }} />
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-full" style={{ background: COL[t], boxShadow: on ? `0 3px 10px ${COL[t]}55` : undefined }}>
+                  <svg viewBox="0 0 24 24" className="size-[14px]" fill="none" stroke="#fff" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: GLIFI.traliccio }} />
                 </span>
-                <span className="min-w-0 leading-tight">
-                  <span className="block text-[17px] font-extrabold text-ink tabular-nums">{conteggi[t]}</span>
-                  <span className="block truncate text-[11px] font-bold text-muted sm:text-[11.5px]">{PLURALE[t]}</span>
+                <span className="contents">
+                  <span className="block text-[16px] leading-5 font-extrabold text-ink tabular-nums">{conteggi[t]}</span>
+                  <span className="col-span-2 block text-[11px] leading-tight font-bold text-muted sm:text-[11.5px]">{PLURALE[t]}</span>
                 </span>
               </button>
             );
@@ -399,15 +474,15 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
             type="button"
             aria-pressed={esistenti}
             onClick={() => setEsistenti((v) => !v)}
-            className={`flex items-center gap-1.5 rounded-[12px] px-1.5 py-1.5 text-left transition sm:gap-2 sm:px-2 ${esistenti ? "" : "opacity-45 grayscale hover:opacity-70"}`}
-            style={esistenti ? { background: `${ESISTENTE}12` } : undefined}
+            className={`grid grid-cols-[auto_1fr] items-center gap-x-1.5 gap-y-0.5 rounded-[12px] px-2 py-1.5 text-left transition ${esistenti ? "" : "opacity-45 grayscale hover:opacity-70"}`}
+            style={esistenti ? { background: `${IN_FUNZIONE}12` } : undefined}
           >
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-full sm:size-8" style={{ background: ESISTENTE }}>
-              <svg viewBox="0 0 24 24" className="size-[17px]" fill="none" stroke="#fff" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: GLIFI.traliccio }} />
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-full" style={{ background: IN_FUNZIONE }}>
+              <svg viewBox="0 0 24 24" className="size-[14px]" fill="none" stroke="#fff" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: GLIFI.cella }} />
             </span>
-            <span className="min-w-0 leading-tight">
-              <span className="block text-[17px] font-extrabold text-ink tabular-nums">{impianti.length}</span>
-              <span className="block truncate text-[11px] font-bold text-muted sm:text-[11.5px]">Esistenti</span>
+            <span className="contents">
+              <span className="block text-[16px] leading-5 font-extrabold text-ink tabular-nums">{(siti.length + impianti.length).toLocaleString("it-IT", { useGrouping: "always" } as Intl.NumberFormatOptions)}</span>
+              <span className="col-span-2 block text-[11px] leading-tight font-bold text-muted sm:text-[11.5px]">In funzione</span>
             </span>
           </button>
         </div>
@@ -450,12 +525,14 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
     );
   } else if (sel?.tipo === "antenna") {
     scheda = <SchedaAntenna a={sel.a} onChiudi={chiudi} onRadar={() => radar(sel.a.geometry.coordinates[0], sel.a.geometry.coordinates[1], sel.a.properties.indirizzo, true)} />;
+  } else if (sel?.tipo === "sito") {
+    scheda = <SchedaSito f={sel.f} onChiudi={chiudi} onRadar={() => radar(sel.f.geometry.coordinates[0], sel.f.geometry.coordinates[1], null, true)} onGuida={() => setGuidaAperta(true)} />;
   } else if (sel?.tipo === "impianto") {
     scheda = <SchedaImpianto f={sel.f} onChiudi={chiudi} onRadar={() => radar(sel.f.geometry.coordinates[0], sel.f.geometry.coordinates[1], sel.f.properties.nome, true)} />;
   } else if (sel?.tipo === "radar") {
-    scheda = <SchedaRadar {...sel} istanze={istanze} impianti={impianti} onChiudi={chiudi} onAntenna={(a) => apriAntenna(a, true)} onGuida={() => setGuidaAperta(true)} />;
+    scheda = <SchedaRadar {...sel} istanze={istanze} impianti={impianti} siti={siti} onChiudi={chiudi} onAntenna={(a) => apriAntenna(a, true)} onGuida={() => setGuidaAperta(true)} />;
   } else {
-    scheda = <Panoramica istanze={istanze} esistenti={impianti.length} anno={anno} onAnno={setAnno} conteggi={conteggi} />;
+    scheda = <Panoramica istanze={istanze} esistenti={impianti.length + siti.length} anno={anno} onAnno={setAnno} conteggi={conteggi} />;
   }
 
   return (
@@ -508,6 +585,39 @@ function SchedaAntenna({ a, onChiudi, onRadar }: { a: Istanza; onChiudi: () => v
   );
 }
 
+function SchedaSito({ f, onChiudi, onRadar, onGuida }: { f: FSito; onChiudi: () => void; onRadar: () => void; onGuida: () => void }) {
+  const p = f.properties;
+  const operatori = p.o.split("|").filter((x) => x && x !== "Altro");
+  const tecnologie = p.t.split(" ").filter(Boolean);
+  return (
+    <Scheda icona={<Tondo colore={IN_FUNZIONE} glifo={GLIFI.cella} />} sopra="Antenna in funzione · rilevata dai telefoni" titolo={operatori.join(" + ") || "Operatore non riconosciuto"} onChiudi={onChiudi}>
+      <div className="rounded-[16px] px-3.5 py-3" style={{ background: `${IN_FUNZIONE}12` }}>
+        <p className="text-[19px] leading-6 font-extrabold tracking-[-.01em]" style={{ color: IN_FUNZIONE }}>
+          {tecnologie.join(" · ") || "Rete mobile"}
+        </p>
+        <p className="mt-0.5 truncate text-[13px] font-semibold text-ink-soft">
+          {operatori.length > 1 ? "Sito condiviso · " : ""}posizione stimata{p.p ? ` (±${Math.max(30, p.p)} m)` : ""} · OpenCelliD
+        </p>
+      </div>
+      <div className="mt-2.5">
+        <Fatti
+          voci={[
+            { l: "Operatori", v: String(Math.max(1, operatori.length)), nota: operatori.length > 1 ? "sullo stesso sito" : (operatori[0] ?? "—") },
+            { l: "Celle radio", v: String(p.n), nota: "trasmettitori" },
+            { l: "Rilevata", v: p.a ? new Date(`${p.a}-01`).toLocaleDateString("it-IT", { month: "short", year: "numeric" }) : "—", nota: "ultima misura" },
+          ]}
+        />
+      </div>
+      <Azioni>
+        <Azione primaria onClick={onRadar}>
+          Cosa c&apos;è intorno
+        </Azione>
+        <Azione onClick={onGuida}>Da dove viene</Azione>
+      </Azioni>
+    </Scheda>
+  );
+}
+
 function SchedaImpianto({ f, onChiudi, onRadar }: { f: FImpianto; onChiudi: () => void; onRadar: () => void }) {
   const p = f.properties;
   const tipo = p.tipo === "traliccio" ? "Traliccio" : p.tipo === "palo" ? "Palo" : "Antenna";
@@ -538,9 +648,13 @@ function SchedaImpianto({ f, onChiudi, onRadar }: { f: FImpianto; onChiudi: () =
   );
 }
 
-function SchedaRadar({ lon, lat, etichetta, c, istanze, impianti, onChiudi, onAntenna, onGuida }: { lon: number; lat: number; etichetta: string | null; c: Contesto | null; istanze: Istanza[]; impianti: FImpianto[]; onChiudi: () => void; onAntenna: (a: Istanza) => void; onGuida: () => void }) {
+function SchedaRadar({ lon, lat, etichetta, c, istanze, impianti, siti, onChiudi, onAntenna, onGuida }: { lon: number; lat: number; etichetta: string | null; c: Contesto | null; istanze: Istanza[]; impianti: FImpianto[]; siti: FSito[]; onChiudi: () => void; onAntenna: (a: Istanza) => void; onGuida: () => void }) {
   const vicine = istanze.map((a) => ({ a, d: distanza([lon, lat], a.geometry.coordinates) })).sort((x, y) => x.d - y.d);
-  const esist = impianti.map((f) => ({ f, d: distanza([lon, lat], f.geometry.coordinates) })).sort((x, y) => x.d - y.d);
+  // in funzione: impianti OSM e siti stimati insieme
+  const esist = [
+    ...impianti.map((f) => ({ f: { properties: { operatore: f.properties.operatore } }, d: distanza([lon, lat], f.geometry.coordinates) })),
+    ...siti.map((f) => ({ f: { properties: { operatore: f.properties.o.split("|").filter((x) => x !== "Altro").join(", ") || null } }, d: distanza([lon, lat], f.geometry.coordinates) })),
+  ].sort((x, y) => x.d - y.d);
   const prima = vicine[0];
   const primoEsist = esist[0];
   const esistPiuVicino = !!primoEsist && (!prima || primoEsist.d < prima.d);
@@ -551,14 +665,14 @@ function SchedaRadar({ lon, lat, etichetta, c, istanze, impianti, onChiudi, onAn
   return (
     <Scheda icona={<Tondo colore="#251D1C" glifo={GLIFI.cella} />} sopra={c?.quartiere ? `${c.quartiere.nome}${c.municipio ? ` · ${c.municipio.nome}` : ""}` : "Raggio di 500 m"} titolo={etichetta ? maiuscola(etichetta) : "Punto scelto sulla mappa"} onChiudi={onChiudi}>
       <div className="flex items-center gap-3 rounded-[16px] bg-bg-sink px-3.5 py-3">
-        <p className="shrink-0 text-[34px] leading-none font-extrabold tracking-[-.03em] tabular-nums" style={{ color: esistPiuVicino ? ESISTENTE : prima && prima.d <= 500 ? COL[t] : "#251D1C" }}>
+        <p className="shrink-0 text-[34px] leading-none font-extrabold tracking-[-.03em] tabular-nums" style={{ color: esistPiuVicino ? IN_FUNZIONE : prima && prima.d <= 500 ? COL[t] : "#251D1C" }}>
           {esistPiuVicino ? metri(primoEsist.d) : prima ? metri(prima.d) : "—"}
         </p>
         {esistPiuVicino ? (
           <span className="min-w-0">
-            <span className="block text-[13px] font-bold text-ink">l&apos;impianto più vicino</span>
+            <span className="block text-[13px] font-bold text-ink">l&apos;antenna in funzione più vicina</span>
             <span className="block truncate text-[12.5px] font-semibold text-ink-soft">
-              {primoEsist.f.properties.operatore ?? "operatore non indicato"} · esistente{prima ? ` · richiesta a ${metri(prima.d)}` : ""}
+              {primoEsist.f.properties.operatore ?? "operatore non indicato"} · in funzione{prima ? ` · richiesta a ${metri(prima.d)}` : ""}
             </span>
           </span>
         ) : (
@@ -569,7 +683,7 @@ function SchedaRadar({ lon, lat, etichetta, c, istanze, impianti, onChiudi, onAn
         )}
       </div>
       <div className="mt-2.5">
-        <Fatti voci={ANELLI.map((r, i) => ({ l: `Entro ${r} m`, v: String(per[i]), nota: perE[i] ? `${perE[i]} ${perE[i] === 1 ? "esistente" : "esistenti"}` : per[i] === 1 ? "richiesta" : "richieste" }))} />
+        <Fatti voci={ANELLI.map((r, i) => ({ l: `Entro ${r} m`, v: String(per[i]), nota: perE[i] ? `${perE[i]} in funzione` : per[i] === 1 ? "richiesta" : "richieste" }))} />
       </div>
       <p className="mt-2.5 truncate text-[13px] text-ink-soft">
         {s ? (
@@ -623,7 +737,7 @@ function Panoramica({ istanze, esistenti, anno, onAnno, conteggi }: { istanze: I
     <div className="pointer-events-auto rounded-[20px] bg-panel/95 px-4 py-3.5 shadow-[0_6px_24px_rgba(37,29,28,.16)] ring-1 ring-black/5 backdrop-blur">
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-[14px] font-bold text-ink">
-          {istanze.length || "…"} richieste <span className="font-semibold text-muted">· {esistenti || "…"} impianti esistenti</span>
+          {esistenti ? esistenti.toLocaleString("it-IT", { useGrouping: "always" } as Intl.NumberFormatOptions) : "…"} antenne in funzione <span className="font-semibold text-muted">· {istanze.length || "…"} richieste</span>
         </p>
         <p className="shrink-0 text-[12px] text-muted">tocca: radar 500 m</p>
       </div>
@@ -667,6 +781,9 @@ function Panoramica({ istanze, esistenti, anno, onAnno, conteggi }: { istanze: I
           </div>
         </div>
       )}
+      <p className="mt-2 text-[11px] leading-snug text-muted">
+        In funzione: celle rilevate dai telefoni © OpenCelliD (CC BY-SA 4.0) e impianti © OpenStreetMap. Richieste: Roma Capitale.
+      </p>
       <p className="sr-only">
         {(Object.keys(COL) as Tipo[]).map((t) => `${PLURALE[t]}: ${conteggi[t]}`).join(", ")}
       </p>

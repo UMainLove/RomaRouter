@@ -282,7 +282,7 @@ async function Fonti() {
     "SELECT id, titolo, ente, url, formato, licenza, ufficiale, n_record, scaricato_il FROM antenne.fonti WHERE id <> 'normativa_cem' ORDER BY ufficiale DESC, ente, titolo",
   );
   const lacune = [
-    "Non esiste un catasto pubblico degli impianti attivi: ARPA Lazio (NirWeb, dal 2026) e il Ministero lo tengono riservato. In mappa ci sono le richieste pubblicate, non tutti i 3.538 impianti.",
+    "Non esiste un catasto pubblico degli impianti attivi: ARPA Lazio (NirWeb, dal 2026) e il Ministero lo tengono riservato. Le antenne «in funzione» in mappa (circa 3.100, contro i 3.538 impianti contati da ARPA) sono ricostruite dalle celle radio misurate dai telefoni (OpenCelliD, CC BY-SA 4.0) e da OpenStreetMap: posizioni stimate, spesso a poche decine di metri da quella vera.",
     "L'elenco ufficiale dei siti sensibili (Allegato A della DAC 78/2024) non è pubblicato in formato aperto: lo ricostruiamo dai layer del Comune e da OpenStreetMap.",
     "Le misure di ARPA sui singoli impianti non sono pubbliche; i report della centralina di via Boncompagni sono solo grafici e fermi a giugno 2022.",
     "Le coordinate pubblicate dal Comune hanno formati misti e alcuni errori: ogni correzione è dichiarata, e dove mancano usiamo lo stradario ufficiale.",

@@ -48,3 +48,15 @@ Studio e scelte di progetto (14/11/2026), dopo la critica alla prima versione «
 - Struttura: icona e titolo, la risposta in una riga grande e colorata, tre caselle di fatti, una o due azioni.
 - Liste lunghe: al massimo tre righe; il resto è un numero e un'azione.
 - Regole, contatti, fonti ed elenco completo stanno nella «Guida» (pagina con schede, si apre dalla barra).
+
+## Antenne in funzione: da dove vengono (novembre 2026)
+
+Il catasto ufficiale degli impianti (ARPA Lazio ne conta 3.538 a Roma) non e' pubblico. La mappa mostra:
+
+| Livello | Fonte | Quanti a Roma | Note |
+| --- | --- | --- | --- |
+| Antenne in funzione | OpenCelliD, copia completa di maggio 2024 su archive.org (CC BY-SA 4.0, senza registrazione) | 74.735 celle → **3.131 siti** | celle 4G raggruppate per stazione (eNodeB), 3G/2G agganciate entro 150 m, siti di operatori diversi entro 35 m uniti; escluse le celle senza misure dal 2018. Posizioni stimate (2.281 siti entro ±50 m) |
+| Impianti esistenti | OpenStreetMap | 317 | tralicci, pali e antenne censiti dai volontari |
+| Richieste | Roma Capitale | 192 | nuove antenne e modifiche pubblicate |
+
+Rifare: `node --env-file=.env.local scripts/antenne/celle.mts data/raw/antenne/celle/roma_celle.csv "OpenCelliD maggio 2024 (CC BY-SA 4.0)"` (il CSV si ricava dal file di archive.org, che sta in `data/raw/`, fuori da git). Scartati: CellMapper, nPerf, OpenSignal e lteitaly.it, perche' le loro condizioni vietano copia e riuso. Il 5G non c'e' ancora nei dati aperti.
