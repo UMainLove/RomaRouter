@@ -81,6 +81,619 @@
 }
 
 /*
+ * Home «Il miglio d'oro» (src/app/page.tsx). Telefono: linea verticale con le diramazioni;
+ * da 64rem: diagramma con le strade in SVG e i capolinea sopra. Le strade si disegnano
+ * all'arrivo e, al passaggio o col Tab su un capolinea, la sua strada si accende e "scorre";
+ * con la riduzione del movimento tutto resta fermo e visibile.
+ */
+@layer components {
+  .mg {
+    background: radial-gradient(ellipse at 50% 56%, #fff 0, var(--color-bg) 62%);
+  }
+  .mg-occhiello {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    text-transform: uppercase;
+    color: var(--color-amaranto);
+  }
+  .mg-occhiello::before,
+  .mg-occhiello::after {
+    content: "";
+    display: none;
+    width: 28px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--color-oro);
+  }
+
+  .mg-diagramma {
+    position: relative;
+    width: 100%;
+    max-width: 560px;
+    margin: 28px auto 0;
+  }
+  .mg-mappa {
+    display: none;
+  }
+
+  /* ---- telefono: dal miliario scende una linea, ogni ambito è una diramazione ---- */
+  .mg-miliario-telefono {
+    position: relative;
+    display: block;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--color-amaranto);
+  }
+  .mg-miliario-telefono::after {
+    content: "";
+    position: absolute;
+    inset: 13px;
+    border-radius: 50%;
+    background: var(--color-oro);
+  }
+  .mg-stazioni {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .mg-stazioni::after {
+    content: "";
+    display: block;
+    height: 28px;
+    margin-left: 18px;
+    border-left: 4px dashed var(--color-campo);
+  }
+  .mg-stazione {
+    position: relative;
+    padding-left: 64px;
+  }
+  .mg-stazione::before {
+    content: "";
+    position: absolute;
+    left: 18px;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--color-line);
+  }
+  .mg-stazione::after {
+    content: "";
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    width: 48px;
+    height: 8px;
+    margin-top: -4px;
+    border-radius: 0 4px 4px 0;
+    background: var(--mg-colore);
+  }
+  .mg-link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 84px;
+    padding: 10px 12px 10px 0;
+    border-radius: 16px;
+    animation: mg-compare 0.5s ease-out calc(var(--mg-ritardo, 0ms) + 650ms) both;
+  }
+  .mg-segno-box {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+  }
+  .mg-segno {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    color: #fff;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(37, 29, 28, 0.25);
+    transition: transform 0.2s;
+  }
+  .mg-testo {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .mg-nome {
+    font-size: 20px;
+    line-height: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .mg-breve {
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--color-ink-soft);
+  }
+  .mg-vai {
+    display: none;
+  }
+  .mg-link:is(:hover, :focus-visible) .mg-segno {
+    transform: scale(1.12);
+  }
+
+  .mg-altro {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 640px;
+    min-height: 64px;
+    margin-top: 4px;
+    padding: 8px 8px 8px 20px;
+    border: 1.5px solid var(--color-campo);
+    border-radius: 999px;
+    background: var(--color-panel);
+    box-shadow: 0 6px 20px rgba(37, 29, 28, 0.06);
+    transition: border-color 0.2s;
+  }
+  .mg-altro:hover {
+    border-color: var(--color-ink);
+  }
+
+  /* ---- il diagramma (SVG decorativo, aria-hidden) ---- */
+  .mg-anello {
+    fill: none;
+    stroke: var(--color-line);
+    stroke-width: 1.5;
+    stroke-dasharray: 2 7;
+  }
+  .mg-strada {
+    fill: none;
+    stroke-width: 12;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: mg-disegna 1s cubic-bezier(0.3, 0.7, 0.2, 1) var(--mg-ritardo, 0ms) forwards;
+    transition:
+      opacity 0.25s,
+      stroke-width 0.25s;
+  }
+  .mg-strada-altro {
+    stroke: var(--color-campo);
+    stroke-width: 4;
+    stroke-dasharray: 4 12;
+    stroke-dashoffset: 0;
+    animation: mg-compare 0.6s ease-out 0.5s both;
+  }
+  .mg-flusso {
+    fill: none;
+    stroke: #fff;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-dasharray: 0.012 0.032;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .mg-piazza {
+    fill: #fff;
+    stroke: var(--color-line);
+    stroke-width: 1.5;
+  }
+  .mg-miliario-alone {
+    fill: none;
+    stroke: color-mix(in oklab, var(--color-amaranto) 22%, transparent);
+    stroke-width: 2;
+  }
+  .mg-iscrizione {
+    font: 700 10.5px var(--font-sans);
+    letter-spacing: 0.3em;
+    fill: var(--color-muted);
+  }
+
+  /* la strada del capolinea scelto si accende, le altre si spengono */
+  .mg:has(.mg-link:is(:hover, :focus-visible)) .mg-strada:not(.mg-strada-altro),
+  .mg:has(.mg-altro:is(:hover, :focus-visible)) .mg-strada:not(.mg-strada-altro) {
+    opacity: 0.22;
+  }
+  .mg:has(.mg-link[data-ambito="oggetti"]:is(:hover, :focus-visible)) .mg-strada[data-ambito="oggetti"],
+  .mg:has(.mg-link[data-ambito="sport"]:is(:hover, :focus-visible)) .mg-strada[data-ambito="sport"],
+  .mg:has(.mg-link[data-ambito="antenne"]:is(:hover, :focus-visible)) .mg-strada[data-ambito="antenne"],
+  .mg:has(.mg-link[data-ambito="arte"]:is(:hover, :focus-visible)) .mg-strada[data-ambito="arte"] {
+    opacity: 1;
+    stroke-width: 16;
+  }
+  .mg:has(.mg-link[data-ambito="oggetti"]:is(:hover, :focus-visible)) .mg-flusso[data-ambito="oggetti"],
+  .mg:has(.mg-link[data-ambito="sport"]:is(:hover, :focus-visible)) .mg-flusso[data-ambito="sport"],
+  .mg:has(.mg-link[data-ambito="antenne"]:is(:hover, :focus-visible)) .mg-flusso[data-ambito="antenne"],
+  .mg:has(.mg-link[data-ambito="arte"]:is(:hover, :focus-visible)) .mg-flusso[data-ambito="arte"] {
+    opacity: 0.95;
+    animation: mg-scorre 1.1s linear infinite;
+  }
+  .mg:has(.mg-altro:is(:hover, :focus-visible)) .mg-strada-altro {
+    stroke: var(--color-ink);
+  }
+
+  @media (min-width: 64rem) {
+    .mg-diagramma {
+      width: min(100%, max(880px, calc((100dvh - 360px) * 2.1429)));
+      max-width: none;
+      aspect-ratio: 1200 / 560;
+      margin-top: 4px;
+    }
+    .mg-mappa {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+    .mg-miliario-telefono,
+    .mg-stazioni::after,
+    .mg-stazione::before,
+    .mg-stazione::after {
+      display: none;
+    }
+    .mg-stazioni {
+      position: absolute;
+      inset: 0;
+    }
+    .mg-stazione {
+      position: absolute;
+      left: var(--x);
+      top: var(--y);
+      width: 0;
+      height: 0;
+      padding: 0;
+    }
+    /* il segno cade esattamente sul capolinea (10px di margine + metà dei 44px = 32px),
+       il testo sta sotto */
+    .mg-link {
+      position: absolute;
+      top: -32px;
+      width: 340px;
+      min-height: 0;
+      padding: 10px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .mg-sx .mg-link {
+      left: -32px;
+    }
+    .mg-dx .mg-link {
+      right: -32px;
+      align-items: flex-end;
+      text-align: right;
+    }
+    .mg-dx .mg-testo {
+      align-items: flex-end;
+    }
+    .mg-segno {
+      width: 44px;
+      height: 44px;
+    }
+    .mg-nome {
+      font-size: 30px;
+      line-height: 34px;
+      letter-spacing: -0.02em;
+    }
+    .mg-breve {
+      max-width: 290px;
+      font-size: 15px;
+      line-height: 21px;
+    }
+    .mg-vai {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--color-amaranto);
+      opacity: 0;
+      translate: -6px 0;
+      transition:
+        opacity 0.2s,
+        translate 0.2s;
+    }
+    .mg-dx .mg-vai {
+      translate: 6px 0;
+    }
+    .mg-link:is(:hover, :focus-visible) .mg-vai {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
+
+  @media (min-width: 40rem) {
+    .mg-occhiello {
+      font-size: 13px;
+      letter-spacing: 0.1em;
+    }
+    .mg-occhiello::before,
+    .mg-occhiello::after {
+      display: block;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mg-strada {
+      stroke-dashoffset: 0;
+      animation: none;
+    }
+    .mg-strada-altro,
+    .mg-link {
+      animation: none;
+    }
+    .mg .mg-flusso {
+      animation: none !important;
+    }
+    .mg-segno,
+    .mg-vai {
+      transition: none;
+    }
+  }
+}
+
+/* Portatili bassi (es. 1280×720): titolo più compatto, così la barra resta in vista.
+   Fuori dai layer perché deve vincere sulle utility di Tailwind della pagina. */
+@media (min-width: 64rem) and (max-height: 800px) {
+  .mg {
+    padding-top: 16px;
+  }
+  .mg-titolo {
+    font-size: 44px;
+    line-height: 48px;
+  }
+  .mg-sottotitolo {
+    display: none;
+  }
+  .mg-diagramma {
+    width: min(100%, max(880px, calc((100dvh - 250px) * 2.1429)));
+  }
+}
+
+@keyframes mg-disegna {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes mg-compare {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+@keyframes mg-scorre {
+  to {
+    stroke-dashoffset: -0.044;
+  }
+}
+
+/* ── Copertina (prima visita) ──────────────────────────────────────────────────────────────
+   Il Colosseo al tramonto, fermo, poi la lupa di bronzo (un video); si apre a cerchio dal Miliarium. La decide uno script nel
+   <head> (data-copertina su <html>) prima del primo disegno; senza JavaScript non compare.
+   Fuori dai layer: nessuna utility deve poterla scavalcare. */
+@property --copertina-raggio {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+.copertina,
+.copertina-salta {
+  display: none;
+}
+html[data-copertina] {
+  overflow: hidden;
+}
+/* la home resta ferma al primo fotogramma finché la copertina non si apre */
+html[data-copertina] .mg *,
+html[data-copertina] .mg *::before,
+html[data-copertina] .mg *::after {
+  animation-play-state: paused !important;
+}
+html[data-copertina] .copertina,
+.copertina[data-fase="uscita"] {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  overflow: hidden;
+  background-color: #3a2a20;
+  background-image: url("/copertina/poster.webp");
+  background-size: cover;
+  background-position: var(--fetta-iniziale, 30%) 50%;
+  background-repeat: no-repeat;
+  color: #f7f0e4;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+.copertina-scena,
+.copertina-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.copertina-scena {
+  opacity: 1;
+}
+/* come il poster (background-size: cover); sugli schermi stretti la fetta segue la lupa
+   (object-position aggiornato a ogni fotogramma da Copertina.tsx) */
+.copertina-video {
+  object-fit: cover;
+  object-position: var(--fetta-iniziale, 30%) 50%;
+}
+.copertina[data-pronta] .copertina-video {
+  opacity: 1;
+}
+/* velo scuro in basso: il testo chiaro resta leggibile anche sopra la strada e gli archi */
+.copertina-velo {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 46%;
+  background: linear-gradient(to top, rgb(24 16 11 / 0.66), rgb(24 16 11 / 0));
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+.copertina-marchio {
+  position: absolute;
+  top: clamp(18px, 3.2vh, 32px);
+  right: clamp(20px, 4vw, 56px);
+  margin: 0;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+/* crediti: piccoli, in basso a sinistra (sul telefono in alto, accanto al marchio); restano per tutta la copertina */
+.copertina-crediti {
+  position: absolute;
+  left: clamp(16px, 4vw, 56px);
+  bottom: clamp(16px, 4vh, 40px);
+  max-width: min(46ch, calc(100% - 260px));
+  margin: 0;
+  font-size: 10.5px;
+  line-height: 14px;
+  color: rgb(247 240 228 / 0.62);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.45);
+}
+@media (max-width: 479px) {
+  .copertina-crediti {
+    top: clamp(18px, 3.2vh, 32px);
+    bottom: auto;
+    max-width: calc(100% - 150px);
+  }
+}
+.copertina-testo {
+  position: absolute;
+  right: clamp(20px, 4vw, 56px);
+  bottom: clamp(84px, 14vh, 150px);
+  margin: 0;
+  text-align: right;
+  transition:
+    opacity 0.5s ease,
+    translate 0.5s ease;
+}
+.copertina-testo p {
+  margin: 0;
+}
+.copertina-luogo {
+  font-size: 11.5px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(247 240 228 / 0.8);
+}
+.copertina-contatore {
+  font-size: clamp(72px, 11vw, 152px);
+  line-height: 0.92;
+  font-weight: 200;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums;
+}
+.copertina-motto {
+  font-size: 15px;
+  line-height: 22px;
+  color: rgb(247 240 228 / 0.8);
+}
+/* quando parte la lupa il testo lascia la scena */
+.copertina[data-corsa] .copertina-testo,
+.copertina[data-corsa] .copertina-velo {
+  opacity: 0;
+  translate: 0 10px;
+}
+html[data-copertina] .copertina-salta {
+  display: inline-flex;
+  align-items: center;
+  position: fixed;
+  z-index: 81;
+  right: clamp(16px, 4vw, 56px);
+  bottom: clamp(16px, 4vh, 40px);
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgb(247 240 228 / 0.28);
+  border-radius: 999px;
+  background: rgb(24 16 11 / 0.42);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #f7f0e4;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+html[data-copertina] .copertina-salta:hover {
+  background: rgb(24 16 11 / 0.62);
+}
+html[data-copertina] .copertina-salta:focus-visible {
+  outline: 2px solid #f7f0e4;
+  outline-offset: 3px;
+}
+
+/* l'apertura: un cerchio dal Miliarium, con il bordo sfumato su 30vmax (opacità dinamica) */
+.copertina[data-fase="uscita"] {
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(
+    circle at var(--cx, 50%) var(--cy, 42%),
+    transparent var(--copertina-raggio),
+    #000 calc(var(--copertina-raggio) + 30vmax)
+  );
+  mask-image: radial-gradient(
+    circle at var(--cx, 50%) var(--cy, 42%),
+    transparent var(--copertina-raggio),
+    #000 calc(var(--copertina-raggio) + 30vmax)
+  );
+  animation: copertina-apri 0.95s cubic-bezier(0.55, 0, 0.2, 1) forwards;
+}
+.copertina[data-uscita="breve"] {
+  animation-duration: 0.6s;
+}
+.copertina[data-fase="uscita"] .copertina-video {
+  scale: 1.06;
+  transition:
+    scale 0.95s cubic-bezier(0.55, 0, 0.2, 1),
+    opacity 0.3s ease;
+}
+@keyframes copertina-apri {
+  from {
+    --copertina-raggio: -30vmax;
+  }
+  to {
+    --copertina-raggio: 160vmax;
+  }
+}
+@keyframes copertina-sfuma {
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .copertina[data-fase="uscita"] {
+    -webkit-mask-image: none;
+    mask-image: none;
+    animation: copertina-sfuma 0.45s ease forwards;
+  }
+  .copertina-video,
+  .copertina-testo,
+  .copertina-velo {
+    transition: none;
+  }
+}
+
+/*
  * Compatibilità per la sezione antenne (mappa e pagina con i dati veri, src/components/antenne).
  * Quei componenti usano i nomi surface / accent / focus: qui li mappiamo sulla palette RomaRouter,
  * con l'accento sul blu dell'ambito "antenne". Valori letterali per non dipendere dai token emessi.

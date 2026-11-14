@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Header } from "@/components/Header";
+import { SCRIPT_AVVIO } from "@/components/copertina/costanti";
 import "./globals.css";
 
 // Montserrat variabile (100–900), latino, licenza SIL OFL 1.1 (fonts/OFL-Montserrat.txt).
@@ -34,7 +35,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="it" className={`${montserrat.variable} ${titillium.variable} h-full antialiased`}>
+    // suppressHydrationWarning: lo script della copertina aggiunge data-copertina prima di React
+    <html lang="it" className={`${montserrat.variable} ${titillium.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_AVVIO }} />
+      </head>
       {/* schermo singolo: la testata in alto, sotto la pagina che riempie lo spazio. Le sezioni con la mappa non
           scorrono mai; le pagine di testo (home, operatori) scorrono solo dentro il loro spazio. */}
       <body className="flex h-dvh flex-col overflow-hidden bg-bg font-sans text-ink">
