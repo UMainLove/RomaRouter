@@ -90,3 +90,4 @@ export async function datiGuida(): Promise<DatiGuida> {
     return { tariffe: t.tariffe, fonti: FONTI_STATICHE, ...riassumi(fc.features) };
   }
 }
+

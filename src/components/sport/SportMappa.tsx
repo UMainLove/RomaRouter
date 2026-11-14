@@ -28,6 +28,23 @@ type Tariffa = { gruppo: string | null; voce: string; euro: number; unita: strin
 type Sel = { tipo: "luogo"; f: FLuogo } | { tipo: "vicino"; lon: number; lat: number; etichetta: string | null } | null;
 
 const ANELLI = [500, 1000, 2000];
+/** Il colore di un campo visto dall'alto: terra rossa, erba, cemento blu, tartan, acqua... */
+const COLORE_CAMPO = [
+  "match", ["get", "d"],
+  "tennis", ["case", ["in", ["coalesce", ["get", "f"], ""], ["literal", ["clay", "ground", "dirt", "compacted", "unpaved"]]], "#D2703A", ["==", ["coalesce", ["get", "f"], ""], "grass"], "#5DA34F", "#3C7DC4"],
+  "padel", "#2C8FB5",
+  ["calcio", "calcetto", "calcio_a_7", "rugby", "hockey", "baseball", "golf"], ["case", ["in", ["coalesce", ["get", "f"], ""], ["literal", ["ground", "dirt", "sand", "compacted", "unpaved"]]], "#B59A62", "#3E9E5B"],
+  "basket", ["case", ["in", ["coalesce", ["get", "f"], ""], ["literal", ["grass", "artificial_turf"]]], "#3E9E5B", "#E0913C"],
+  ["pallavolo", "pallamano"], "#E2B23F",
+  "beach_volley", "#E6CB8C",
+  ["nuoto", "acquagym", "pallanuoto"], "#2FB0E6",
+  ["atletica", "corsa"], "#C4553F",
+  "bocce", "#CDB38A",
+  "skate", "#9AA4AE",
+  "equitazione", "#BFA06A",
+  "multi", "#7F8FA3",
+  "#9B8CC9",
+];
 const ROMANI = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV"];
 const ACCESSI = Object.keys(ACCESSO) as Accesso[];
 const fmt = (n: number) => n.toLocaleString("it-IT", { useGrouping: "always" } as Intl.NumberFormatOptions);
@@ -161,6 +178,26 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
       const colore = ["match", ["get", "a"], "libero", ACCESSO.libero.c, "comunale", ACCESSO.comunale.c, "scuola", ACCESSO.scuola.c, ACCESSO.club.c] as never;
       map.addLayer({ id: "rr-anelli-f", type: "fill", source: "rr-anelli", filter: ["==", ["geometry-type"], "Polygon"], paint: { "fill-color": "#251D1C", "fill-opacity": ["match", ["get", "i"], 0, 0.07, 1, 0.045, 0.03] } }, sotto);
       map.addLayer({ id: "rr-anelli-l", type: "line", source: "rr-anelli", filter: ["==", ["geometry-type"], "Polygon"], paint: { "line-color": "#251D1C", "line-width": 1.4, "line-opacity": 0.55, "line-dasharray": [3, 3] } }, sotto);
+      // da vicino: il perimetro degli impianti (tinta leggera del colore dell'accesso) e i campi veri,
+      // colorati come il loro fondo, con il bordo bianco e una seconda riga dentro che ricorda le linee del campo
+      map.addSource("rr-campi", { type: "geojson", data: vuoto });
+      map.addLayer({ id: "rr-aree-f", type: "fill", source: "rr-campi", minzoom: 13.5, filter: ["==", ["get", "k"], "a"], paint: { "fill-color": colore, "fill-opacity": ["interpolate", ["linear"], ["zoom"], 13.5, 0, 14.5, 0.09, 17, 0.07] } }, sotto);
+      map.addLayer({ id: "rr-aree-l", type: "line", source: "rr-campi", minzoom: 13.5, filter: ["==", ["get", "k"], "a"], paint: { "line-color": colore, "line-width": ["interpolate", ["linear"], ["zoom"], 13.5, 0.8, 17, 2], "line-opacity": ["interpolate", ["linear"], ["zoom"], 13.5, 0, 14.5, 0.55], "line-dasharray": [2.5, 1.5] } }, sotto);
+      map.addLayer({ id: "rr-campi-f", type: "fill", source: "rr-campi", minzoom: 13.8, filter: ["==", ["get", "k"], "c"], paint: { "fill-color": COLORE_CAMPO as never, "fill-opacity": ["interpolate", ["linear"], ["zoom"], 13.8, 0, 14.8, 0.82, 17, 0.9] } }, sotto);
+      map.addLayer({ id: "rr-campi-l", type: "line", source: "rr-campi", minzoom: 13.8, filter: ["==", ["get", "k"], "c"], paint: { "line-color": "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 14, 0.6, 16, 1.6, 18, 3], "line-opacity": ["interpolate", ["linear"], ["zoom"], 13.8, 0, 14.8, 0.95] } }, sotto);
+      map.addLayer({ id: "rr-campi-segni", type: "line", source: "rr-campi", minzoom: 16, filter: ["==", ["get", "k"], "c"], paint: { "line-color": "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 16, 0.6, 18, 1.4], "line-offset": ["interpolate", ["linear"], ["zoom"], 16, -2, 18, -6], "line-opacity": 0.6 } }, sotto);
+      // i campi si scaricano solo quando servono (da vicino)
+      let campi = false;
+      const caricaCampi = () => {
+        if (campi || map.getZoom() < 13.3) return;
+        campi = true;
+        caricaDati<{ type: "FeatureCollection"; features: unknown[] }>("/api/sport/campi", "/dati/sport/campi.json", (d) => !!d.features?.length)
+          .then((fc) => (map.getSource("rr-campi") as GeoJSONSource).setData(fc as never))
+          .catch(() => (campi = false));
+      };
+      map.on("moveend", caricaCampi);
+      caricaCampi();
+
       // tutti i luoghi come puntini (si vede subito dove sono, anche a migliaia), e sopra le spille:
       // da lontano solo quelle che non si sovrappongono (prima comunali e gratis, poi le piu' grandi),
       // da vicino tutte. La spilla scelta si ingrandisce.
@@ -202,6 +239,15 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
         },
         paint: { "text-color": "#251D1C", "text-halo-color": "#fff", "text-halo-width": 1.6 },
       });
+      // l'onda sotto la spilla scelta (animata) e la spilla sotto il mouse, un po' piu' grande
+      map.addLayer({ id: "rr-alone", type: "circle", source: "rr-luoghi", filter: ["==", ["get", "id"], -1], paint: { "circle-color": colore, "circle-radius": 8, "circle-opacity": 0.4, "circle-stroke-color": colore, "circle-stroke-width": 1.5, "circle-stroke-opacity": 0.6 } }, "rr-luoghi");
+      map.addLayer({
+        id: "rr-luoghi-su",
+        type: "symbol",
+        source: "rr-luoghi",
+        filter: ["==", ["get", "id"], -1],
+        layout: { ...spille, "icon-size": ["interpolate", ["linear"], ["zoom"], 10, 0.92, 14, 1.06, 18, 1.2], "icon-allow-overlap": true, "icon-ignore-placement": true },
+      });
       map.addLayer({
         id: "rr-luoghi-sel",
         type: "symbol",
@@ -227,7 +273,14 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
 
       map.on("click", (e) => {
         const box: [[number, number], [number, number]] = [[e.point.x - 7, e.point.y - 7], [e.point.x + 7, e.point.y + 7]];
-        const f = map.queryRenderedFeatures(e.point, { layers: ["rr-luoghi-sel", "rr-luoghi"] })[0] ?? map.queryRenderedFeatures(box, { layers: ["rr-luoghi", "rr-luoghi-c"] })[0];
+        const f =
+          map.queryRenderedFeatures(e.point, { layers: ["rr-luoghi-sel", "rr-luoghi-su", "rr-luoghi"] })[0] ??
+          map.queryRenderedFeatures(box, { layers: ["rr-luoghi", "rr-luoghi-c"] })[0];
+        const campo = f ? null : map.queryRenderedFeatures(e.point, { layers: ["rr-campi-f", "rr-aree-f"] })[0];
+        if (campo) {
+          const l = tutti.current.find((x) => x.id === Number(campo.properties.l));
+          if (l) return void apri(l, false);
+        }
         if (f) {
           const l = tutti.current.find((x) => x.id === Number(f.properties.id));
           if (l) {
@@ -237,7 +290,18 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
         }
         vicino(e.lngLat.lng, e.lngLat.lat, null, false);
       });
-      ["rr-luoghi", "rr-luoghi-c"].forEach((l) => {
+      let sopra: number | null = null;
+      map.on("mousemove", "rr-luoghi", (e) => {
+        const id = Number(e.features?.[0]?.properties.id ?? -1);
+        if (id === sopra) return;
+        sopra = id;
+        map.setFilter("rr-luoghi-su", ["==", ["get", "id"], id]);
+      });
+      map.on("mouseleave", "rr-luoghi", () => {
+        sopra = null;
+        map.setFilter("rr-luoghi-su", ["==", ["get", "id"], -1]);
+      });
+      ["rr-luoghi", "rr-luoghi-c", "rr-campi-f"].forEach((l) => {
         map.on("mouseenter", l, () => (map.getCanvas().style.cursor = "pointer"));
         map.on("mouseleave", l, () => (map.getCanvas().style.cursor = ""));
       });
@@ -271,7 +335,22 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
 
   useEffect(() => {
     const k = m.current;
-    if (k?.map.getLayer("rr-luoghi-sel")) k.map.setFilter("rr-luoghi-sel", ["==", ["get", "id"], sel?.tipo === "luogo" ? sel.f.id : -1]);
+    if (!k?.map.getLayer("rr-luoghi-sel")) return;
+    const id = sel?.tipo === "luogo" ? sel.f.id : -1;
+    k.map.setFilter("rr-luoghi-sel", ["==", ["get", "id"], id]);
+    k.map.setFilter("rr-alone", ["==", ["get", "id"], id]);
+    if (id < 0 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let raf = 0;
+    const t0 = performance.now();
+    const onda = (t: number) => {
+      const f = ((t - t0) % 1600) / 1600;
+      k.map.setPaintProperty("rr-alone", "circle-radius", 6 + f * 26);
+      k.map.setPaintProperty("rr-alone", "circle-opacity", 0.38 * (1 - f));
+      k.map.setPaintProperty("rr-alone", "circle-stroke-opacity", 0.7 * (1 - f));
+      raf = requestAnimationFrame(onda);
+    };
+    raf = requestAnimationFrame(onda);
+    return () => cancelAnimationFrame(raf);
   }, [sel]);
 
   // "Mappa" nell'elenco della Guida: si torna sulla mappa sul luogo
