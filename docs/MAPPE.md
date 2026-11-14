@@ -99,3 +99,25 @@ basterà inviare lo stesso `.eml`). «Ricomincia la demo» rimette tutto in coda
 API: `/api/artisti/pass` (GET, POST, DELETE), `/api/artisti/prenota`, `/api/operatori/arte` (GET, DELETE),
 `/api/operatori/arte/invia`, `/api/operatori/arte/invii/<id>` (.eml). Da fare prima di andare dal vero:
 SPID vero, accesso riservato all'area operatori, invio PEC e ricevute.
+
+## Rosso e verde rifatti con l'art. 2 (novembre 2026)
+
+Critica: «troppe poche zone davvero non utilizzabili». Era vero: il rosso mostrava solo i divieti deliberati
+dai Municipi (sono davvero pochi: 10 vie e piazze del Municipio I più i divieti di suono del 2018) e il verde
+copriva ogni esagono attraversato da una via, anche in campagna o lungo una superstrada. Mancavano le regole
+generali dell'art. 2 DAC 24/2012, che valgono ovunque. Ora (dati OpenStreetMap, `scripts/artisti/vincoli_osm.mts`):
+
+| Regola (art. 2) | Come si disegna | Quante |
+| --- | --- | --- |
+| Niente musica nelle vie larghe meno di 5 m | larghezza da facciata a facciata misurata ogni 8 m sugli edifici OSM della città storica (es. via dei Cappellari 4,3 m, via del Corso 10,4 m) | 196 vie |
+| Niente musica a ridosso dei beni artistici e culturali | monumenti, rovine, porte, mura, archi, obelischi, fontane storiche, musei: area + 10 m o 15 m attorno al punto | 1.723 |
+| Niente musica vicino a ospedali e luoghi di culto | da «attenzione» (giallo) a «solo silenzio» | 93 + 810 |
+| Niente musica vicino alle scuole in attività | vale solo nei giorni feriali dalle 8 alle 17, da settembre a giugno | 2.676 |
+| Non ostacolare la circolazione | superstrade e autostrade (motorway, trunk) non contano come spazio pedonale | 2.599 tratti |
+| Nessuno spazio pedonale | campagna coltivata, boschi e prati fuori dai parchi, cimiteri, aree militari, ferrovie, aeroporti, cave, discariche, cantieri | 15.133 aree |
+
+Per chi suona (o fa il fuoco) «solo silenzio» ora è rosso: vuol dire «qui non puoi». Copertura: adatta
+488 km² (prima 623), parco 20 km² (i parchi valgono anche dove li attraversa un viale), non adatta 781 km²
+(prima 657). Rifare: `node --env-file=.env.local scripts/artisti/vincoli_osm.mts [--scarica]`, poi
+`npm run artisti:esporta`. Limiti: larghezze stimate solo nella città storica; i beni culturali sono quelli
+mappati su OpenStreetMap (non il vincolo della Soprintendenza).

@@ -49,6 +49,13 @@ export interface Motivo {
 // fasce orarie in comune con la mappa (lib/orari-arte.ts)
 export { fasciaArt6 };
 
+function scuolaInAttivita(quando: Date) {
+  const p = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Rome", weekday: "short", month: "numeric", hour: "numeric", hourCycle: "h23" }).formatToParts(quando);
+  const v = (t: string) => p.find((x) => x.type === t)?.value ?? "";
+  const ora = Number(v("hour")), mese = Number(v("month"));
+  return !["Sat", "Sun"].includes(v("weekday")) && mese !== 7 && mese !== 8 && ora >= 8 && ora < 17;
+}
+
 export async function verificaLuogo(lat: number, lon: number, attivita: Attivita, quando?: Date) {
   const P = "ST_SetSRID(ST_MakePoint($1, $2), 4326)";
   const [zone, municipio, postazioni, esibizioni, contatti, pubblico, copertura] = await Promise.all([
@@ -79,7 +86,11 @@ export async function verificaLuogo(lat: number, lon: number, attivita: Attivita
   const classe = copertura.rows[0]?.classe ?? "adatta";
 
   const tocca = (z: Zona) => z.vale_per.length === 0 || z.vale_per.includes(attivita);
-  const pertinenti = zone.rows.filter(tocca);
+  // scuole: niente musica solo mentre sono in attivita' (art. 2), cioe' giorni feriali 8-17 da settembre a giugno
+  const scuolaAperta = scuolaInAttivita(quando ?? new Date());
+  const pertinenti = zone.rows
+    .filter(tocca)
+    .map((z) => (z.categoria === "scuola" && z.esito === "condizioni" && scuolaAperta ? { ...z, esito: "solo_silenzio" } : z));
   const motivo = (z: Zona): Motivo => ({
     testo: z.motivo + (z.condizione ? ` (${z.condizione})` : ""), luogo: z.nome, riferimento: z.riferimento, fonte_url: z.fonte_url,
     ufficiale: z.ufficiale, verifica: z.verifica, approssimata: z.approssimata,

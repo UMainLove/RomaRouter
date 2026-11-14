@@ -303,6 +303,9 @@ try {
   await regoleEBenchmark();
   const { rows } = await db.query<{ n: number }>("SELECT artisti.ricalcola_zone() AS n");
   log(`zone calcolate: ${rows[0].n}`);
+  // regole generali dell'art. 2 (vie strette, ospedali, chiese, beni culturali): dati di scripts/artisti/vincoli_osm.mts
+  const art2 = await db.query<{ n: number }>("SELECT artisti.ricalcola_vincoli_art2() AS n");
+  log(`zone art. 2: ${art2.rows[0].n}`);
   await db.query("COMMIT");
   log("import completato");
 } catch (err) {

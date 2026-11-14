@@ -355,7 +355,7 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
         let s: string | null = null;
         if (e === "area_dedicata" && (v.length === 0 ? !dedicate : v.includes(attivita))) s = "dedicata";
         else if (!dedicate && vale && e === "no") s = "no";
-        else if (!dedicate && vale && e === "solo_silenzio") s = "limitato";
+        else if (!dedicate && vale && e === "solo_silenzio") s = "no";
         else if (!dedicate && e === "solo_postazioni") s = attivita === "fuoco" ? "no" : "palchi";
         return s ? { ...f, properties: { ...f.properties, s } } : null;
       })
@@ -661,8 +661,7 @@ function Legenda({ modo, attivita }: { modo: Modo; attivita: AttivitaArte }) {
         : [
             { c: COL.si, t: "Si può" },
             { c: COL.nonAdatto, t: "Non adatto" },
-            { c: COL.no, t: "Vietato" },
-            { c: COL.limitato, t: "Solo silenzio" },
+            { c: COL.no, t: attivita === "silenziosa" ? "Vietato" : "Vietato per te" },
             { c: COL.palchi, t: "Solo sui palchi" },
             { c: COL.piazza, t: "Piazze libere", tondo: true },
           ];
@@ -678,7 +677,7 @@ function Legenda({ modo, attivita }: { modo: Modo; attivita: AttivitaArte }) {
           </li>
         ))}
       </ul>
-      {modo === "esibirmi" && !dedicate && <p className="mt-1.5 text-[12px] text-muted">Verde: strade e piazze dove valgono le regole generali (orari e preavviso). Rosa: campagna, ferrovie, autostrade.</p>}
+      {modo === "esibirmi" && !dedicate && <p className="mt-1.5 text-[12px] text-muted">{attivita === "musica" || attivita === "fuoco" ? "Rosso: divieti dei Municipi, vie sotto i 5 m, ospedali, chiese e monumenti (art. 2). " : "Rosso: divieti dei Municipi. "}Rosa: campagna, cimiteri, ferrovie, superstrade.</p>}
     </div>
   );
 }
@@ -689,7 +688,7 @@ const TITOLI: Record<string, (verbo: string) => string> = {
   si_condizioni: () => "Sì, con una condizione",
   solo_postazioni: () => "Solo sui palchi numerati",
   solo_area_dedicata: () => "Solo nelle aree dedicate",
-  solo_silenzio: () => "Qui solo esibizioni silenziose",
+  solo_silenzio: (v) => (v === "esibirti" ? "Qui solo esibizioni silenziose" : `No, qui non puoi ${v}`),
   probabilmente_no: () => "Meglio di no: divieto da verificare",
   no: () => "No, qui è vietato",
   non_adatto: () => "Qui non c'è spazio adatto",
@@ -702,7 +701,7 @@ const TONO: Record<string, { bg: string; fg: string }> = {
 
 function SchedaVerdetto({ v, attivita, clock, onChiudi, onAnnuncia, onPalco, onGuida }: { v: Risultato; attivita: AttivitaArte; clock: ReturnType<typeof orologio>; onChiudi: () => void; onAnnuncia: () => void; onPalco: () => void; onGuida: () => void }) {
   const a = att(attivita);
-  const t = TONO[v.esito.tono];
+  const t = TONO[v.esito.codice === "solo_silenzio" ? "errore" : v.esito.tono];
   const motivo = v.motivi[0] ?? (v.esito.codice === "si_condizioni" ? v.condizioni[0] : null);
   // il palco piu' vicino adatto a quello che fai (non l'area dei cartomanti per chi suona)
   const palco = v.postazioni_vicine.find((p) => PALCHI_PER[attivita].includes(p.tipo));

@@ -25,7 +25,7 @@ Allo stesso modo l'arte di strada:
 & "C:\Program Files\PostgreSQL\17\bin\pg_restore.exe" -U romarouter -h localhost -d rr_artisti_strada --no-owner --clean --if-exists data/seed/rr_artisti_strada.dump
 ```
 
-e poi `npm run db:migrate -- artisti-di-strada`.
+e poi `npm run db:migrate -- artisti-di-strada`. La copia comprende anche i dati OpenStreetMap delle regole generali (suolo, superstrade, beni culturali, edifici e vie della città storica, © OpenStreetMap contributors, ODbL), che si rifanno con `node --env-file=.env.local scripts/artisti/vincoli_osm.mts --scarica`.
 
 **Senza database anche la mappa dell'arte di strada funziona**: legge `public/dati/artisti/` (copertura di tutta Roma, zone, postazioni, piazze, esibizioni), aggiornate da `npm run artisti:esporta` con il sito avviato.
 
