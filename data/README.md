@@ -4,7 +4,8 @@ Dati già importati e puliti, così chi fa `git pull` non deve rilanciare gli im
 
 | Cartella | Contenuto |
 | --- | --- |
-| `seed/rr_antenne.dump` | Copia completa del database antenne: schemi `antenne` e `opendata` (formato `pg_dump -Fc`) |
+| `seed/rr_antenne.dump` | Copia completa del database antenne: schemi `antenne` e `opendata` (formato `pg_dump -Fc`), comprese le 74.735 celle radio e i 3.131 siti in funzione |
+| `seed/rr_artisti_strada.dump` | Copia completa del database dell'arte di strada: schema `artisti` (zone, postazioni, divieti con gli atti 2026, esibizioni dimostrative) |
 | `geojson/` | I layer della sezione antenne in GeoJSON (WGS84, lon/lat, RFC 7946), pronti per qualunque mappa |
 | `raw/` | Copie dei file scaricati dalle fonti. **Fuori da git**: si rigenerano con `npm run antenne:import` |
 
@@ -18,6 +19,16 @@ Prerequisito: il database `rr_antenne` creato da `db/init.sql` (vedi `docs/SETUP
 
 Poi `npm run db:migrate -- antenne` allinea la tabella delle migrazioni. La migrazione si può rieseguire senza danni sui dati già presenti.
 
+Allo stesso modo l'arte di strada:
+
+```powershell
+& "C:\Program Files\PostgreSQL\17\bin\pg_restore.exe" -U romarouter -h localhost -d rr_artisti_strada --no-owner --clean --if-exists data/seed/rr_artisti_strada.dump
+```
+
+e poi `npm run db:migrate -- artisti-di-strada`.
+
+**Senza database la mappa delle antenne funziona lo stesso**: se le API non rispondono legge le copie in `public/dati/antenne/` (richieste, antenne in funzione, impianti OpenStreetMap), aggiornate da `npm run antenne:esporta`.
+
 ## GeoJSON per la mappa
 
 | File | Elementi | Cosa sono |
@@ -26,6 +37,8 @@ Poi `npm run db:migrate -- antenne` allinea la tabella delle migrazioni. La migr
 | `geojson/antenne_siti_sensibili.geojson` | 2.519 | Scuole, asili nido, ospedali, RSA, carceri, parchi giochi (art. 4 DAC 78/2024). `ufficiale: false` indica che il dato viene da OpenStreetMap |
 | `geojson/antenne_aree_vincolate.geojson` | 37 | Sito UNESCO e aree naturali protette (poligoni semplificati) |
 | `geojson/antenne_monitoraggio.geojson` | 2 | Centraline ARPA Lazio di monitoraggio dei campi elettromagnetici |
+| `geojson/antenne_in_funzione.geojson` | 3.131 | Antenne in funzione ricostruite dalle celle radio misurate dai telefoni (OpenCelliD maggio 2024, **CC BY-SA 4.0**: citare «© OpenCelliD»). Proprietà corte: `o` operatori, `t` tecnologie, `n` celle, `p` precisione in metri, `a` ultima misura. Posizioni stimate |
+| `geojson/antenne_impianti_osm.geojson` | 317 | Tralicci, pali e antenne per telecomunicazioni censiti su OpenStreetMap (ODbL) |
 
 Per caricarli si può usare per esempio `fetch("/data/...")` dopo averli copiati in `public/`, oppure le API live `/api/antenne/*` (vedi `docs/ANTENNE.md`), che restituiscono gli stessi dati sempre aggiornati.
 

@@ -29,7 +29,17 @@ const LAYER: [string, string][] = [
   ["/api/antenne/siti-sensibili", "antenne_siti_sensibili.geojson"],
   ["/api/antenne/aree-vincolate", "antenne_aree_vincolate.geojson"],
   ["/api/antenne/monitoraggio", "antenne_monitoraggio.geojson"],
+  ["/api/antenne/siti", "antenne_in_funzione.geojson"],
+  ["/api/antenne/impianti", "antenne_impianti_osm.geojson"],
 ];
+// Copie lette dalla mappa quando il database non c'e' (progetto appena scaricato): public/dati/antenne
+const PER_LA_MAPPA: Record<string, string> = {
+  "antenne_istanze_srb.geojson": "richieste.json",
+  "antenne_in_funzione.geojson": "in-funzione.json",
+  "antenne_impianti_osm.geojson": "impianti-osm.json",
+};
+const pubblico = path.resolve(import.meta.dirname, "../../public/dati/antenne");
+await mkdir(pubblico, { recursive: true });
 await mkdir(path.join(radice, "geojson"), { recursive: true });
 for (const [api, file] of LAYER) {
   const res = await fetch(base + api);
@@ -37,5 +47,6 @@ for (const [api, file] of LAYER) {
   const { type, features } = (await res.json()) as { type: string; features: unknown[] };
   const name = file.replace(/^antenne_|\.geojson$/g, "");
   await writeFile(path.join(radice, "geojson", file), JSON.stringify({ type, name, features }) + "\n");
+  if (PER_LA_MAPPA[file]) await writeFile(path.join(pubblico, PER_LA_MAPPA[file]), JSON.stringify({ type, features }));
   console.log(`geojson/${file}: ${features.length} elementi`);
 }

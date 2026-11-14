@@ -50,10 +50,22 @@ const CATEGORIE: Record<string, string> = {
 };
 const ARPA = "https://www.arpalazio.it/en/servizi/faq";
 
+/** Dati della sezione: l'API legge il database; se il database non c'e' (progetto appena scaricato) si usano le copie in public/dati/antenne. */
+function caricaDati<T>(api: string, copia: string): Promise<T> {
+  return fetch(api)
+    .then((r) => (r.ok ? (r.json() as Promise<T>) : Promise.reject(new Error(String(r.status)))))
+    .then((d) => ((d as { features?: unknown[] }).features?.length ? d : Promise.reject(new Error("vuoto"))))
+    .catch(() => fetch(copia).then((r) => r.json() as Promise<T>));
+}
+
 const tipoDi = (t: string | null): Tipo => (t === "installazione" ? "nuova" : t === "incremento limiti emissivi" ? "potenziamento" : "modifica");
 const tagliaDi = (p: Props): Taglia => (/bassa potenza|ridotte dimensioni/i.test(p.regime ?? "") ? "piccola" : "macro");
 const metri = (m: number) => (m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1).replace(".", ",")} km`);
-const maiuscola = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+const maiuscola = (s: string) =>
+  s !== s.toUpperCase()
+    ? s
+    : s.toLowerCase().replace(/(^|[\s'(-])(\p{L})(\p{L}*)/gu, (m, sep: string, a: string, b: string) =>
+        /^(di|del|della|dei|delle|degli|dello|da|de|e|in|al|alla|ai|alle)$/.test(a + b) && sep ? sep + a + b : sep + a.toUpperCase() + b);
 function distanza(a: [number, number], b: [number, number]) {
   const k = Math.PI / 180, x = (b[0] - a[0]) * k * Math.cos(((a[1] + b[1]) / 2) * k), y = (b[1] - a[1]) * k;
   return Math.sqrt(x * x + y * y) * 6371000;
@@ -172,34 +184,27 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
       caricaIcone(map, icone);
       const vuoto = { type: "FeatureCollection" as const, features: [] };
       ["rr-ant", "rr-radar", "rr-sens", "rr-osm"].forEach((s) => map.addSource(s, { type: "geojson", data: vuoto }));
-      // antenne in funzione (siti stimati dalle misure dei telefoni): a grappoli finche' sono tante
-      map.addSource("rr-siti", { type: "geojson", data: vuoto, cluster: true, clusterRadius: 44, clusterMaxZoom: 14 });
+      // antenne in funzione (siti stimati dalle misure dei telefoni): tutte visibili, una per una.
+      // Da lontano un punto (migliaia di punti restano leggeri sulla GPU), da vicino l'icona.
+      map.addSource("rr-siti", { type: "geojson", data: vuoto });
       map.addLayer({
         id: "rr-siti-c",
         type: "circle",
         source: "rr-siti",
-        filter: ["has", "point_count"],
+        maxzoom: 14.5,
         paint: {
           "circle-color": IN_FUNZIONE,
-          "circle-opacity": 0.88,
-          "circle-radius": ["step", ["get", "point_count"], 13, 20, 17, 100, 22, 400, 28],
+          "circle-opacity": ["interpolate", ["linear"], ["zoom"], 10, 0.75, 14, 0.95],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 9.5, 1.6, 11, 2.4, 13, 3.6, 14.5, 5],
           "circle-stroke-color": "#fff",
-          "circle-stroke-width": 2,
+          "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 10, 0.3, 14, 1],
         },
-      });
-      map.addLayer({
-        id: "rr-siti-cn",
-        type: "symbol",
-        source: "rr-siti",
-        filter: ["has", "point_count"],
-        layout: { "text-field": ["get", "point_count_abbreviated"], "text-font": ["Noto Sans Bold"], "text-size": 12, "text-allow-overlap": true },
-        paint: { "text-color": "#fff" },
       });
       map.addLayer({
         id: "rr-siti",
         type: "symbol",
         source: "rr-siti",
-        filter: ["!", ["has", "point_count"]],
+        minzoom: 14.5,
         layout: {
           "icon-image": "sito",
           "icon-size": ["interpolate", ["linear"], ["zoom"], 12, 0.6, 15, 0.85, 17, 1],
@@ -271,17 +276,14 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
         paint: { "text-color": "#251D1C", "text-halo-color": "#F3EFE7", "text-halo-width": 2 },
       });
 
-      fetch("/api/antenne/istanze")
-        .then((r) => r.json())
-        .then((fc: { features: Istanza[] }) => setIstanze(fc.features))
+      caricaDati<{ features: Istanza[] }>("/api/antenne/istanze", "/dati/antenne/richieste.json")
+        .then((fc) => setIstanze(fc.features))
         .catch(() => setErrore("Le antenne non si sono caricate. Riprova tra poco."));
-      fetch("/api/antenne/siti")
-        .then((r) => r.json())
-        .then((fc: { features: FSito[] }) => setSiti(fc.features))
+      caricaDati<{ features: FSito[] }>("/api/antenne/siti", "/dati/antenne/in-funzione.json")
+        .then((fc) => setSiti(fc.features))
         .catch(() => {});
-      fetch("/api/antenne/impianti")
-        .then((r) => r.json())
-        .then((fc: { features: FImpianto[] }) => {
+      caricaDati<{ features: FImpianto[] }>("/api/antenne/impianti", "/dati/antenne/impianti-osm.json")
+        .then((fc) => {
           setImpianti(fc.features);
           (map.getSource("rr-osm") as GeoJSONSource).setData(fc as never);
         })
@@ -314,16 +316,10 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
       };
 
       map.on("click", (e) => {
-        const g = map.queryRenderedFeatures(e.point, { layers: ["rr-siti-c"] })[0];
-        if (g) {
-          const src = map.getSource("rr-siti") as GeoJSONSource;
-          Promise.resolve(src.getClusterExpansionZoom(Number(g.properties.cluster_id)))
-            .then((z) => map.easeTo({ center: (g.geometry as unknown as { coordinates: [number, number] }).coordinates, zoom: Math.min(Number(z) + 0.3, 17), duration: 500 }))
-            .catch(() => {});
-          return;
-        }
         const f = map.queryRenderedFeatures(e.point, { layers: ["rr-ant"] })[0];
-        const st = f ? null : map.queryRenderedFeatures(e.point, { layers: ["rr-siti"] })[0];
+        // i punti piccoli si toccano con un po' di margine
+        const vicino: [[number, number], [number, number]] = [[e.point.x - 6, e.point.y - 6], [e.point.x + 6, e.point.y + 6]];
+        const st = f ? null : map.queryRenderedFeatures(e.point, { layers: ["rr-siti"] })[0] ?? map.queryRenderedFeatures(vicino, { layers: ["rr-siti-c"] })[0];
         if (st) {
           const coord = (st.geometry as unknown as { coordinates: [number, number] }).coordinates;
           if (!window.matchMedia("(min-width: 1024px)").matches) vola(map, coord[1], coord[0], map.getZoom());
@@ -386,7 +382,7 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
   useEffect(() => {
     const k = m.current;
     if (!k || !pronto) return;
-    ["rr-osm", "rr-siti", "rr-siti-c", "rr-siti-cn"].forEach((l) => k.map.setLayoutProperty(l, "visibility", esistenti ? "visible" : "none"));
+    ["rr-osm", "rr-siti", "rr-siti-c"].forEach((l) => k.map.setLayoutProperty(l, "visibility", esistenti ? "visible" : "none"));
   }, [esistenti, pronto]);
 
   // antenne in funzione: i grappoli si rifanno sui siti dell'operatore scelto

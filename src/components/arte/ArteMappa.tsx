@@ -84,6 +84,7 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
   const [oraVera, setOraVera] = useState<Date | null>(null);
   const adesso = oraVera ?? PRIMA;
   const m = useRef<{ map: MapLibre; ml: ML } | null>(null);
+  const condGrezze = useRef<FZona[]>([]);
   const stato = useRef({ modo, attivita });
   useEffect(() => {
     stato.current = { modo, attivita };
@@ -262,6 +263,7 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
           .then((r) => r.json())
           .then((fc: { features: FZona[] }) => {
             if (k !== ultimo) return;
+            condGrezze.current = fc.features;
             const a = stato.current.attivita;
             const features = fc.features.filter((f) => f.properties.v.length === 0 || f.properties.v.includes(a));
             (map.getSource("rr-cond") as GeoJSONSource).setData({ type: "FeatureCollection", features } as never);
@@ -314,6 +316,8 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
       })
       .filter(Boolean);
     (k.map.getSource("rr-zone") as GeoJSONSource).setData({ type: "FeatureCollection", features } as never);
+    const cond = condGrezze.current.filter((f) => f.properties.v.length === 0 || f.properties.v.includes(attivita));
+    (k.map.getSource("rr-cond") as GeoJSONSource).setData({ type: "FeatureCollection", features: cond } as never);
     const guarda = modo === "guardare";
     k.map.setPaintProperty("rr-velo", "fill-opacity", dedicate && !guarda ? 0.2 : 0);
     k.map.setPaintProperty("rr-zone", "fill-opacity", guarda ? 0.05 : ["match", ["get", "s"], "no", 0.16, "dedicata", 0.3, 0.17]);
@@ -332,14 +336,17 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
       .filter((f) => modo === "guardare" || tipi.includes(f.properties.tipo))
       .map((f) => ({ ...f, properties: { ...f.properties, s: statoPalco(f).s, breve: breve(f.properties.nome) } }));
     (k.map.getSource("rr-palchi") as GeoJSONSource).setData({ type: "FeatureCollection", features: fp } as never);
-    const fa = (modo === "guardare" ? visibili : esib.filter((f) => inScena(f.properties))).map((f) => {
+    const restantiOggi = esib.filter((f) => ROMA(new Date(f.properties.inizio)) === oggi && new Date(f.properties.fine) > adesso);
+    const perChiSuona = restantiOggi.length ? restantiOggi : esib.filter((f) => ROMA(new Date(f.properties.inizio)) === domani);
+    const fa = (modo === "guardare" ? visibili : perChiSuona).map((f) => {
       const p = f.properties;
       const vivo = inScena(p);
-      return { ...f, properties: { ...p, ora: vivo, c: att(p.attivita).c, quando: vivo ? `in scena fino alle ${ora(p.fine)}` : ora(p.inizio) } };
+      const altroGiorno = ROMA(new Date(p.inizio)) !== oggi;
+      return { ...f, properties: { ...p, ora: vivo, c: att(p.attivita).c, quando: vivo ? `in scena fino alle ${ora(p.fine)}` : `${altroGiorno ? "domani " : ""}${ora(p.inizio)}` } };
     });
     (k.map.getSource("rr-artisti") as GeoJSONSource).setData({ type: "FeatureCollection", features: fa } as never);
     k.map.setLayoutProperty("rr-palchi", "icon-size", modo === "guardare" ? ["interpolate", ["linear"], ["zoom"], 11, 0.4, 16, 0.65] : ["interpolate", ["linear"], ["zoom"], 11, 0.55, 14, 0.8, 17, 1]);
-  }, [palchi, esib, visibili, modo, attivita, statoPalco, inScena, pronto]);
+  }, [palchi, esib, visibili, modo, attivita, statoPalco, inScena, pronto, oggi, domani, adesso]);
 
   // l'anello sul simbolo scelto (palco o artista)
   useEffect(() => {
@@ -570,6 +577,7 @@ function Legenda({ modo, attivita }: { modo: Modo; attivita: AttivitaArte }) {
             { c: COL.palchi, t: "Solo sui palchi" },
             { c: COL.libero, t: "Palco libero", tondo: true },
             { c: COL.occupato, t: "Occupato", tondo: true },
+            { c: COL.chiuso, t: "Chiuso ora", tondo: true },
           ];
   return (
     <div className="pointer-events-auto rounded-[20px] bg-panel/95 px-4 py-3 shadow-[0_6px_24px_rgba(37,29,28,.16)] ring-1 ring-black/5 backdrop-blur">
@@ -662,7 +670,13 @@ function SchedaVerdetto({ v, attivita, clock, onChiudi, onAnnuncia, onPalco, onG
     </Scheda>
   );
 }
-const titoloLuogo = (s?: string | null) => (s ? s.charAt(0) + s.slice(1).toLowerCase() : "Punto scelto sulla mappa").replace(/\b(via|piazza|largo|viale|vicolo|campo|ponte)\b/gi, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+const titoloLuogo = (s?: string | null) => {
+  if (!s) return "Punto scelto sulla mappa";
+  if (s !== s.toUpperCase()) return s;
+  // "PIAZZA DI S. MARIA" -> "Piazza di S. Maria": parole brevi minuscole, il resto con l'iniziale maiuscola
+  return s.toLowerCase().replace(/(^|[\s'(-])(\p{L})(\p{L}*)/gu, (m, sep: string, a: string, b: string) =>
+    /^(di|del|della|dei|delle|degli|dello|da|de|e|in|al|alla|ai|alle)$/.test(a + b) && sep ? sep + a + b : sep + a.toUpperCase() + b);
+};
 
 function SchedaPalco({ f, info, clock, adesso, onChiudi, onPrenota, onArtista }: { f: FPalco; info: { s: "libero" | "occupato" | "chiuso"; chi: FEsib | null; oggi: FEsib[] }; clock: ReturnType<typeof orologio>; adesso: Date; onChiudi: () => void; onPrenota: () => void; onArtista: (f: FEsib) => void }) {
   const p = f.properties;
