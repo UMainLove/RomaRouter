@@ -13,6 +13,16 @@ const montserrat = localFont({
   variable: "--font-montserrat",
   display: "swap",
 });
+// Titillium Web: il carattere dei siti della Pubblica Amministrazione italiana (Designers Italia), per il nome.
+// SIL OFL 1.1 (fonts/OFL-TitilliumWeb.txt), locale come Montserrat.
+const titillium = localFont({
+  src: [
+    { path: "./fonts/titillium-web-latin-600.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/titillium-web-latin-700.woff2", weight: "700", style: "normal" },
+  ],
+  variable: "--font-titillium",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -26,7 +36,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     // suppressHydrationWarning: lo script della copertina aggiunge data-copertina prima di React
-    <html lang="it" className={`${montserrat.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang="it" className={`${montserrat.variable} ${titillium.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: SCRIPT_AVVIO }} />
       </head>
