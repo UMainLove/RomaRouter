@@ -47,12 +47,12 @@ export function SceltaChip({
 }) {
   const attivo = Boolean(valore);
   return (
-    <label className={`${baseChip} ${attivo ? ATTIVO : SPENTO}`}>
+    <label className={`${baseChip} max-w-full ${attivo ? ATTIVO : SPENTO}`}>
       <span className="sr-only">{etichetta}</span>
       <select
         value={valore}
         onChange={(e) => onChange(e.target.value)}
-        className="min-h-11 cursor-pointer appearance-none rounded-full bg-transparent py-0 pr-9 pl-3.5 outline-none"
+        className="min-h-11 w-full max-w-full cursor-pointer appearance-none truncate rounded-full bg-transparent py-0 pr-9 pl-3.5 outline-none"
       >
         <option value="">{vuoto}</option>
         {opzioni.map((o) => (
