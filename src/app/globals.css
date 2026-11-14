@@ -720,3 +720,88 @@ html[data-copertina] .copertina-salta:focus-visible {
   --color-accent-2: var(--accent-2);
   --color-focus: var(--focus);
 }
+
+/* ── Il Colosseo al centro della home ──────────────────────────────────────────────────────
+   Travertino, ombre calde e oro. Le strade arrivano in ~1,3 s: poi gli archi si accendono uno
+   dopo l'altro, l'arena si illumina e una luce di tramonto gira piano sull'anello. Passando su un
+   ambito, l'arena prende il suo colore. Fuori dai layer: deve vincere sulle regole del diagramma. */
+.mg-col-centro { fill: var(--color-oro); }
+.mg-col-ombra { fill: #3a2a1c; opacity: 0.1; }
+.mg-col-base { fill: #ECE1CB; stroke: #B79A63; stroke-width: 1.6; }
+.mg-col-cunei { stroke: #D3C09A; stroke-width: 0.9; fill: none; }
+.mg-col-anello { fill: none; stroke: #CDB68A; stroke-width: 1.1; }
+.mg-col-podio { fill: #E3D4B6; stroke: #B79A63; stroke-width: 1.6; }
+.mg-col-muro-sud { fill: none; stroke: #C2A570; stroke-width: 3.4; stroke-linecap: round; }
+.mg-col-archi-fondo { fill: none; stroke: #A9894F; stroke-width: 7.5; stroke-linecap: round; }
+.mg-col-archi {
+  fill: none; stroke: #F1E3C2; stroke-width: 4.2; stroke-linecap: butt;
+  stroke-dasharray: 0.58 0.42;
+  opacity: 0;
+  animation: mg-col-compare 0.9s ease-out 1.15s forwards;
+}
+.mg-col-arena { fill: #D9C49B; stroke: none; }
+.mg-col-sotterranei { fill: none; stroke: #B5955C; stroke-width: 1.1; }
+.mg-col-pavimento { fill: #C9A774; opacity: 0.85; }
+.mg-col-arena-bordo { fill: none; stroke: #9F7F45; stroke-width: 1.8; }
+.mg-col-arena-luce {
+  fill: var(--color-oro);
+  opacity: 0;
+  transition: fill 0.35s;
+  animation: mg-col-accende 1.6s ease-out 1.25s forwards, mg-col-respira 4.8s ease-in-out 2.9s infinite;
+}
+.mg-col-luce {
+  fill: none; stroke: #FFF4D6; stroke-width: 4.4; stroke-linecap: round;
+  stroke-dasharray: 9 91; stroke-dashoffset: 0;
+  opacity: 0;
+  animation: mg-col-compare 0.8s ease-out 1.9s forwards, mg-col-gira 14s linear 1.9s infinite;
+}
+/* le strade: dopo che sono arrivate, una corrente leggera continua a scorrere verso Roma */
+.mg .mg-flusso {
+  opacity: 0.55;
+  animation: mg-scorre 1.6s linear 1.3s infinite;
+}
+/* passando su un ambito l'arena prende il suo colore */
+.mg:has(.mg-link[data-ambito="oggetti"]:is(:hover, :focus-visible)) .mg-col-arena-luce { fill: var(--color-oggetti); }
+.mg:has(.mg-link[data-ambito="sport"]:is(:hover, :focus-visible)) .mg-col-arena-luce { fill: var(--color-sport); }
+.mg:has(.mg-link[data-ambito="antenne"]:is(:hover, :focus-visible)) .mg-col-arena-luce { fill: var(--color-antenne); }
+.mg:has(.mg-link[data-ambito="arte"]:is(:hover, :focus-visible)) .mg-col-arena-luce { fill: var(--color-arte); }
+@keyframes mg-col-compare { to { opacity: 1; } }
+@keyframes mg-col-accende { 0% { opacity: 0; } 35% { opacity: 0.85; } 100% { opacity: 0.32; } }
+@keyframes mg-col-respira { 0%, 100% { opacity: 0.32; } 50% { opacity: 0.5; } }
+@keyframes mg-col-gira { to { stroke-dashoffset: -100; } }
+@media (prefers-reduced-motion: reduce) {
+  .mg-col-archi, .mg-col-luce { animation: none; opacity: 1; }
+  .mg-col-luce { opacity: 0; }
+  .mg-col-arena-luce { animation: none; opacity: 0.32; }
+  .mg .mg-flusso { animation: none; opacity: 0; }
+}
+
+/* «Guarda il video»: sotto i quattro pulsanti, discreto, rimette la copertina */
+.mg-rivedi {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 9px 18px 9px 14px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-ink) 14%, transparent);
+  background: color-mix(in srgb, #fff 70%, transparent);
+  color: var(--color-ink-soft);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s, transform 0.2s;
+}
+.mg-rivedi svg {
+  color: var(--color-amaranto);
+}
+.mg-rivedi:hover {
+  color: var(--color-ink);
+  border-color: color-mix(in srgb, var(--color-amaranto) 45%, transparent);
+  background: #fff;
+  transform: translateY(-1px);
+}
+.mg-rivedi:focus-visible {
+  outline: 2px solid var(--color-amaranto);
+  outline-offset: 3px;
+}

@@ -3,12 +3,12 @@ import type { CSSProperties } from "react";
 import { Icon } from "@/components/Icon";
 import { Copertina } from "@/components/copertina/Copertina";
 import { CLASSI_FORMA } from "@/components/ui/Varie";
-import { ALTRO, AMBITI, ORDINE_AMBITI, type AmbitoId } from "@/lib/ambiti";
+import { Colosseo } from "@/components/home/Colosseo";
+import { AMBITI, ORDINE_AMBITI, type AmbitoId } from "@/lib/ambiti";
 
 /*
- * Home «Il miglio d'oro»: il logo diventa la pagina. Al centro il Miliarium Aureum, la colonna
- * del Foro da cui si misuravano le strade; quattro strade nei colori degli ambiti arrivano ai
- * loro capolinea, la quinta (tratteggiata) porta a «Non è tra questi?».
+ * Home: tutte le strade portano a Roma. Al centro il Colosseo visto dall'alto; quattro strade nei
+ * colori degli ambiti partono dai capolinea e corrono verso di lui, e quando arrivano l'arena si accende.
  * Desktop: diagramma in SVG (decorativo) con i capolinea come link sopra. Telefono: una linea
  * verticale con le diramazioni. Interazioni solo in CSS (globals.css, sezione .mg).
  */
@@ -18,13 +18,18 @@ const CENTRO = { x: 600, y: 225 };
 
 // Le etichette stanno sotto il capolinea: sopra le strade resta spazio per il titolo.
 const STRADE: Record<AmbitoId, { d: string; x: number; y: number; lato: "sx" | "dx"; ritardo: number }> = {
-  oggetti: { d: `M${CENTRO.x} ${CENTRO.y} L470 95 L150 95`, x: 150, y: 95, lato: "sx", ritardo: 0 },
-  sport: { d: `M${CENTRO.x} ${CENTRO.y} L730 95 L1050 95`, x: 1050, y: 95, lato: "dx", ritardo: 110 },
-  antenne: { d: `M${CENTRO.x} ${CENTRO.y} L730 355 L1050 355`, x: 1050, y: 355, lato: "dx", ritardo: 220 },
-  arte: { d: `M${CENTRO.x} ${CENTRO.y} L470 355 L150 355`, x: 150, y: 355, lato: "sx", ritardo: 330 },
+  oggetti: { d: `M150 95 L470 95 L${CENTRO.x} ${CENTRO.y}`, x: 150, y: 95, lato: "sx", ritardo: 0 },
+  sport: { d: `M1050 95 L730 95 L${CENTRO.x} ${CENTRO.y}`, x: 1050, y: 95, lato: "dx", ritardo: 110 },
+  antenne: { d: `M1050 355 L730 355 L${CENTRO.x} ${CENTRO.y}`, x: 1050, y: 355, lato: "dx", ritardo: 220 },
+  arte: { d: `M150 355 L470 355 L${CENTRO.x} ${CENTRO.y}`, x: 150, y: 355, lato: "sx", ritardo: 330 },
 };
-const PIAZZA = 84;
-const STRADA_ALTRO = `M${CENTRO.x} ${CENTRO.y + PIAZZA} L${CENTRO.x} ${ALTO}`;
+/** Una riga per ambito: niente slogan, solo un motivo per entrare. */
+const INVITO: Record<AmbitoId, string> = {
+  oggetti: "Roma restituisce quasi tutto",
+  sport: "C'è un campo che ti aspetta",
+  antenne: "Che cosa c'è sopra i tetti",
+  arte: "La città è un palcoscenico",
+};
 // anelli a distanza fissa dal miliario, come le miglia
 const ANELLI = [112, 224, 336];
 
@@ -36,22 +41,15 @@ export default function Home() {
       <Copertina />
       <main className="mg flex flex-1 flex-col items-center px-4 pt-10 pb-12 sm:px-8 lg:pt-8 lg:pb-10">
         <div className="flex w-full max-w-[1100px] flex-col items-center gap-2 text-center">
-          <p className="mg-occhiello">Tutte le strade portano al servizio giusto</p>
-          <h1 className="mg-titolo text-[40px] leading-[44px] font-bold tracking-[-0.03em] sm:text-[60px] sm:leading-[62px]">Scegli un ambito</h1>
-          <p className="mg-sottotitolo max-w-[560px] text-base leading-6 text-ink-soft sm:text-lg sm:leading-7">
-            Per ognuno trovi la mappa e una barra dove chiedere quello che ti serve, a parole tue.
-          </p>
+          <p className="mg-occhiello">Tutte le strade portano a Roma</p>
+          <h1 className="mg-titolo text-[40px] leading-[44px] font-bold tracking-[-0.03em] sm:text-[60px] sm:leading-[62px]">Da dove partiamo?</h1>
         </div>
 
         <div className="mg-diagramma">
           <svg className="mg-mappa" viewBox={`0 0 ${LARGO} ${ALTO}`} aria-hidden="true" focusable="false">
-            <defs>
-              <path id="mg-iscrizione" d={`M${CENTRO.x - 64} ${CENTRO.y} a64 64 0 1 1 128 0 a64 64 0 1 1 -128 0`} />
-            </defs>
             {ANELLI.map((r) => (
               <circle key={r} className="mg-anello" cx={CENTRO.x} cy={CENTRO.y} r={r} />
             ))}
-            <path className="mg-strada mg-strada-altro" data-ambito="altro" d={STRADA_ALTRO} />
             {ORDINE_AMBITI.map((id) => {
               const s = STRADE[id];
               const stile: Variabili = { "--mg-ritardo": `${s.ritardo}ms`, stroke: `var(--color-${id})` };
@@ -62,18 +60,7 @@ export default function Home() {
                 </g>
               );
             })}
-            <g className="mg-miliario">
-              {/* la piazza del Foro: le strade partono dal suo bordo e l'iscrizione resta pulita */}
-              <circle cx={CENTRO.x} cy={CENTRO.y} r={PIAZZA} className="mg-piazza" />
-              <circle cx={CENTRO.x} cy={CENTRO.y} r={52} className="mg-miliario-alone" />
-              <circle cx={CENTRO.x} cy={CENTRO.y} r={38} fill="var(--color-amaranto)" />
-              <circle cx={CENTRO.x} cy={CENTRO.y} r={15} fill="var(--color-oro)" />
-              <text className="mg-iscrizione" textLength={396} lengthAdjust="spacing">
-                <textPath href="#mg-iscrizione" startOffset="0" textLength={396} lengthAdjust="spacing">
-                  MILIARIUM AUREUM · ROMA · TUTTE LE STRADE ·
-                </textPath>
-              </text>
-            </g>
+            <Colosseo cx={CENTRO.x} cy={CENTRO.y} />
           </svg>
 
           <span aria-hidden="true" className="mg-miliario-telefono" />
@@ -100,9 +87,9 @@ export default function Home() {
                     </span>
                     <span className="mg-testo">
                       <span className="mg-nome">{a.nome}</span>
-                      <span className="mg-breve">{a.breve}</span>
+                      <span className="mg-breve">{INVITO[id]}</span>
                       <span className="mg-vai">
-                        Apri mappa e assistente
+                        Entra
                         <Icon name="freccia" size={16} strokeWidth={2.2} />
                       </span>
                     </span>
@@ -113,16 +100,14 @@ export default function Home() {
           </ol>
         </div>
 
-        <Link href={ALTRO.href} className="mg-altro group" data-ambito="altro">
-          <Icon name="cerca" size={22} className="shrink-0 text-muted" />
-          <span className="min-w-0 flex-1 text-left">
-            <span className="block text-[17px] leading-6 font-bold">{ALTRO.nome}</span>
-            <span className="block truncate text-sm leading-5 text-ink-soft">{ALTRO.breve}</span>
-          </span>
-          <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-amaranto text-white group-hover:bg-amaranto-scuro">
-            <Icon name="freccia" size={20} strokeWidth={2} />
-          </span>
-        </Link>
+        {/* un link vero (ricarica la pagina): lo script nel <head> vede ?copertina=1 e rimette il video */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- serve la ricarica completa */}
+        <a href="/?copertina=1" className="mg-rivedi">
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <path d="M5 3.2v9.6c0 .5.5.8.9.5l7.1-4.8c.4-.3.4-.8 0-1L5.9 2.7c-.4-.3-.9 0-.9.5z" fill="currentColor" />
+          </svg>
+          Guarda il video
+        </a>
       </main>
     </>
   );
