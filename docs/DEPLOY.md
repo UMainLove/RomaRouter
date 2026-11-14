@@ -55,16 +55,13 @@ sul vostro computer (le copie in `data/seed` sono fatte con pg_dump 17), Node 22
 6. **Tabelle e dati.** Lo script che a casa parte con `npm run dev` applica le migrazioni e carica le copie
    di `data/seed` (artisti, antenne, sport; i punti di consegna degli oggetti smarriti arrivano con le migrazioni,
    le segnalazioni partono vuote). Legge `.env.local`,
-   quindi per un momento lo puntiamo su Neon, tenendo da parte il vostro:
+   ma le variabili già presenti nel terminale hanno la precedenza, quindi il vostro `.env.local` non si tocca:
 
    ```bash
-   cp .env.local .env.local.mio          # il vostro, per dopo
-   # in .env.local: le 5 stringhe DIRETTE di Neon + OGGETTI_SEGRETO (vedi sotto)
+   # .env.neon: le 5 stringhe DIRETTE di Neon + OGGETTI_SEGRETO, tra virgolette ("…": dentro c'è &)
+   set -a; source .env.neon; set +a     # queste variabili vincono su quelle di .env.local
    npm run db:allinea                     # un paio di minuti: la copia degli artisti è la più grande
-   cp .env.local .env.neon                # le stringhe di Neon, per la prossima volta
-   cp .env.local.mio .env.local           # torna il vostro
    ```
-
    Deve scrivere `[database] … aggiornato` per artisti, antenne e sport. Se dice «non raggiungibile»,
    controllate stringa e password. I file `.env*` sono già esclusi da git: non committateli.
 7. **Spazio.** Nel piano gratuito ogni progetto Neon ha 1 GB. Controllate in *Monitoring → Storage*:
@@ -119,5 +116,4 @@ compare «In questo momento non riesco a caricare…». In quel caso guardate `/
 
 ## Aggiornare i dati più avanti
 
-Nuove migrazioni o nuove copie in `data/seed`: ripetete il passo 6 (`.env.neon` come `.env.local`,
-`npm run db:allinea`, poi rimettete il vostro). Il sito su Vercel non va ripubblicato.
+Nuove migrazioni o nuove copie in `data/seed`: ripetete il passo 6 (`source .env.neon`, poi `npm run db:allinea`). Il sito su Vercel non va ripubblicato.
