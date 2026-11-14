@@ -8,10 +8,12 @@ export const W = 1920;
 export const H = 1080;
 export const f = (secondi: number) => Math.round(secondi * FPS);
 
-/** Video artisti, parte 1 (l'inizio, con il loro audio). */
-export const SLOT_A = 15;
-/** Video artisti, parte 2 (la ragazza che canta). */
-export const SLOT_B = 4;
+/** Video artisti, parte 1 (l'inizio, con il loro audio): 480 fotogrammi. */
+export const SLOT_A = 16;
+/** Video artisti, parte 2 («La donna è mobile»): 73 fotogrammi. */
+export const SLOT_B = 73 / 30;
+/** Dopo «La donna è mobile» l'ultimo fotogramma resta fermo mentre la strada blu lo attraversa. */
+export const FERMO_B = 0.6;
 
 const LUPA = 6.867;
 const RIVELA = 5.75;
@@ -19,10 +21,10 @@ const OGGETTI = 16;
 const SPORT = 48;
 const ARTE_CARTELLO = 80;
 const SLOT_A_INIZIO = 84;
-const ARTE = SLOT_A_INIZIO + SLOT_A; // 99
+const ARTE = SLOT_A_INIZIO + SLOT_A; // 100
 const ARTE_DURATA = 36;
-const SLOT_B_INIZIO = ARTE + ARTE_DURATA; // 135
-const ANTENNE = SLOT_B_INIZIO + SLOT_B; // 139
+const SLOT_B_INIZIO = ARTE + ARTE_DURATA; // 136
+const ANTENNE = SLOT_B_INIZIO + SLOT_B + FERMO_B; // 139,03
 const ANTENNE_DURATA = 30;
 const FINALE = ANTENNE + ANTENNE_DURATA; // 169
 const FINALE_DURATA = 19;

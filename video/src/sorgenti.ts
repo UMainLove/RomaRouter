@@ -2,8 +2,8 @@
  * I file che il film usa da video/public. I due video degli artisti arrivano a parte: quando ci sono,
  * si mette qui il percorso (es. "sorgenti/artisti-1.mp4") e si rifa' il render.
  */
-export const VIDEO_ARTISTI_1: string | null = null;
-export const VIDEO_ARTISTI_2: string | null = null;
+export const VIDEO_ARTISTI_1: string | null = "sorgenti/artisti-1.mp4";
+export const VIDEO_ARTISTI_2: string | null = "sorgenti/artisti-2.mp4";
 /** secondi da saltare all'inizio di ciascun video (se servisse tagliare la testa) */
 export const INIZIO_ARTISTI_1 = 0;
 export const INIZIO_ARTISTI_2 = 0;

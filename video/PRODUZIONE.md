@@ -135,7 +135,20 @@ Da `video/`:
 6. `npm run web` → `public/video/romarouter.mp4` del sito (leggero, parte subito) e, per il mix con
    la voce, `out/romarouter-senza-audio.mp4` e `out/romarouter-musica.wav` (musica ed effetti).
 
-### Quando arrivano i due video degli artisti
+### I due video degli artisti
+
+Sono già montati: «Prima parte» (16 s) e «La donna è mobile» (2,4 s). Gli originali sono 8K HEVC
+(197 MB e 8 MB, da Google Drive): non sono nel repository; per rifare il film vanno ricompressi in
+1080p30 in `video/public/sorgenti/` con
+
+    ffmpeg -i "Prima parte.mov" -vf "scale=1920:1080:flags=lanczos,format=yuv420p" -r 30 -c:v libx264 -preset slow -crf 14 -c:a aac -b:a 192k -ar 48000 artisti-1.mp4
+
+(e lo stesso per «la donna è mobile.mov» → `artisti-2.mp4`). Passaggi: alla fine della prima parte la
+camera entra nello schermo del telefono e ne esce sulla mappa vera; gli artisti si aprono a onda
+arancio su «La donna è mobile», che a fine clip resta ferma mentre la strada blu delle antenne la
+attraversa. L'audio dei due video è a −3 dB, al livello della musica.
+
+Per cambiarli:
 
 1. Copiarli in `video/public/sorgenti/` (es. `artisti-1.mp4`, `artisti-2.mp4`).
 2. In `src/sorgenti.ts` mettere i percorsi in `VIDEO_ARTISTI_1` e `VIDEO_ARTISTI_2` (ed eventualmente
