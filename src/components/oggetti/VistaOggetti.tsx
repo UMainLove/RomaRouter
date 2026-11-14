@@ -1,91 +1,227 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { INDIRIZZI_ESEMPIO, ZONE } from "@/data/esempi";
+import { distanzaMetri, normalizza } from "@/lib/geo";
 import {
-  CATEGORIE_OGGETTI,
-  LUOGHI_RITROVAMENTO,
-  OGGETTI,
-  UFFICIO_OGGETTI,
-  ZONE,
-  type CategoriaOggetto,
-  type LuogoRitrovamento,
-} from "@/data/esempi";
-import { normalizza } from "@/lib/geo";
-import { formattaData } from "@/lib/formato";
+  MACRO_AREE,
+  type CategoriaPuntoRiconsegna,
+  type PuntoRiconsegnaPubblico,
+} from "@/lib/oggetti/costanti";
 import { BarraAgente } from "../agente/BarraAgente";
-import { Icon } from "../Icon";
 import { Mappa } from "../mappa/Mappa";
 import { PUNTO_UFFICIO, type PuntoMappa } from "../mappa/punti";
-import { Etichetta, NotaPrivacy } from "../ui/Varie";
-import { ChipRimovibile, Conteggio, RigaFiltri, SceltaChip, useFiltri } from "../vista/Filtri";
-import { Elenco, Risultato, Vuoto } from "../vista/Risultato";
+import { useFiltri } from "../vista/Filtri";
 import { VistaAmbito } from "../vista/VistaAmbito";
-import { ICONE_CATEGORIA } from "./icone";
+import { AccessoOggetti, type ContattoMagicLinkClient, type SessioneClient } from "./AccessoOggetti";
+import {
+  ElencoPuntiRiconsegna,
+  type CentroPosizione,
+  type PuntoRiconsegnaConDistanza,
+} from "./ElencoPuntiRiconsegna";
+import { PannelloPerso } from "./PannelloPerso";
+import { PannelloTrovato } from "./PannelloTrovato";
 
-const CHIAVI = ["q", "categoria", "luogo", "colore", "dal", "zona"];
-const COLORI = Array.from(new Set(OGGETTI.map((o) => o.colore).filter((c): c is string => Boolean(c)))).sort();
-const maiuscola = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+type Scheda = "perso" | "trovato";
 
-const PASSI = [
-  { titolo: "Trova l'oggetto", testo: "Nel catalogo c'è solo la descrizione, mai dati personali." },
-  { titolo: "Dimostra che è tuo", testo: "Descrivi un dettaglio che non è pubblicato, per esempio cosa c'era dentro." },
-  { titolo: "Scegli chi ritira", testo: "Di persona con un documento, con una delega firmata o tramite ambasciata o consolato." },
-  { titolo: "Prenota l'appuntamento", testo: "Porta il documento e la ricevuta dei diritti di custodia: [IMPORTO]." },
-];
+const RAGGIO_RICONSEGNA_M = 2500;
+const CENTRO_DEFAULT_ROMA: CentroPosizione = {
+  lat: 41.8959,
+  lon: 12.4823,
+  etichetta: "Piazza Venezia (centro Roma)",
+  esatto: false,
+};
+
+function geocodificaLuogo(testo: string): CentroPosizione | null {
+  const t = normalizza(testo);
+  if (!t) return null;
+  for (const [chiave, ind] of Object.entries(INDIRIZZI_ESEMPIO)) {
+    if (t.includes(chiave) || chiave.includes(t)) return { ...ind, esatto: true };
+  }
+  for (const [chiave, z] of Object.entries(ZONE)) {
+    if (t.includes(chiave)) return { etichetta: z.nome, lat: z.lat, lon: z.lon, esatto: false };
+  }
+  for (const [chiave, z] of Object.entries(MACRO_AREE)) {
+    if (chiave !== "altro" && (t.includes(normalizza(chiave)) || t.includes(normalizza(z.nome)))) {
+      return { etichetta: z.nome, lat: z.lat, lon: z.lon, esatto: false };
+    }
+  }
+  return null;
+}
 
 export function VistaOggetti() {
   const { parametri, imposta, azzera } = useFiltri("/oggetti");
-  const q = parametri.get("q") ?? "";
-  const categoria = (parametri.get("categoria") ?? "") as CategoriaOggetto | "";
-  const luogo = (parametri.get("luogo") ?? "") as LuogoRitrovamento | "";
-  const colore = parametri.get("colore") ?? "";
-  const dal = parametri.get("dal") ?? "";
+  const schedaIniziale = parametri.get("scheda");
+  const scheda: Scheda = schedaIniziale === "trovato" ? "trovato" : "perso";
+
+  const categoria = parametri.get("categoria") ?? "";
   const zona = parametri.get("zona") ?? "";
+  const soloH24 = parametri.get("h24") === "1";
+  const indirizzoUrl = parametri.get("indirizzo") ?? "";
+  const latUrl = Number(parametri.get("lat"));
+  const lonUrl = Number(parametri.get("lon"));
+  const firma = `${indirizzoUrl}|${parametri.get("lat") ?? ""}|${parametri.get("lon") ?? ""}`;
+
+  const [sessione, setSessione] = useState<SessioneClient | null>(null);
+  const [contattoMagicLink, setContattoMagicLink] = useState<ContattoMagicLinkClient | null>(null);
+  const [refreshSessione, setRefreshSessione] = useState(0);
   const [selezionato, setSelezionato] = useState<string | null>(null);
+  const [testoFiltro, setTestoFiltro] = useState("");
+  const [puntiDb, setPuntiDb] = useState<PuntoRiconsegnaPubblico[]>([]);
+  const [caricamentoPunti, setCaricamentoPunti] = useState(true);
+  const [errorePunti, setErrorePunti] = useState<string | null>(null);
+  const [posizione, setPosizione] = useState<{ luogo: CentroPosizione; firma: string } | null>(null);
+  const [errorePosizione, setErrorePosizione] = useState<string | null>(null);
 
-  // Tutti i filtri tranne la zona: la mappa conta per zona, l'elenco filtra anche per zona.
-  const senzaZona = useMemo(() => {
-    const parole = normalizza(q).split(" ").filter(Boolean);
-    return OGGETTI.filter((o) => !categoria || o.categoria === categoria)
-      .filter((o) => !luogo || o.luogo === luogo)
-      .filter((o) => !colore || o.colore === colore)
-      .filter((o) => !dal || o.data >= dal)
-      .filter((o) => parole.every((p) => normalizza(`${o.descrizione} ${CATEGORIE_OGGETTI[o.categoria]}`).includes(p)))
-      .sort((a, b) => b.data.localeCompare(a.data));
-  }, [q, categoria, luogo, colore, dal]);
-  const risultati = useMemo(() => senzaZona.filter((o) => !zona || o.zona === zona), [senzaZona, zona]);
+  useEffect(() => {
+    let attivo = true;
+    fetch("/api/oggetti/punti", { cache: "no-store" })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Errore caricamento punti (${res.status})`);
+        return res.json() as Promise<{ punti: PuntoRiconsegnaPubblico[] }>;
+      })
+      .then((dati) => {
+        if (!attivo) return;
+        setPuntiDb(Array.isArray(dati.punti) ? dati.punti : []);
+        setErrorePunti(null);
+      })
+      .catch((err) => {
+        if (!attivo) return;
+        setErrorePunti(err instanceof Error ? err.message : "Impossibile caricare i punti di riconsegna.");
+      })
+      .finally(() => {
+        if (attivo) setCaricamentoPunti(false);
+      });
+    return () => {
+      attivo = false;
+    };
+  }, []);
 
-  // Sulla mappa: l'ufficio dove si ritira e, per zona, quanti oggetti corrispondono (mai il punto esatto).
-  const punti = useMemo<PuntoMappa[]>(() => {
-    const perZona = new Map<string, number>();
-    for (const o of senzaZona) perZona.set(o.zona, (perZona.get(o.zona) ?? 0) + 1);
-    return [
-      PUNTO_UFFICIO,
-      ...[...perZona].map(([k, n]) => ({
-        id: `zona-${k}`,
-        ambito: "oggetti" as const,
-        nome: `${n === 1 ? "1 oggetto trovato" : `${n} oggetti trovati`} a ${ZONE[k]?.nome ?? k}`,
-        dettaglio: "Tocca per vedere solo questa zona",
-        href: `/oggetti?zona=${k}`,
-        lat: ZONE[k]?.lat ?? 0,
-        lon: ZONE[k]?.lon ?? 0,
-        conteggio: n,
-      })),
-    ];
-  }, [senzaZona]);
+  // Se il permesso GPS è già concesso dal browser, aggancia automaticamente la posizione esatta
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation || !navigator.permissions) return;
+    let attivo = true;
+    navigator.permissions
+      .query({ name: "geolocation" })
+      .then((stato) => {
+        if (!attivo || stato.state !== "granted") return;
+        navigator.geolocation.getCurrentPosition(
+          (p) => {
+            if (!attivo) return;
+            setPosizione((prev) =>
+              prev ?? {
+                luogo: {
+                  lat: p.coords.latitude,
+                  lon: p.coords.longitude,
+                  etichetta: "La tua posizione esatta",
+                  esatto: true,
+                  precisioneMetri: p.coords.accuracy,
+                },
+                firma,
+              },
+            );
+          },
+          () => {},
+          { enableHighAccuracy: true, timeout: 6000 },
+        );
+      })
+      .catch(() => {});
+    return () => {
+      attivo = false;
+    };
+  }, [firma]);
 
-  const suMappa = (id: string) => {
-    if (id.startsWith("zona-")) {
-      const k = id.slice(5);
-      imposta({ zona: zona === k ? null : k });
-      setSelezionato(zona === k ? null : id);
-    } else {
-      setSelezionato(id);
-      document.getElementById("ufficio-oggetti")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  const centroEsatto = useMemo<CentroPosizione | null>(() => {
+    if (posizione && posizione.firma === firma) return posizione.luogo;
+    if (latUrl && lonUrl) return { lat: latUrl, lon: lonUrl, etichetta: "Posizione esatta sulla mappa", esatto: true };
+    return indirizzoUrl ? geocodificaLuogo(indirizzoUrl) : null;
+  }, [posizione, firma, latUrl, lonUrl, indirizzoUrl]);
+
+  const centroRiferimento = centroEsatto ?? CENTRO_DEFAULT_ROMA;
+
+  const puntiFiltrati = useMemo<PuntoRiconsegnaConDistanza[]>(() => {
+    const qNorm = normalizza(testoFiltro);
+    const base = puntiDb.filter((p) => {
+      if (categoria && p.categoria !== categoria) return false;
+      if (zona && p.macroArea !== zona) return false;
+      if (soloH24 && !p.h24) return false;
+      if (qNorm) {
+        const testo = normalizza(`${p.nome} ${p.ente} ${p.indirizzo} ${p.zonaNome} ${p.municipio} ${p.note ?? ""}`);
+        if (!testo.includes(qNorm)) return false;
+      }
+      return true;
+    });
+
+    const conDistanza = base.map((p) => ({
+      ...p,
+      distanza: distanzaMetri(centroRiferimento, p),
+    }));
+
+    conDistanza.sort((a, b) => a.distanza - b.distanza);
+    return conDistanza;
+  }, [puntiDb, categoria, zona, soloH24, testoFiltro, centroRiferimento]);
+
+  const conteggiCategoria = useMemo(() => {
+    const counts: Partial<Record<CategoriaPuntoRiconsegna, number>> = {};
+    for (const p of puntiDb) {
+      counts[p.categoria] = (counts[p.categoria] ?? 0) + 1;
     }
+    return counts;
+  }, [puntiDb]);
+
+  const conteggioMisericordieH24 = useMemo(
+    () => puntiDb.filter((p) => p.categoria === "misericordia" && p.h24).length,
+    [puntiDb],
+  );
+
+  const puntiMappa = useMemo<PuntoMappa[]>(() => {
+    if (!puntiFiltrati.length && caricamentoPunti) return [PUNTO_UFFICIO];
+    return puntiFiltrati.map((p) => ({
+      id: p.id,
+      ambito: "oggetti",
+      nome: p.nome,
+      dettaglio: `${p.indirizzo} · ${p.orari}`,
+      href: "/oggetti#punti-riconsegna",
+      lat: p.lat,
+      lon: p.lon,
+    }));
+  }, [puntiFiltrati, caricamentoPunti]);
+
+  const cambiaScheda = (prossima: Scheda) => {
+    imposta({ scheda: prossima === "perso" ? null : prossima });
   };
 
-  const filtriAttivi = CHIAVI.some((k) => parametri.has(k));
+  const usaPosizione = () => {
+    if (!navigator.geolocation) {
+      setErrorePosizione("Il browser non permette di usare la posizione: inserisci la tua via esatta nel campo qui sotto.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        setErrorePosizione(null);
+        setPosizione({
+          luogo: {
+            lat: p.coords.latitude,
+            lon: p.coords.longitude,
+            etichetta: "La tua posizione esatta",
+            esatto: true,
+            precisioneMetri: p.coords.accuracy,
+          },
+          firma,
+        });
+      },
+      () => setErrorePosizione("Posizione GPS non disponibile: controlla i permessi del browser oppure scrivi la tua via nello stradario qui sotto."),
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  };
+
+  const suMappa = (id: string) => {
+    setSelezionato(id);
+  };
+
+  const suElenco = (id: string) => {
+    setSelezionato((prev) => (prev === id ? null : id));
+  };
 
   return (
     <VistaAmbito
@@ -93,122 +229,113 @@ export function VistaOggetti() {
       barra={<BarraAgente voceId="oggetti" />}
       mappa={
         <Mappa
-          titolo="Mappa degli oggetti ritrovati per zona e dell'ufficio dove ritirarli"
-          punti={punti}
-          selezionato={zona ? `zona-${zona}` : selezionato}
+          titolo="Mappa dei luoghi dove riconsegnare oggetti smarriti a Roma"
+          punti={puntiMappa}
+          selezionato={selezionato}
           onSeleziona={suMappa}
+          centro={centroEsatto}
+          raggioMetri={centroEsatto ? RAGGIO_RICONSEGNA_M : undefined}
         />
       }
     >
-      <RigaFiltri attivi={filtriAttivi} onAzzera={() => azzera(CHIAVI)}>
-        {q && (
-          <ChipRimovibile onRimuovi={() => imposta({ q: null })} etichettaRimuovi={`Togli la ricerca: ${q}`}>
-            «{q}»
-          </ChipRimovibile>
-        )}
-        <SceltaChip
-          etichetta="Tipo di oggetto"
-          vuoto="Tutti i tipi"
-          valore={categoria}
-          opzioni={(Object.keys(CATEGORIE_OGGETTI) as CategoriaOggetto[]).map((c) => ({ valore: c, etichetta: CATEGORIE_OGGETTI[c] }))}
-          onChange={(v) => imposta({ categoria: v })}
-        />
-        <SceltaChip
-          etichetta="Dove è stato trovato"
-          vuoto="Ovunque"
-          valore={luogo}
-          opzioni={(Object.keys(LUOGHI_RITROVAMENTO) as LuogoRitrovamento[]).map((l) => ({ valore: l, etichetta: LUOGHI_RITROVAMENTO[l] }))}
-          onChange={(v) => imposta({ luogo: v })}
-        />
-        <SceltaChip
-          etichetta="Colore"
-          vuoto="Ogni colore"
-          valore={colore}
-          opzioni={COLORI.map((c) => ({ valore: c, etichetta: maiuscola(c) }))}
-          onChange={(v) => imposta({ colore: v })}
-        />
-        <SceltaChip
-          etichetta="Zona"
-          vuoto="Tutte le zone"
-          valore={zona}
-          opzioni={Object.entries(ZONE).map(([k, z]) => ({ valore: k, etichetta: z.nome }))}
-          onChange={(v) => imposta({ zona: v })}
-        />
-        {dal && (
-          <ChipRimovibile onRimuovi={() => imposta({ dal: null })} etichettaRimuovi="Togli il filtro sulla data">
-            Dal {formattaData(dal, false)}
-          </ChipRimovibile>
-        )}
-      </RigaFiltri>
+      <div className="flex flex-col gap-2 rounded-panel border border-line bg-bg-sink p-2.5">
+        <div role="tablist" aria-label="Funzioni del servizio Oggetti smarriti" className="grid grid-cols-2 gap-1.5">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={scheda === "perso"}
+            onClick={() => cambiaScheda("perso")}
+            className={`min-h-11 rounded-card px-2.5 text-xs font-bold sm:text-sm ${
+              scheda === "perso" ? "bg-amaranto text-white" : "bg-panel text-ink hover:border-campo"
+            }`}
+          >
+            Ho perso (protetto)
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={scheda === "trovato"}
+            onClick={() => cambiaScheda("trovato")}
+            className={`min-h-11 rounded-card px-2.5 text-xs font-bold sm:text-sm ${
+              scheda === "trovato" ? "bg-oggetti text-white" : "bg-panel text-ink hover:border-campo"
+            }`}
+          >
+            Ho trovato
+          </button>
+        </div>
+      </div>
 
-      <Conteggio>{risultati.length === 1 ? "1 oggetto" : `${risultati.length} oggetti`}</Conteggio>
-
-      {risultati.length ? (
-        <Elenco etichetta="Oggetti ritrovati">
-          {risultati.map((o) => (
-            <Risultato
-              key={o.codice}
-              id={o.codice}
-              ambito="oggetti"
-              icona={ICONE_CATEGORIA[o.categoria]}
-              titolo={o.descrizione}
-              sottotitolo={`Trovato il ${formattaData(o.data, false)} · ${LUOGHI_RITROVAMENTO[o.luogo].toLowerCase()} · ${ZONE[o.zona]?.nome ?? ""}`}
-              scelto={selezionato === o.codice}
-              onScegli={(id) => setSelezionato((s) => (s === id ? null : id))}
-              etichette={
-                o.stato === "custodia" ? (
-                  <Etichetta tono="ok" icona="spunta">
-                    In custodia
-                  </Etichetta>
-                ) : (
-                  <Etichetta tono="attenzione" icona="orologio">
-                    Ritiro in corso
-                  </Etichetta>
-                )
-              }
-              dettagli={<p className="text-sm text-ink-soft">Codice {o.codice} · {CATEGORIE_OGGETTI[o.categoria]}</p>}
-              azione={o.stato === "custodia" ? { href: `/oggetti/${o.codice}/ritiro`, etichetta: "È mio: richiedi il ritiro" } : undefined}
-            />
-          ))}
-        </Elenco>
-      ) : (
-        <Vuoto>Nessun oggetto con questi filtri. Gli oggetti arrivano all&apos;ufficio anche dopo qualche giorno: riprova più avanti.</Vuoto>
+      {scheda === "perso" && (
+        <div className="flex flex-col gap-4">
+          <AccessoOggetti
+            refreshKey={refreshSessione}
+            onCambioSessione={setSessione}
+            onCambioContattoMagicLink={setContattoMagicLink}
+          />
+          <PannelloPerso
+            sessione={sessione}
+            contattoMagicLink={contattoMagicLink}
+            onRegistrata={() => setRefreshSessione((n) => n + 1)}
+          />
+        </div>
       )}
 
-      <section
-        id="ufficio-oggetti"
-        aria-labelledby="t-ufficio"
-        className={`flex flex-col gap-3 rounded-panel border bg-panel p-4 ${selezionato === PUNTO_UFFICIO.id ? "border-ink" : "border-line"}`}
-      >
-        <div className="flex gap-3">
-          <Icon name="segnaposto" size={22} className="mt-0.5 shrink-0 text-oggetti-ink" />
-          <div>
-            <h2 id="t-ufficio" className="text-base font-bold">
-              {UFFICIO_OGGETTI.nome}
-            </h2>
-            <p className="text-[15px] text-ink-soft">{UFFICIO_OGGETTI.indirizzo}</p>
-            <p className="mt-1 text-[13px] text-muted">{UFFICIO_OGGETTI.nota}</p>
-          </div>
+      {scheda === "trovato" && (
+        <div className="flex flex-col gap-4">
+          <AccessoOggetti
+            refreshKey={refreshSessione}
+            onCambioSessione={setSessione}
+            onCambioContattoMagicLink={setContattoMagicLink}
+          />
+          <PannelloTrovato
+            sessione={sessione}
+            onRegistrato={() => setRefreshSessione((n) => n + 1)}
+          />
         </div>
-        <details className="group">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-[15px] font-bold">
-            Come funziona il ritiro
-            <Icon name="giu" size={16} strokeWidth={2.2} className="transition-transform group-open:rotate-180" />
-          </summary>
-          <ol className="flex flex-col gap-3 pt-1">
-            {PASSI.map((p, i) => (
-              <li key={p.titolo} className="flex gap-3">
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-oggetti-tint text-sm font-bold text-oggetti-ink">{i + 1}</span>
-                <span>
-                  <b className="block text-[15px]">{p.titolo}</b>
-                  <span className="text-sm leading-5 text-ink-soft">{p.testo}</span>
-                </span>
-              </li>
-            ))}
-          </ol>
-        </details>
-      </section>
-      <NotaPrivacy>Nel catalogo nessun dato personale: per i documenti compare solo il tipo, mai nomi o numeri. Sulla mappa solo i conteggi per zona.</NotaPrivacy>
+      )}
+
+      <ElencoPuntiRiconsegna
+        punti={puntiFiltrati}
+        totaleComplessivo={puntiDb.length}
+        conteggiCategoria={conteggiCategoria}
+        conteggioMisericordieH24={conteggioMisericordieH24}
+        caricamento={caricamentoPunti}
+        erroreCaricamento={errorePunti}
+        selezionato={selezionato}
+        onSeleziona={suElenco}
+        categoria={categoria}
+        zona={zona}
+        soloH24={soloH24}
+        testoFiltro={testoFiltro}
+        onCategoria={(v) => imposta({ categoria: v || null })}
+        onZona={(v) => imposta({ zona: v || null })}
+        onSoloH24={() => imposta({ h24: soloH24 ? null : "1" })}
+        onTestoFiltro={setTestoFiltro}
+        onAzzeraFiltri={() => {
+          setTestoFiltro("");
+          azzera(["categoria", "zona", "h24"]);
+        }}
+        centro={centroRiferimento}
+        haPosizioneEsatta={Boolean(centroEsatto?.esatto)}
+        errorePosizione={errorePosizione}
+        onUsaPosizione={usaPosizione}
+        onScegliIndirizzoEsatto={(scelta) => {
+          setErrorePosizione(null);
+          setPosizione({
+            luogo: {
+              lat: scelta.lat,
+              lon: scelta.lon,
+              etichetta: scelta.etichetta,
+              esatto: true,
+            },
+            firma,
+          });
+        }}
+        onTogliPosizione={() => {
+          setPosizione(null);
+          imposta({ indirizzo: null, lat: null, lon: null });
+        }}
+      />
     </VistaAmbito>
   );
 }

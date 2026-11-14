@@ -1,18 +1,22 @@
 import type { Metadata } from "next";
-import { RegistraOggetto } from "@/components/operatori/RegistraOggetto";
+import { AreaOperatori } from "@/components/operatori/AreaOperatori";
 import { contenitore } from "@/components/ui/stili";
 
-export const metadata: Metadata = { title: "Area operatori" };
+export const metadata: Metadata = { title: "Area operatori · Livello 3" };
 
 export default function PaginaOperatori() {
   return (
     <main className={`${contenitore} flex flex-col gap-6 py-8`}>
       <div>
-        <p className="text-sm font-bold tracking-[0.06em] text-muted uppercase">Area operatori · Reparto Oggetti Rinvenuti</p>
-        <h1 className="text-[30px] leading-[38px] font-bold">Registra un oggetto</h1>
-        <p className="text-base text-ink-soft">Carica una foto: l&apos;agente propone la scheda, tu controlli e pubblichi.</p>
+        <p className="text-sm font-bold tracking-[0.06em] text-muted uppercase">
+          Area operatori · Livello 3 · Reparto Oggetti Rinvenuti, Custodi e Forze dell&apos;Ordine
+        </p>
+        <h1 className="text-[30px] leading-[38px] font-bold">Gestione protetta e restituzione</h1>
+        <p className="text-base text-ink-soft">
+          Catalogo completo con Audit Log, inbox match pseudonima, verifica con domande aperte, semaforo documenti e passaggi di consegna.
+        </p>
       </div>
-      <RegistraOggetto />
+      <AreaOperatori />
     </main>
   );
 }

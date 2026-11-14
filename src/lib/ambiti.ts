@@ -34,7 +34,7 @@ export const AMBITI: Record<AmbitoId, Ambito> = {
     id: "oggetti",
     nome: "Oggetti smarriti",
     corto: "Oggetti",
-    breve: "Cerca tra gli oggetti ritrovati e prenota il ritiro",
+    breve: "Segnala uno smarrimento o consegna un oggetto ritrovato",
     href: "/oggetti",
     icona: "chiave",
     forma: "rombo",
