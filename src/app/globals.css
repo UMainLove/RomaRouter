@@ -556,6 +556,25 @@ html[data-copertina] .copertina,
   font-weight: 700;
   letter-spacing: -0.01em;
 }
+/* crediti: piccoli, in basso a sinistra (sul telefono in alto, accanto al marchio); restano per tutta la copertina */
+.copertina-crediti {
+  position: absolute;
+  left: clamp(16px, 4vw, 56px);
+  bottom: clamp(16px, 4vh, 40px);
+  max-width: min(46ch, calc(100% - 260px));
+  margin: 0;
+  font-size: 10.5px;
+  line-height: 14px;
+  color: rgb(247 240 228 / 0.62);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.45);
+}
+@media (max-width: 479px) {
+  .copertina-crediti {
+    top: clamp(18px, 3.2vh, 32px);
+    bottom: auto;
+    max-width: calc(100% - 150px);
+  }
+}
 .copertina-testo {
   position: absolute;
   right: clamp(20px, 4vw, 56px);
@@ -671,4 +690,32 @@ html[data-copertina] .copertina-salta:focus-visible {
   .copertina-velo {
     transition: none;
   }
+}
+
+/*
+ * Compatibilità per la sezione antenne (mappa e pagina con i dati veri, src/components/antenne).
+ * Quei componenti usano i nomi surface / accent / focus: qui li mappiamo sulla palette RomaRouter,
+ * con l'accento sul blu dell'ambito "antenne". Valori letterali per non dipendere dai token emessi.
+ */
+:root {
+  --background: #f9f6f4; /* = bg */
+  --foreground: #251d1c; /* = ink */
+  --surface: #ffffff; /* = panel */
+  --surface-2: #f3efed; /* = bg-sink */
+  --ink: #251d1c;
+  --muted: #5f5654;
+  --line: #e2dddc;
+  --accent: #2a6fd6; /* = antenne */
+  --accent-2: #1f55a8; /* = antenne-ink */
+  --focus: #251d1c;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-focus: var(--focus);
 }

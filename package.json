@@ -3,12 +3,31 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/db/allinea.mts",
     "dev": "next dev",
     "build": "next build",
+    "prestart": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/db/allinea.mts",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:migrate": "node --env-file=.env.local scripts/db/migrate.mts",
+    "db:allinea": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/db/allinea.mts",
+    "antenne:import": "node --env-file=.env.local scripts/antenne/import.mts",
+    "antenne:esporta": "node --env-file=.env.local scripts/antenne/esporta.mts",
+    "antenne:test": "node --test scripts/antenne/coord.test.mts scripts/antenne/geocode.test.mts",
+    "mappe:build": "node scripts/mappe/build.mts",
+    "antenne:celle": "node --env-file=.env.local scripts/antenne/celle.mts",
+    "antenne:impianti-osm": "node --env-file=.env.local scripts/antenne/impianti_osm.mts",
+    "artisti:import": "node --env-file=.env.local scripts/artisti/import.mts",
+    "artisti:demo": "node --env-file=.env.local scripts/artisti/esibizioni_demo.mts",
+    "artisti:esporta": "node --env-file=.env.local scripts/artisti/esporta.mts",
+    "luoghi:indice": "node --env-file=.env.local scripts/luoghi/indice.mts",
+    "artisti:copertura": "node --env-file=.env.local scripts/artisti/copertura.mts",
+    "sport:import": "node --env-file=.env.local scripts/sport/import.mts",
+    "sport:esporta": "node --env-file=.env.local scripts/sport/esporta.mts",
+    "oggetti:esporta": "node scripts/oggetti/esporta.mts"
   },
   "dependencies": {
+    "maplibre-gl": "^6.18.0",
     "next": "16.4.6",
     "pg": "^8.23.1",
     "react": "19.3.0",
@@ -21,9 +40,12 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cheerio": "^1.2.0",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
+    "exceljs": "^4.4.0",
     "tailwindcss": "4.3.3",
-    "typescript": "^5"
+    "typescript": "^5",
+    "unpdf": "^2.1.0"
   }
 }

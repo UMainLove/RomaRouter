@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name><![CDATA[Ecco dove l'Arte di Strada è limitata a Roma]]></name>
+    <description><![CDATA[Roma è una città dove l'Arte di Strada è stata progressivamente limitata.<br>In questa mappa abbiamo evidenziato le località dove questa è limitata.<br>Se ci sono altre limitazioni non segnalate fatecele sapere dalla pagina facebook: https://www.facebook.com/groups/artistidestradaroma]]></description>
+    <Style id="icon-1751-C2185B-labelson">
+      <IconStyle>
+        <color>ff5b18c2</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+    </Style>
+    <Folder>
+      <name>Centro Storico</name>
+      <Placemark>
+        <name>Piazza Navona</name>
+        <description>Delibera n.24 del 2012 Allegato B - Divieto di uso di tromba, sassofono, piatti e utilizzo di impianti di amplificazione.</description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4730742,41.8991633,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Piazza del Popolo</name>
+        <description>Delibera n.24 del 2012 Allegato B - Divieto di uso di tromba, sassofono, piatti e utilizzo di impianti di amplificazione.</description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4763579,41.9107038,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Terrazza del Pincio</name>
+        <description>Delibera n.24 del 2012 Allegato B - Divieto di uso di tromba, sassofono, piatti e utilizzo di impianti di amplificazione.</description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4782529,41.9112402,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Piazza Augusto Imperatore</name>
+        <description>Delibera n.24 del 2012 Allegato B - Divieto di uso di tromba, sassofono, piatti e utilizzo di impianti di amplificazione.</description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4762006,41.906733,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Piazza di Spagna</name>
+        <description>Delibera n.24 del 2012 Allegato B - Divieto di uso di tromba, sassofono, piatti e utilizzo di impianti di amplificazione.</description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.482327,41.9056978,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Piazza Mignanelli</name>
+        <description>Delibera n.24 del 2012 Allegato B - Divieto di uso di tromba, sassofono, piatti e utilizzo di impianti di amplificazione.</description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.483432,41.9051722,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Piazza di Sant'Apollinare]]></name>
+        <description>Delibera n.24 del 2012 Allegato B - Divieto di uso di tromba, sassofono, piatti e utilizzo di impianti di amplificazione.</description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4732599,41.9008693,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Piazza di Pietra</name>
+        <description>Delibera n.24 del 2012 Allegato B - Divieto di uso di tromba, sassofono, piatti e utilizzo di impianti di amplificazione.</description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4797261,41.9001157,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Campo de' Fiori]]></name>
+        <description>Delibera n.24 del 2012 Allegato B - Divieto di uso di tromba, sassofono, piatti e utilizzo di impianti di amplificazione.</description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4721829,41.8955904,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Piazza Farnese</name>
+        <description>Delibera n.24 del 2012 Allegato B - Divieto di uso di tromba, sassofono, piatti e utilizzo di impianti di amplificazione.</description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4711462,41.895026,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Piazza dei Calcarari</name>
+        <description>Delibera n.24 del 2012 Allegato B - Divieto di uso di tromba, sassofono, piatti e utilizzo di impianti di amplificazione.</description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4773163,41.895105,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Castel Sant'Angelo]]></name>
+        <description>Delibera n.24 del 2012 Allegato B - Divieto di uso di tromba, sassofono, piatti e utilizzo di impianti di amplificazione.</description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4641946,41.9019213,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Piazza Trilussa</name>
+        <description>Delibera n.24 del 2012 Allegato B - Divieto di uso di tromba, sassofono, piatti e utilizzo di impianti di amplificazione.</description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4699174,41.8918664,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Piazza di San Silvestro</name>
+        <description>Delibera n.24 del 2012 Allegato B - Divieto di uso di tromba, sassofono, piatti e utilizzo di impianti di amplificazione.</description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4812831,41.9026169,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Piazza della Maddalena</name>
+        <description>Delibera n.24 del 2012 Allegato B - Divieto di uso di tromba, sassofono, piatti e utilizzo di impianti di amplificazione.</description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4766203,41.8999967,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Piazza di San Lorenzo in Lucina</name>
+        <description>Delibera n.24 del 2012 Allegato B - Divieto di uso di tromba, sassofono, piatti e utilizzo di impianti di amplificazione.</description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4792072,41.903735,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Piazza di San Salvatore in Lauro</name>
+        <description>Delibera n.24 del 2012 Allegato B - Divieto di uso di tromba, sassofono, piatti e utilizzo di impianti di amplificazione.</description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4690606,41.9008172,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Piazza di Santa Maria in Trastevere</name>
+        <description><![CDATA[Municipio I - Delibera 1 agosto 2018 - spazi ritenuti non idonei per l'esercizio dell'arte di strada effettuato mediante esibizioni a carattere musicale, sia che ricorrano all'utilizzo dell'amplificazione del suono sia che non ne facciano uso, o con esibizioni di altra natura che comunque siano fonte di rumore e <br>prevedano diffusioni sonore.]]></description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4702193,41.8896969,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Piazza di San Egidio</name>
+        <description><![CDATA[Municipio I - Delibera 1 agosto 2018 - spazi ritenuti non idonei per l'esercizio dell'arte di strada effettuato mediante esibizioni a carattere musicale, sia che ricorrano all'utilizzo dell'amplificazione del suono sia che non ne facciano uso, o con esibizioni di altra natura che comunque siano fonte di rumore e<br>prevedano diffusioni sonore.]]></description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4690446,41.890085,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Piazza della Rotonda</name>
+        <description><![CDATA[Municipio I - Delibera 1 agosto 2018 - spazi ritenuti non idonei per l'esercizio dell'arte di strada effettuato mediante esibizioni a carattere musicale, sia che ricorrano all'utilizzo dell'amplificazione del suono sia che non ne facciano uso, o con esibizioni di altra natura che comunque siano fonte di rumore e<br>prevedano diffusioni sonore.]]></description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.476615,41.899453,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Via dei Pastini</name>
+        <description><![CDATA[Municipio I - Delibera 1 agosto 2018 - spazi ritenuti non idonei per l'esercizio dell'arte di strada effettuato mediante esibizioni a carattere musicale, sia che ricorrano all'utilizzo dell'amplificazione del suono sia che non ne facciano uso, o con esibizioni di altra natura che comunque siano fonte di rumore e<br>prevedano diffusioni sonore.]]></description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4780942,41.8994999,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Via delle Muratte</name>
+        <description><![CDATA[Municipio I - Delibera 1 agosto 2018 - spazi ritenuti non idonei per l'esercizio dell'arte di strada effettuato mediante esibizioni a carattere musicale, sia che ricorrano all'utilizzo dell'amplificazione del suono sia che non ne facciano uso, o con esibizioni di altra natura che comunque siano fonte di rumore e<br>prevedano diffusioni sonore.]]></description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4818211,41.9003226,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Via del Corso</name>
+        <description><![CDATA[(nel tratto compreso tra Largo dei Lombardi e San Carlo e quello tra Via di Gesù e Maria e Via di San Giacomo) Municipio I - Delibera 1 agosto 2018 - spazi ritenuti non idonei per l'esercizio dell'arte di strada effettuato mediante esibizioni a carattere musicale, sia che ricorrano all'utilizzo dell'amplificazione del suono sia che non ne facciano uso, o con esibizioni di altra natura che comunque siano fonte di rumore e<br>prevedano diffusioni sonore.]]></description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4783197,41.9058567,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Piazza della Madonna dei Monti</name>
+        <description><![CDATA[ivi compresi i tratti facenti parte dell’ area pedonale (via degli Zingari e via dell’Angeletto) Municipio I - Delibera 1 agosto 2018 - spazi ritenuti non idonei per l'esercizio dell'arte di strada effettuato mediante esibizioni a carattere musicale, sia che ricorrano all'utilizzo dell'amplificazione del suono sia che non ne facciano uso, o con esibizioni di altra natura che comunque siano fonte di rumore e<br>prevedano diffusioni sonore.]]></description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4910085,41.8948378,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Via della Pace</name>
+        <description><![CDATA[Municipio I - Delibera 1 agosto 2018 - spazi ritenuti non idonei per l'esercizio dell'arte di strada effettuato mediante esibizioni a carattere musicale, sia che ricorrano all'utilizzo dell'amplificazione del suono sia che non ne facciano uso, o con esibizioni di altra natura che comunque siano fonte di rumore e<br>prevedano diffusioni sonore.]]></description>
+        <styleUrl>#icon-1751-C2185B-labelson</styleUrl>
+        <Point>
+          <coordinates>
+            12.4714575,41.8996822,0
+          </coordinates>
+        </Point>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>

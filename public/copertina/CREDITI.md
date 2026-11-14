@@ -13,3 +13,5 @@
   - Conversione glTF: AsoboStudio e scurest
 - Cielo: HDRI «The Sky Is On Fire» di Poly Haven (https://polyhaven.com/a/the_sky_is_on_fire), CC0 1.0,
   con il colore corretto nella scena.
+
+Sul sito l'attribuzione compare nella copertina stessa (in basso a sinistra, sul telefono in alto).

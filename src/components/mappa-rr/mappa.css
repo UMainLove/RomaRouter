@@ -1,0 +1,23 @@
+/* Mappe RomaRouter: comandi e attribuzioni nello stile del sito */
+.maplibregl-map { font-family: var(--font-montserrat), system-ui, sans-serif; }
+.maplibregl-ctrl-attrib.maplibregl-compact { background: rgba(255, 255, 255, .8); font-size: 11px; }
+.maplibregl-ctrl-bottom-right { bottom: 0; }
+@media (max-width: 1023px) {
+  .maplibregl-ctrl-bottom-right { bottom: auto; top: 0; }
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib { margin-top: 236px !important; }
+}
+.rr-pulsa { position: relative; width: 52px; height: 52px; pointer-events: none; }
+.rr-pulsa::before, .rr-pulsa::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  background: var(--rr-pulsa, #c2185b); opacity: .35; animation: rr-onda 2.2s ease-out infinite;
+}
+.rr-pulsa::after { animation-delay: 1.1s; }
+@keyframes rr-onda { 0% { transform: scale(.35); opacity: .45; } 100% { transform: scale(1.35); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .rr-pulsa::before, .rr-pulsa::after { animation: none; opacity: .2; } }
+.rr-scorri { scrollbar-width: none; }
+.rr-scorri::-webkit-scrollbar { display: none; }
+
+/* schede: entrata morbida (vetro che sale e si posa) */
+.rr-entra { animation: rr-entra .42s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes rr-entra { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .rr-entra { animation: none; } }

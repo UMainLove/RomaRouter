@@ -217,6 +217,10 @@ export function Copertina() {
         <div ref={contenitore} className="copertina-scena" />
         <div className="copertina-velo" />
         <p className="copertina-marchio">RomaRouter</p>
+        {/* attribuzione richiesta dalla CC BY 4.0 (la corsa della lupa); dettagli in /copertina/CREDITI.md */}
+        <p className="copertina-crediti">
+          Corsa della lupa dal rig e dall&apos;animazione di tomkranis (CC BY 4.0) · cielo di Poly Haven (CC0)
+        </p>
         <div className="copertina-testo">
           <p className="copertina-luogo">Roma · Anfiteatro Flavio</p>
           <p className="copertina-contatore">
