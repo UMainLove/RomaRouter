@@ -1,12 +1,12 @@
 "use client";
 
-import type { GeoJSONSource, Map as MapLibre } from "maplibre-gl";
+import type { ExpressionSpecification, GeoJSONSource, Map as MapLibre } from "maplibre-gl";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Cerca, type Luogo } from "../mappa-rr/Cerca";
-import { caricaIcone, spilla } from "../mappa-rr/icone";
 import { inquadra, MappaVettoriale, vola, type ML } from "../mappa-rr/MappaVettoriale";
 import { Azione, Azioni, Fatti, Scheda, Schermo, Strumenti, Tondo } from "../mappa-rr/Schermo";
 import { primoTesto } from "../mappa-rr/stile";
+import { assicuraSpille } from "./spille";
 import { ACCESSO, GLIFI_SPORT, NOMI_DISCIPLINA, PRIORITA, SPORT, TIPO, type Accesso, type Gruppo } from "./sport";
 
 /*
@@ -56,6 +56,7 @@ function caricaDati<T>(api: string, copia: string, pieno: (d: T) => boolean): Pr
 /** Il glifo del luogo: lo sport scelto, altrimenti il suo sport principale. */
 function glifoDi(p: Props, gruppo: Gruppo | "tutti"): Gruppo {
   if (gruppo !== "tutti") return gruppo;
+  if (p.a === "libero" && p.d?.length === 1 && p.d[0] === "fitness") return "fitness" as Gruppo;
   return PRIORITA.find((g) => p.g?.includes(g)) ?? (p.a === "scuola" || p.t === "palestra" ? "palestra" : "altro");
 }
 
@@ -112,7 +113,7 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
   const vicino = useCallback((lon: number, lat: number, etichetta: string | null, volaLi: boolean) => {
     const k = m.current;
     if (!k) return;
-    if (volaLi || !window.matchMedia("(min-width: 1024px)").matches) inquadra(k.map, [[lon - 0.027, lat - 0.02], [lon + 0.027, lat + 0.02]]);
+    if (volaLi || !window.matchMedia("(min-width: 1024px)").matches) inquadra(k.map, [[lon - 0.019, lat - 0.0142], [lon + 0.019, lat + 0.0142]]);
     setSel({ tipo: "vicino", lon, lat, etichetta });
     const src = k.map.getSource("rr-anelli") as GeoJSONSource;
     const disegna = (f: number) =>
@@ -142,7 +143,7 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
     (f: FLuogo, volaLi: boolean) => {
       togliAnelli();
       setSel({ tipo: "luogo", f });
-      if (volaLi && m.current) vola(m.current.map, f.geometry.coordinates[1], f.geometry.coordinates[0], Math.max(m.current.map.getZoom(), 16));
+      if (volaLi && m.current) vola(m.current.map, f.geometry.coordinates[1], f.geometry.coordinates[0], Math.min(Math.max(m.current.map.getZoom(), 14.5), 16));
     },
     [togliAnelli],
   );
@@ -155,49 +156,59 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
   const pronta = useCallback(
     (map: MapLibre, ml: ML) => {
       const sotto = primoTesto(map);
-      const icone: Record<string, { svg: string; w: number; h: number }> = {};
-      ACCESSI.forEach((a) => (Object.keys(GLIFI_SPORT) as (Gruppo | "tutti")[]).forEach((g) => (icone[`sp-${g}-${a}`] = spilla(ACCESSO[a].c, GLIFI_SPORT[g], 30))));
-      caricaIcone(map, icone);
       const vuoto = { type: "FeatureCollection" as const, features: [] };
       ["rr-luoghi", "rr-anelli"].forEach((s) => map.addSource(s, { type: "geojson", data: vuoto }));
       const colore = ["match", ["get", "a"], "libero", ACCESSO.libero.c, "comunale", ACCESSO.comunale.c, "scuola", ACCESSO.scuola.c, ACCESSO.club.c] as never;
       map.addLayer({ id: "rr-anelli-f", type: "fill", source: "rr-anelli", filter: ["==", ["geometry-type"], "Polygon"], paint: { "fill-color": "#251D1C", "fill-opacity": ["match", ["get", "i"], 0, 0.07, 1, 0.045, 0.03] } }, sotto);
       map.addLayer({ id: "rr-anelli-l", type: "line", source: "rr-anelli", filter: ["==", ["geometry-type"], "Polygon"], paint: { "line-color": "#251D1C", "line-width": 1.4, "line-opacity": 0.55, "line-dasharray": [3, 3] } }, sotto);
-      // da lontano un punto colorato (migliaia restano leggeri), da vicino la spilla con lo sport
+      // tutti i luoghi come puntini (si vede subito dove sono, anche a migliaia), e sopra le spille:
+      // da lontano solo quelle che non si sovrappongono (prima comunali e gratis, poi le piu' grandi),
+      // da vicino tutte. La spilla scelta si ingrandisce.
       map.addLayer({
         id: "rr-luoghi-c",
         type: "circle",
         source: "rr-luoghi",
-        maxzoom: 13.6,
-        layout: { "circle-sort-key": ["match", ["get", "a"], "club", 0, "scuola", 1, "comunale", 2, 3] },
+        maxzoom: 15,
+        layout: { "circle-sort-key": ["get", "o"] },
         paint: {
           "circle-color": colore,
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 9.5, ["case", ["==", ["get", "a"], "club"], 1.6, 2.4], 12, ["case", ["==", ["get", "a"], "club"], 3, 4.2], 13.6, 6],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 9.5, 1.8, 12, 2.8, 14, 3.6],
+          "circle-opacity": ["interpolate", ["linear"], ["zoom"], 10, 0.75, 14.5, 0.55],
           "circle-stroke-color": "#fff",
-          "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 10, 0.4, 13, 1.2],
+          "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 10, 0.5, 13, 1],
         },
       });
+      const spille = {
+        "icon-image": ["concat", "pin-", ["get", "k"], "-", ["get", "a"], "-", ["get", "b"]] as ExpressionSpecification,
+        "icon-anchor": "bottom" as const,
+        "symbol-sort-key": ["get", "o"] as ExpressionSpecification,
+      };
       map.addLayer({
         id: "rr-luoghi",
         type: "symbol",
         source: "rr-luoghi",
-        minzoom: 13.6,
         layout: {
-          "icon-image": ["concat", "sp-", ["get", "k"], "-", ["get", "a"]],
-          "icon-size": ["interpolate", ["linear"], ["zoom"], 13.6, 0.72, 15, 0.9, 17, 1.05],
-          "icon-allow-overlap": true,
-          "symbol-sort-key": ["match", ["get", "a"], "club", 3, "scuola", 2, "comunale", 1, 0],
-          "text-field": ["step", ["zoom"], "", 15.6, ["get", "nome"]],
+          ...spille,
+          "icon-size": ["interpolate", ["linear"], ["zoom"], 10, 0.7, 12, 0.8, 14, 0.92, 16, 1.02, 18, 1.1],
+          "icon-allow-overlap": ["step", ["zoom"], false, 14.8, true],
+          "icon-padding": ["interpolate", ["linear"], ["zoom"], 10, 6, 14, 2],
+          "text-field": ["step", ["zoom"], "", 15.4, ["get", "nome"]],
           "text-font": ["Noto Sans Bold"],
           "text-size": 11.5,
-          "text-offset": [0, 1.45],
+          "text-offset": [0, 0.35],
           "text-anchor": "top",
           "text-max-width": 9,
           "text-optional": true,
         },
         paint: { "text-color": "#251D1C", "text-halo-color": "#fff", "text-halo-width": 1.6 },
       });
-      map.addLayer({ id: "rr-luoghi-sel", type: "circle", source: "rr-luoghi", filter: ["==", ["get", "id"], -1], paint: { "circle-radius": 21, "circle-opacity": 0, "circle-stroke-color": "#251D1C", "circle-stroke-width": 3 } }, "rr-luoghi");
+      map.addLayer({
+        id: "rr-luoghi-sel",
+        type: "symbol",
+        source: "rr-luoghi",
+        filter: ["==", ["get", "id"], -1],
+        layout: { ...spille, "icon-size": ["interpolate", ["linear"], ["zoom"], 10, 1, 14, 1.15, 18, 1.25], "icon-allow-overlap": true, "icon-ignore-placement": true },
+      });
       map.addLayer({
         id: "rr-anelli-t",
         type: "symbol",
@@ -216,11 +227,11 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
 
       map.on("click", (e) => {
         const box: [[number, number], [number, number]] = [[e.point.x - 7, e.point.y - 7], [e.point.x + 7, e.point.y + 7]];
-        const f = map.queryRenderedFeatures(e.point, { layers: ["rr-luoghi"] })[0] ?? map.queryRenderedFeatures(box, { layers: ["rr-luoghi-c", "rr-luoghi"] })[0];
+        const f = map.queryRenderedFeatures(e.point, { layers: ["rr-luoghi-sel", "rr-luoghi"] })[0] ?? map.queryRenderedFeatures(box, { layers: ["rr-luoghi", "rr-luoghi-c"] })[0];
         if (f) {
           const l = tutti.current.find((x) => x.id === Number(f.properties.id));
           if (l) {
-            if (!window.matchMedia("(min-width: 1024px)").matches) vola(map, l.geometry.coordinates[1], l.geometry.coordinates[0], map.getZoom());
+            if (!window.matchMedia("(min-width: 1024px)").matches) map.easeTo({ center: l.geometry.coordinates, duration: 450 });
             return void apri(l, false);
           }
         }
@@ -241,8 +252,21 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
   useEffect(() => {
     const k = m.current;
     if (!k || !pronto) return;
-    const features = visibili.map((f) => ({ ...f, properties: { id: f.id, a: f.properties.a, k: glifoDi(f.properties, gruppo), nome: nomeLuogo(f.properties) } }));
-    (k.map.getSource("rr-luoghi") as GeoJSONSource).setData({ type: "FeatureCollection", features } as never);
+    const RANGO: Record<Accesso, number> = { comunale: 0, libero: 1, scuola: 2, club: 3 };
+    const features = visibili.map((f) => {
+      const p = f.properties;
+      const kk = glifoDi(p, gruppo);
+      const b = p.s >= 2 ? Math.min(p.s, 10) : 0;
+      return { ...f, properties: { id: f.id, a: p.a, k: kk, b, o: RANGO[p.a] * 1000 - Math.min(p.s, 999) - (p.n ? 0.5 : 0), nome: nomeLuogo(p) } };
+    });
+    const colori = Object.fromEntries(ACCESSI.map((a) => [a, ACCESSO[a].c]));
+    let vivo = true;
+    assicuraSpille(k.map, features.map((x) => `pin-${x.properties.k}-${x.properties.a}-${x.properties.b}`), colori).then(() => {
+      if (vivo) (k.map.getSource("rr-luoghi") as GeoJSONSource).setData({ type: "FeatureCollection", features } as never);
+    });
+    return () => {
+      vivo = false;
+    };
   }, [visibili, gruppo, pronto]);
 
   useEffect(() => {
