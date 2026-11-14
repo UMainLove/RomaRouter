@@ -476,7 +476,7 @@
 }
 
 /* ── Copertina (prima visita) ──────────────────────────────────────────────────────────────
-   Il Colosseo fermo, poi la lupa; si apre a cerchio dal Miliarium. La decide uno script nel
+   Il Colosseo al tramonto, fermo, poi la lupa di bronzo (un video); si apre a cerchio dal Miliarium. La decide uno script nel
    <head> (data-copertina su <html>) prima del primo disegno; senza JavaScript non compare.
    Fuori dai layer: nessuna utility deve poterla scavalcare. */
 @property --copertina-raggio {
@@ -505,17 +505,18 @@ html[data-copertina] .copertina,
   inset: 0;
   z-index: 80;
   overflow: hidden;
-  background-color: #efe9df;
+  background-color: #3a2a20;
   background-image: url("/copertina/poster.webp");
   background-size: cover;
+  background-position: var(--fetta-iniziale, 30%) 50%;
   background-repeat: no-repeat;
-  color: var(--color-ink);
+  color: #f7f0e4;
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
 }
 .copertina-scena,
-.copertina-tela {
+.copertina-video {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -527,15 +528,26 @@ html[data-copertina] .copertina,
 .copertina-scena {
   opacity: 1;
 }
-.copertina[data-pronta] .copertina-tela {
+/* come il poster (background-size: cover); sugli schermi stretti la fetta segue la lupa */
+.copertina-video {
+  object-fit: cover;
+  object-position: var(--fetta-iniziale, 30%) 50%;
+}
+.copertina[data-pronta] .copertina-video {
   opacity: 1;
 }
-/* velo chiaro in basso: il testo resta leggibile anche sopra gli archi (telefoni) */
+.copertina[data-corsa] .copertina-video {
+  object-position: var(--fetta-finale, 40%) 50%;
+  transition:
+    opacity 0.3s ease,
+    object-position 1.6s cubic-bezier(0.45, 0, 0.25, 1);
+}
+/* velo scuro in basso: il testo chiaro resta leggibile anche sopra la strada e gli archi */
 .copertina-velo {
   position: absolute;
   inset: auto 0 0 0;
-  height: 42%;
-  background: linear-gradient(to top, rgb(239 233 223 / 0.82), rgb(239 233 223 / 0));
+  height: 46%;
+  background: linear-gradient(to top, rgb(24 16 11 / 0.66), rgb(24 16 11 / 0));
   pointer-events: none;
   transition: opacity 0.5s ease;
 }
@@ -568,7 +580,7 @@ html[data-copertina] .copertina,
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-ink-soft);
+  color: rgb(247 240 228 / 0.8);
 }
 .copertina-contatore {
   font-size: clamp(72px, 11vw, 152px);
@@ -580,7 +592,7 @@ html[data-copertina] .copertina,
 .copertina-motto {
   font-size: 15px;
   line-height: 22px;
-  color: var(--color-ink-soft);
+  color: rgb(247 240 228 / 0.8);
 }
 /* quando parte la lupa il testo lascia la scena */
 .copertina[data-corsa] .copertina-testo,
@@ -597,22 +609,22 @@ html[data-copertina] .copertina-salta {
   bottom: clamp(16px, 4vh, 40px);
   min-height: 44px;
   padding: 0 18px;
-  border: 1px solid rgb(37 29 28 / 0.18);
+  border: 1px solid rgb(247 240 228 / 0.28);
   border-radius: 999px;
-  background: rgb(250 249 247 / 0.78);
+  background: rgb(24 16 11 / 0.42);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  color: var(--color-ink);
+  color: #f7f0e4;
   font: inherit;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
 }
 html[data-copertina] .copertina-salta:hover {
-  background: rgb(250 249 247 / 0.95);
+  background: rgb(24 16 11 / 0.62);
 }
 html[data-copertina] .copertina-salta:focus-visible {
-  outline: 2px solid var(--color-amaranto);
+  outline: 2px solid #f7f0e4;
   outline-offset: 3px;
 }
 
@@ -634,11 +646,12 @@ html[data-copertina] .copertina-salta:focus-visible {
 .copertina[data-uscita="breve"] {
   animation-duration: 0.6s;
 }
-.copertina[data-fase="uscita"] .copertina-tela {
+.copertina[data-fase="uscita"] .copertina-video {
   scale: 1.06;
   transition:
     scale 0.95s cubic-bezier(0.55, 0, 0.2, 1),
-    opacity 0.3s ease;
+    opacity 0.3s ease,
+    object-position 1.6s cubic-bezier(0.45, 0, 0.25, 1);
 }
 @keyframes copertina-apri {
   from {
@@ -659,7 +672,7 @@ html[data-copertina] .copertina-salta:focus-visible {
     mask-image: none;
     animation: copertina-sfuma 0.45s ease forwards;
   }
-  .copertina-tela,
+  .copertina-video,
   .copertina-testo,
   .copertina-velo {
     transition: none;

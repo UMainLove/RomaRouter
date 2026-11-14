@@ -7,7 +7,7 @@ export function Footer() {
           Non è un servizio ufficiale di Roma Capitale · dati di esempio · mappa basata su Quartieri di Roma 2026 ·
           © OpenStreetMap contributors
         </span>
-        <span>Copertina: lupa dalla volpe 3D di PixelMannen (CC0), rig e animazione di tomkranis (CC BY 4.0)</span>
+        <span>Copertina: corsa della lupa dal rig e dall&apos;animazione di tomkranis (CC BY 4.0), cielo di Poly Haven (CC0)</span>
       </div>
     </footer>
   );

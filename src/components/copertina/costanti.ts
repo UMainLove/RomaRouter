@@ -1,24 +1,28 @@
 /*
- * Valori condivisi tra la copertina (bundle della home) e la scena 3D (caricata a parte):
- * qui niente three.js, cosi' la home non lo scarica.
+ * Valori della copertina della home e dello script nel <head>.
  */
 
-/** File della scena e poster: generati da scripts/copertina (vedi docs/COPERTINA.md). */
-export const URL_SCENA = "/copertina/colosseo.glb";
-export const PESO_SCENA = 310_000;
+/**
+ * Il video della copertina: render di Blender (scripts/copertina, vedi docs/COPERTINA.md), 1920x1080,
+ * 30 fotogrammi al secondo, 4,6 s. AV1 per chi lo decodifica, H.264 per tutti gli altri; il browser
+ * prende la prima sorgente che sa riprodurre. Il poster e' il primo fotogramma.
+ */
+export const VIDEO = [
+  { src: "/copertina/copertina.webm", tipo: 'video/webm; codecs="av01.0.08M.10"' },
+  { src: "/copertina/copertina.mp4", tipo: 'video/mp4; codecs="avc1.640029"' },
+] as const;
 
-/** Fino a qui la camera e' ferma: il primo fotogramma 3D coincide col poster. */
+/** Fino a qui il video e' fermo sul poster (la lupa e' una statua ai piedi del Colosseo). */
 export const T_FERMA = 2;
-/** Parte la dissolvenza verso la home (la lupa sta passando l'ultimo pilastro). */
+/** Parte l'apertura verso la home (la lupa sta passando sotto gli archi). */
 export const T_DISSOLVENZA = 3.6;
 
 /**
- * Sugli schermi piu' stretti del 16:10 si vede una fetta verticale del fotogramma di riferimento,
- * come background-position sul poster: 0 = bordo sinistro, 1 = destro. Durante l'inseguimento
- * la fetta scivola verso la lupa.
+ * Sugli schermi piu' stretti del 16:9 si vede una fetta verticale del video, come
+ * object-position: 0 = bordo sinistro, 1 = destro. Durante l'inseguimento la fetta segue la lupa.
  */
-export const FETTA_INIZIALE = 0.36;
-export const FETTA_FINALE = 0.56;
+export const FETTA_INIZIALE = 0.3;
+export const FETTA_FINALE = 0.4;
 
 /** localStorage: la copertina si vede solo alla prima visita (o con ?copertina=1). */
 export const CHIAVE_VISTA = "rr-copertina";

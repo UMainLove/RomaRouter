@@ -1,16 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { CHIAVE_VISTA, FETTA_INIZIALE, PESO_SCENA, T_DISSOLVENZA, T_FERMA, URL_SCENA } from "./costanti";
-import type { Scena } from "./scena";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { CHIAVE_VISTA, FETTA_FINALE, FETTA_INIZIALE, T_DISSOLVENZA, T_FERMA, VIDEO } from "./costanti";
 
 /*
  * Copertina della home, solo alla prima visita (o con ?copertina=1).
- * 0–2 s: il Colosseo fermo (prima il poster, poi la scena 3D identica) e il contatore.
- * 2–4 s: la lupa fa lo slalom tra gli archi e la camera la segue con una panoramica che parte
- * piano. Poi la copertina si apre a cerchio dal Miliarium della home, con il bordo sfumato.
- * La home e' gia' sotto e completa: chi usa un lettore di schermo non aspetta, e qualsiasi
- * tasto, clic o scroll salta l'introduzione.
+ * 0–2 s: il Colosseo al tramonto, fermo (il poster è il primo fotogramma del video), e il contatore.
+ * 2–3,6 s: la lupa di bronzo fa lo slalom tra gli archi e la camera la segue con una panoramica che
+ * parte piano. Poi la copertina si apre a cerchio dal Miliarium della home, con il bordo sfumato.
+ * Il video si scarica solo quando la copertina parte. La home è già sotto e completa: chi usa un
+ * lettore di schermo non aspetta, e qualsiasi tasto, clic o scroll salta l'introduzione.
  */
 
 type Fase = "attesa" | "uscita" | "finita";
@@ -24,15 +23,6 @@ const TASTI_SALTA = new Set(["Escape", "Enter", " ", "Tab", "ArrowDown", "PageDo
 declare global {
   interface Window {
     __rrCopertina?: number;
-  }
-}
-
-function supportaWebGL() {
-  try {
-    const c = document.createElement("canvas");
-    return !!(c.getContext("webgl2") || c.getContext("webgl"));
-  } catch {
-    return false;
   }
 }
 
@@ -50,6 +40,28 @@ function centroMiliario(): [number, number] | null {
   return null;
 }
 
+/** Video muto in linea: gli attributi servono a iOS per farlo partire da solo. */
+function creaVideo() {
+  const v = document.createElement("video");
+  v.className = "copertina-video";
+  v.muted = true;
+  v.defaultMuted = true;
+  v.playsInline = true;
+  v.setAttribute("muted", "");
+  v.setAttribute("playsinline", "");
+  v.preload = "auto";
+  v.disablePictureInPicture = true;
+  v.disableRemotePlayback = true;
+  v.tabIndex = -1;
+  for (const { src, tipo } of VIDEO) {
+    const s = document.createElement("source");
+    s.src = src;
+    s.type = tipo;
+    v.appendChild(s);
+  }
+  return v;
+}
+
 export function Copertina() {
   const radice = useRef<HTMLDivElement>(null);
   const contenitore = useRef<HTMLDivElement>(null);
@@ -63,25 +75,28 @@ export function Copertina() {
     const box = contenitore.current;
     if (!html.hasAttribute("data-copertina") || !nodo || !box) return;
     const el: HTMLDivElement = nodo; // non nullo anche dentro le funzioni qui sotto
-    // una tela nuova a ogni avvio: in sviluppo (StrictMode) l'effetto parte due volte e due
-    // renderer sulla stessa tela si spegnerebbero a vicenda
-    const canvas = document.createElement("canvas");
-    canvas.className = "copertina-tela";
-    box.appendChild(canvas);
 
     const t0 = window.__rrCopertina ?? performance.now();
     const secondi = () => (performance.now() - t0) / 1000;
     const ridotto = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const soloPoster = ridotto || connessioneLeggera() || !supportaWebGL();
+    const soloPoster = ridotto || connessioneLeggera();
 
-    let scena: Scena | null = null;
+    // un video nuovo a ogni avvio (in sviluppo l'effetto parte due volte)
+    const video: HTMLVideoElement | null = soloPoster ? null : creaVideo();
     let raf = 0;
-    let pronta = false;
-    let tClip = 0; // secondi della clip: fermi col poster fino a T_FERMA, poi lo slalom
-    let ultimo = 0;
+    let partito = false;
     let uscita = false;
     let chiuso = false;
     const timer: number[] = [];
+
+    function fermaVideo() {
+      if (!video) return;
+      video.pause();
+      // libera subito il decoder (sui telefoni ce n'e' uno solo)
+      video.querySelectorAll("source").forEach((s) => s.remove());
+      video.removeAttribute("src");
+      video.load();
+    }
 
     function esci(rapida: boolean) {
       if (uscita || chiuso) return;
@@ -103,8 +118,7 @@ export function Copertina() {
         if (finita) return;
         finita = true;
         cancelAnimationFrame(raf);
-        scena?.distruggi();
-        scena = null;
+        fermaVideo();
         setFase("finita");
       };
       // fine dell'animazione CSS di apertura; il timer copre i browser che non la eseguono
@@ -118,18 +132,12 @@ export function Copertina() {
       esci(true);
     }
 
-    function ciclo(adesso: number) {
-      if (!scena || chiuso) return;
-      // fase ferma: orologio reale (se la scena arriva dopo i 2 s lo slalom parte subito).
-      // Slalom: al massimo 50 ms per fotogramma, cosi' su un telefono lento rallenta ma non salta.
-      if (tClip < T_FERMA) tClip = Math.min(secondi(), T_FERMA);
-      else tClip += Math.min((adesso - ultimo) / 1000, 0.05);
-      ultimo = adesso;
-      scena.disegna(tClip);
-      if (!el.dataset.pronta) el.dataset.pronta = "1";
-      if (tClip >= T_FERMA && !el.dataset.corsa) el.dataset.corsa = "1";
+    function ciclo() {
+      if (!video || chiuso) return;
+      const t = video.currentTime;
+      if (t >= T_FERMA && !el.dataset.corsa) el.dataset.corsa = "1";
       // su un dispositivo lentissimo la copertina non trattiene comunque la home oltre i 12 s
-      if (tClip >= T_DISSOLVENZA || secondi() > LIMITE_TOTALE) esci(false);
+      if (t >= T_DISSOLVENZA || video.ended || secondi() > LIMITE_TOTALE) esci(false);
       raf = requestAnimationFrame(ciclo);
     }
 
@@ -138,31 +146,40 @@ export function Copertina() {
     el.addEventListener("pointerdown", salta);
     el.addEventListener("touchmove", salta, { passive: true });
 
-    if (soloPoster) {
+    if (!video) {
       timer.push(window.setTimeout(() => setPercento(100), 250));
       timer.push(window.setTimeout(() => esci(ridotto), ridotto ? 1500 : T_FERMA * 1000 + 500));
     } else {
-      timer.push(window.setTimeout(() => !pronta && esci(false), LIMITE_CARICAMENTO * 1000));
-      import("./scena")
-        .then(({ creaScena }) =>
-          creaScena(canvas, URL_SCENA, {
-            pesoStimato: PESO_SCENA,
-            suProgresso: (f) => setPercento((p) => Math.max(p, Math.round(f * 100))),
-          }),
-        )
-        .then((s) => {
-          if (uscita || chiuso) {
-            s.distruggi();
-            return;
-          }
-          scena = s;
-          pronta = true;
-          raf = requestAnimationFrame((adesso) => {
-            ultimo = adesso;
-            ciclo(adesso);
-          });
-        })
-        .catch(() => esci(false));
+      const v: HTMLVideoElement = video;
+      box.appendChild(v);
+      const progresso = () => {
+        const b = v.buffered;
+        if (!b.length || !Number.isFinite(v.duration) || v.duration <= 0) return;
+        const f = b.end(b.length - 1) / v.duration;
+        setPercento((p) => Math.max(p, Math.min(99, Math.round(f * 100))));
+      };
+      const pronto = () => {
+        if (partito || uscita || chiuso) return;
+        partito = true;
+        // il video riparte da dove sarebbe la copertina: fermo fino ai 2 s, poi lo slalom
+        // (se arriva tardi la corsa parte subito)
+        const t = Math.min(secondi(), T_FERMA);
+        if (Math.abs(v.currentTime - t) > 0.15) v.currentTime = t;
+        setPercento(100);
+        el.dataset.pronta = "1";
+        raf = requestAnimationFrame(ciclo);
+      };
+      v.addEventListener("progress", progresso);
+      v.addEventListener("loadedmetadata", progresso);
+      v.addEventListener("playing", pronto);
+      v.lastElementChild?.addEventListener("error", () => !partito && esci(false));
+      timer.push(window.setTimeout(() => !partito && esci(false), LIMITE_CARICAMENTO * 1000));
+      // play() subito: su iOS e' anche quello che fa partire il download. Se il browser nega la
+      // riproduzione automatica (es. risparmio energetico) resta il poster per il tempo della pausa.
+      v.play().catch(() => {
+        if (partito || chiuso) return;
+        timer.push(window.setTimeout(() => esci(false), Math.max(0, T_FERMA * 1000 + 500 - secondi() * 1000)));
+      });
     }
 
     return () => {
@@ -173,9 +190,8 @@ export function Copertina() {
       window.removeEventListener("wheel", salta);
       el.removeEventListener("pointerdown", salta);
       el.removeEventListener("touchmove", salta);
-      scena?.distruggi();
-      scena = null;
-      canvas.remove();
+      fermaVideo();
+      video?.remove();
     };
   }, []);
 
@@ -188,7 +204,12 @@ export function Copertina() {
         className="copertina"
         data-fase={fase}
         aria-hidden="true"
-        style={{ backgroundPosition: `${FETTA_INIZIALE * 100}% 50%` }}
+        style={
+          {
+            "--fetta-iniziale": `${FETTA_INIZIALE * 100}%`,
+            "--fetta-finale": `${FETTA_FINALE * 100}%`,
+          } as CSSProperties
+        }
       >
         <div ref={contenitore} className="copertina-scena" />
         <div className="copertina-velo" />
