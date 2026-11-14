@@ -25,11 +25,11 @@ const titillium = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: "Roma Router · tutte le strade portano al servizio giusto",
-    template: "%s · Roma Router",
+    default: "RomaRouter · tutte le strade portano al servizio giusto",
+    template: "%s · RomaRouter",
   },
   description:
-    "Chiedi a Roma Router cosa ti serve: ti porta al servizio giusto di Roma Capitale, dagli oggetti smarriti agli impianti sportivi.",
+    "Chiedi a RomaRouter cosa ti serve: ti porta al servizio giusto di Roma Capitale, dagli oggetti smarriti agli impianti sportivi.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

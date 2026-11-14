@@ -16,7 +16,7 @@ export default function NonTrovata() {
       </p>
       <div className="flex flex-wrap gap-3">
         <Link href="/altro" className={btnPrimario}>
-          Chiedi a Roma Router
+          Chiedi a RomaRouter
         </Link>
         <Link href="/" className={btnSecondario}>
           Scegli un ambito
