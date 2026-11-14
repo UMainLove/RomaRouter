@@ -124,33 +124,41 @@ async function Fonti() {
 export default function PaginaArte() {
   return (
     <ArteMappa
-      info={
-        <div className="flex flex-col gap-5">
-          <Blocco
-            id="regole"
-            titolo="Le regole in breve"
-            testo="Il regolamento di Roma Capitale (DAC 24/2012, come risulta dopo la sentenza del TAR Lazio n. 5494/2013) vale in tutto il Comune; i Municipi aggiungono divieti in zone precise."
-          >
-            <Suspense fallback={<Attesa cosa="le regole" />}>
-              <Regole />
-            </Suspense>
-          </Blocco>
-          <Blocco id="contatti" titolo="A chi mandare il preavviso" testo="Almeno 3 giorni prima, al Gruppo di Polizia Locale del Municipio dove ti esibisci (art. 10).">
-            <Suspense fallback={<Attesa cosa="i contatti" />}>
-              <Contatti />
-            </Suspense>
-          </Blocco>
-          <Blocco
-            id="fonti"
-            titolo="Fonti"
-            testo="Atti di Roma Capitale e dei Municipi raccolti nel dataset Art Spot. Le posizioni delle postazioni sono stimate dalle planimetrie; i divieti noti solo dalla stampa sono segnati «da verificare»."
-          >
-            <Suspense fallback={<Attesa cosa="le fonti" />}>
-              <Fonti />
-            </Suspense>
-          </Blocco>
-        </div>
-      }
+      guida={[
+        {
+          id: "regole",
+          nome: "Regole",
+          contenuto: (
+            <Blocco id="regole" titolo="Le regole in breve" testo="Il regolamento di Roma Capitale (DAC 24/2012, come risulta dopo la sentenza del TAR Lazio n. 5494/2013) vale in tutto il Comune; i Municipi aggiungono divieti in zone precise.">
+              <Suspense fallback={<Attesa cosa="le regole" />}>
+                <Regole />
+              </Suspense>
+            </Blocco>
+          ),
+        },
+        {
+          id: "preavviso",
+          nome: "Preavviso",
+          contenuto: (
+            <Blocco id="contatti" titolo="A chi mandare il preavviso" testo="Almeno 3 giorni prima, al Gruppo di Polizia Locale del Municipio dove ti esibisci (art. 10). Dalla scheda di un punto il messaggio è già scritto.">
+              <Suspense fallback={<Attesa cosa="i contatti" />}>
+                <Contatti />
+              </Suspense>
+            </Blocco>
+          ),
+        },
+        {
+          id: "fonti",
+          nome: "Fonti",
+          contenuto: (
+            <Blocco id="fonti" titolo="Da dove vengono i dati" testo="Atti di Roma Capitale e dei Municipi (registro Deliberazioni e Atti), dataset Art Spot e OpenStreetMap. Le posizioni delle postazioni sono stimate dalle planimetrie.">
+              <Suspense fallback={<Attesa cosa="le fonti" />}>
+                <Fonti />
+              </Suspense>
+            </Blocco>
+          ),
+        },
+      ]}
     />
   );
 }

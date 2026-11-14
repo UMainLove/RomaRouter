@@ -1,5 +1,6 @@
 import "server-only";
 import { querySezione } from "@/lib/db";
+import { fasciaArt6 } from "@/lib/orari-arte";
 
 /**
  * Sezione "Artisti di strada" (database rr_artisti_strada, dataset Art Spot).
@@ -44,18 +45,8 @@ export interface Motivo {
   testo: string; luogo: string; riferimento: string | null; fonte_url: string | null; ufficiale: boolean; verifica: string; approssimata: boolean;
 }
 
-/** Fascia oraria dell'art. 6 DAC 24/2012 valida in quel momento (ora di Roma). */
-export function fasciaArt6(quando: Date, attivita: Attivita) {
-  const parti = new Intl.DateTimeFormat("it-IT", { timeZone: "Europe/Rome", month: "numeric", hour: "numeric", minute: "numeric", hourCycle: "h23" })
-    .formatToParts(quando);
-  const v = (t: string) => Number(parti.find((p) => p.type === t)?.value ?? 0);
-  const mese = v("month"), minuti = v("hour") * 60 + v("minute");
-  const estate = mese >= 6 && mese <= 9;
-  const fasce = attivita === "esoterica" ? [[16, 20], [20, 24]] : attivita === "figurativa" ? [[8, 24]] : estate ? [[10, 13], [16, 22]] : [[10, 13], [16, 20]];
-  const dentro = fasce.some(([a, b]) => minuti >= a * 60 && minuti < b * 60);
-  const testo = fasce.map(([a, b]) => `${a}–${b}`).join(" e ");
-  return { dentro, testo, stagione: attivita === "esoterica" || attivita === "figurativa" ? null : estate ? "1 giugno – 30 settembre" : "1 ottobre – 31 maggio" };
-}
+// fasce orarie in comune con la mappa (lib/orari-arte.ts)
+export { fasciaArt6 };
 
 export async function verificaLuogo(lat: number, lon: number, attivita: Attivita, quando?: Date) {
   const P = "ST_SetSRID(ST_MakePoint($1, $2), 4326)";

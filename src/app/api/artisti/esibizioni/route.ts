@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
         'type', 'Feature', 'id', e.id,
         'geometry', ST_AsGeoJSON(e.geom, 6)::json,
         'properties', json_build_object('nome_arte', e.nome_arte, 'disciplina', e.disciplina, 'descrizione', e.descrizione,
-          'link', e.link, 'inizio', e.inizio, 'fine', e.fine, 'luogo', e.luogo, 'postazione', e.postazione, 'attivita', e.attivita, 'stato', e.stato, 'demo', e.demo)
+          'link', e.link, 'inizio', e.inizio, 'fine', e.fine, 'luogo', e.luogo, 'postazione', e.postazione, 'pk', e.postazione_chiave, 'attivita', e.attivita, 'stato', e.stato, 'demo', e.demo)
       ) ORDER BY e.inizio), '[]'::json)) AS fc
      FROM artisti.v_esibizioni e
      WHERE e.geom IS NOT NULL AND e.fine > now() AND e.inizio < now() + make_interval(days => $1)`,

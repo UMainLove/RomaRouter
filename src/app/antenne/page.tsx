@@ -341,22 +341,44 @@ const Attesa = ({ cosa }: { cosa: string }) => (
 export default function Antenne(props: PageProps<"/antenne">) {
   return (
     <AntenneMappa
-      info={
-        <div className="flex flex-col gap-8">
-          <Blocco id="elenco" titolo="Tutte le richieste" testo="Le richieste di nuove antenne o di modifiche pubblicate da Roma Capitale.">
-            <Suspense fallback={<Attesa cosa="dell'elenco" />}><Elenco searchParams={props.searchParams} /></Suspense>
-          </Blocco>
-          <Blocco id="misure" titolo="Limiti e misure" testo="Cosa dice la legge, chi misura e come chiedere una verifica a casa tua.">
-            <Suspense fallback={<Attesa cosa="delle misure" />}><Misure /></Suspense>
-          </Blocco>
-          <Blocco id="contesto" titolo="Le regole, dall'Italia al tuo Municipio" testo="Come si autorizza un'antenna, dove è vietata e quali norme valgono.">
-            <Suspense fallback={<Attesa cosa="delle regole" />}><Contesto /></Suspense>
-          </Blocco>
-          <Blocco id="fonti" titolo="Da dove vengono i dati" testo="Ogni dato ha una fonte pubblica. Dove i dati mancano, lo diciamo.">
-            <Suspense fallback={<Attesa cosa="delle fonti" />}><Fonti /></Suspense>
-          </Blocco>
-        </div>
-      }
+      guida={[
+        {
+          id: "elenco",
+          nome: "Elenco",
+          contenuto: (
+            <Blocco id="elenco" titolo="Tutte le richieste" testo="Le richieste di nuove antenne o di modifiche pubblicate da Roma Capitale. «Mappa» ti riporta sull'antenna.">
+              <Suspense fallback={<Attesa cosa="dell'elenco" />}><Elenco searchParams={props.searchParams} /></Suspense>
+            </Blocco>
+          ),
+        },
+        {
+          id: "limiti",
+          nome: "Limiti e misure",
+          contenuto: (
+            <Blocco id="misure" titolo="Campi elettromagnetici: limiti e controlli" testo="Cosa dice la legge, chi misura e come chiedere una verifica a casa tua.">
+              <Suspense fallback={<Attesa cosa="delle misure" />}><Misure /></Suspense>
+            </Blocco>
+          ),
+        },
+        {
+          id: "regole",
+          nome: "Regole",
+          contenuto: (
+            <Blocco id="contesto" titolo="Le regole, dall'Italia al tuo Municipio" testo="Come si autorizza un'antenna, dove è vietata e quali norme valgono.">
+              <Suspense fallback={<Attesa cosa="delle regole" />}><Contesto /></Suspense>
+            </Blocco>
+          ),
+        },
+        {
+          id: "fonti",
+          nome: "Fonti",
+          contenuto: (
+            <Blocco id="fonti" titolo="Da dove vengono i dati" testo="Ogni dato ha una fonte pubblica. Dove i dati mancano, lo diciamo.">
+              <Suspense fallback={<Attesa cosa="delle fonti" />}><Fonti /></Suspense>
+            </Blocco>
+          ),
+        },
+      ]}
     />
   );
 }

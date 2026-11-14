@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     `SELECT json_build_object('type', 'FeatureCollection', 'features', COALESCE(json_agg(json_build_object(
         'type', 'Feature', 'id', z.id,
         'geometry', ST_AsGeoJSON(ST_SimplifyPreserveTopology(z.geom, CASE WHEN $6::boolean THEN 0.00005 ELSE 0.00002 END), CASE WHEN $6::boolean THEN 5 ELSE 6 END)::json,
-        'properties', CASE WHEN $6::boolean THEN json_build_object('e', z.esito, 'u', z.ufficiale) ELSE json_build_object('esito', z.esito, 'categoria', z.categoria, 'nome', z.nome, 'motivo', z.motivo,
+        'properties', CASE WHEN $6::boolean THEN json_build_object('e', z.esito, 'u', z.ufficiale, 'v', z.vale_per, 'n', z.nome) ELSE json_build_object('esito', z.esito, 'categoria', z.categoria, 'nome', z.nome, 'motivo', z.motivo,
           'condizione', z.condizione, 'vale_per', z.vale_per, 'riferimento', z.riferimento, 'fonte_url', z.fonte_url,
           'verifica', z.verifica, 'ufficiale', z.ufficiale, 'approssimata', z.approssimata, 'priorita', z.priorita) END
       ) ORDER BY z.priorita), '[]'::json)) AS fc

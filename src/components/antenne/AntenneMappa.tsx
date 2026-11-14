@@ -1,21 +1,24 @@
 "use client";
 
-import type * as Leaflet from "leaflet";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { CercaIndirizzo, type Luogo } from "../mappa-leggera/CercaIndirizzo";
-import { inquadra, MappaLeaflet, volaA, type LeafletNS } from "../mappa-leggera/MappaLeaflet";
-import { SchermoMappa } from "../mappa-leggera/SchermoMappa";
+import type { ExpressionSpecification, GeoJSONSource, Map as MapLibre } from "maplibre-gl";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Cerca, type Luogo } from "../mappa-rr/Cerca";
+import { caricaIcone, GLIFI, punto, spilla } from "../mappa-rr/icone";
+import { inquadra, MappaVettoriale, vola, type ML } from "../mappa-rr/MappaVettoriale";
+import { Azione, Azioni, Fatti, Scheda, Schermo, Strumenti, Tondo } from "../mappa-rr/Schermo";
+import { primoTesto } from "../mappa-rr/stile";
 
 /*
- * /antenne: "che antenne ci sono vicino a casa mia?". La mappa mostra solo le richieste di antenne
- * pubblicate da Roma Capitale (due colori: nuova antenna, modifica di un impianto). Un indirizzo o un
- * tocco sulla mappa disegna il cerchio di 500 m e il pannello dice cosa c'e' dentro; un tocco su
- * un'antenna ne mostra la scheda. Scuole, ospedali e aree protette solo se chiesti, e solo da vicino.
+ * Antenne. Tre idee:
+ *  1. il simbolo dice il tipo: la forma e' la taglia (traliccio = stazione radio base, cerchio piccolo = piccola
+ *     antenna a bassa potenza), il colore l'intervento (nuova, potenziamento, modifica), l'anello scuro un sito
+ *     condiviso da piu' operatori. I bottoni in alto sono la legenda e il filtro;
+ *  2. il radar di casa: un indirizzo e partono gli anelli di 100, 250 e 500 m; in grande la distanza della piu' vicina;
+ *  3. la linea del tempo: le richieste mese per mese, si sceglie l'anno.
  */
 
-const COLORI = { nuova: "#C2410C", modifica: "#2A6FD6", sensibile: "#7A4FD0", vincolo: "#0F9466" };
-const RAGGIO = 500;
-
+type Tipo = "nuova" | "potenziamento" | "modifica";
+type Taglia = "macro" | "piccola";
 type Props = {
   gestori: string[]; indirizzo: string | null; tipo_intervento: string | null; regime: string | null; data_pubblicazione: string | null;
   municipio_nome: string | null; quartiere: string | null; qualita_posizione: string; nota_qualita: string | null;
@@ -23,391 +26,658 @@ type Props = {
 };
 type Istanza = { id: number; geometry: { coordinates: [number, number] }; properties: Props };
 type Contesto = {
-  punto: { lat: number; lon: number }; municipio: { numero: number; nome: string } | null; quartiere: { nome: string; tipo: string } | null;
+  municipio: { numero: number; nome: string } | null; quartiere: { nome: string; tipo: string } | null;
   aree_vincolate: { tipo: string; nome: string }[];
-  istanze_srb_nel_raggio: { id: number; gestori: string[]; indirizzo: string | null; tipo_intervento: string | null; data_pubblicazione: string | null; distanza_m: number }[];
   siti_sensibili_piu_vicini: { categoria: string; nome: string | null; indirizzo: string | null; distanza_m: number }[];
 };
-type Selezione = { tipo: "antenna"; a: Istanza } | { tipo: "zona"; c: Contesto; etichetta: string | null } | null;
+type Impianto = { osm: string; tipo: "traliccio" | "palo" | "antenna"; mobile: boolean; operatore: string | null; altezza_m: number | null; nome: string | null };
+type FImpianto = { geometry: { coordinates: [number, number] }; properties: Impianto };
+type Sel = { tipo: "antenna"; a: Istanza } | { tipo: "impianto"; f: FImpianto } | { tipo: "radar"; lon: number; lat: number; etichetta: string | null; c: Contesto | null } | null;
 
-const nuova = (t: string | null) => t === "installazione";
+const COL: Record<Tipo, string> = { nuova: "#E4572E", potenziamento: "#E89B1A", modifica: "#3366CC" };
+const NOME: Record<Tipo, string> = { nuova: "Nuova antenna", potenziamento: "Potenziamento", modifica: "Modifica di un impianto" };
+const PLURALE: Record<Tipo, string> = { nuova: "Nuove", potenziamento: "Potenziate", modifica: "Modificate" };
+const TAGLIA: Record<Taglia, string> = { macro: "Stazione radio base", piccola: "Piccola antenna" };
+const CONDIVISO = "#251D1C";
+const ESISTENTE = "#3F4A5C";
+const ANELLI = [100, 250, 500];
 const CATEGORIE: Record<string, string> = {
   scuola: "Scuola", asilo_nido: "Asilo nido", ospedale: "Ospedale", casa_di_cura: "Casa di cura", rsa: "RSA",
   parco_giochi: "Parco giochi", universita: "Università", clinica: "Clinica",
 };
-const dataIt = (d: string | null) => (d ? new Date(d).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" }) : "—");
+const ARPA = "https://www.arpalazio.it/en/servizi/faq";
 
-export function AntenneMappa({ info }: { info: ReactNode }) {
-  const [totale, setTotale] = useState<number | null>(null);
-  const [sel, setSel] = useState<Selezione>(null);
+const tipoDi = (t: string | null): Tipo => (t === "installazione" ? "nuova" : t === "incremento limiti emissivi" ? "potenziamento" : "modifica");
+const tagliaDi = (p: Props): Taglia => (/bassa potenza|ridotte dimensioni/i.test(p.regime ?? "") ? "piccola" : "macro");
+const metri = (m: number) => (m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1).replace(".", ",")} km`);
+const maiuscola = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+function distanza(a: [number, number], b: [number, number]) {
+  const k = Math.PI / 180, x = (b[0] - a[0]) * k * Math.cos(((a[1] + b[1]) / 2) * k), y = (b[1] - a[1]) * k;
+  return Math.sqrt(x * x + y * y) * 6371000;
+}
+function cerchio(lon: number, lat: number, r: number, n = 72) {
+  const k = 180 / Math.PI / 6371000;
+  return Array.from({ length: n + 1 }, (_, i) => {
+    const t = (i / n) * 2 * Math.PI;
+    return [lon + (r * Math.cos(t) * k) / Math.cos((lat * Math.PI) / 180), lat + r * Math.sin(t) * k];
+  });
+}
+
+export function AntenneMappa({ guida }: { guida: { id: string; nome: string; contenuto: ReactNode }[] }) {
+  const [istanze, setIstanze] = useState<Istanza[]>([]);
+  const [impianti, setImpianti] = useState<FImpianto[]>([]);
+  const [esistenti, setEsistenti] = useState(true);
+  const [tipi, setTipi] = useState<Record<Tipo, boolean>>({ nuova: true, potenziamento: true, modifica: true });
+  const [anno, setAnno] = useState<string | null>(null);
+  const [operatore, setOperatore] = useState<string>("");
+  const [sensibili, setSensibili] = useState(false);
+  const [sel, setSel] = useState<Sel>(null);
   const [carica, setCarica] = useState(false);
   const [errore, setErrore] = useState<string | null>(null);
-  const [vista, setVista] = useState<"risultato" | "info">("risultato");
-  const [aperto, setAperto] = useState(false);
-  const [sensibili, setSensibili] = useState(false);
-  const [vincoli, setVincoli] = useState(false);
-
-  const k = useRef<{
-    map: Leaflet.Map; L: LeafletNS; istanze: Istanza[]; punti: Map<number, Leaflet.CircleMarker>; cerchio: Leaflet.Circle | null;
-    sens: Leaflet.LayerGroup; vinc: Leaflet.LayerGroup; vincCaricati: boolean;
-  } | null>(null);
-  const flag = useRef({ sensibili, vincoli });
+  const [guidaAperta, setGuidaAperta] = useState(false);
+  const [pronto, setPronto] = useState(false);
+  const m = useRef<{ map: MapLibre; ml: ML; sens?: () => void } | null>(null);
+  const flag = useRef({ sensibili });
   useEffect(() => {
-    flag.current = { sensibili, vincoli };
+    flag.current = { sensibili };
   });
 
-  const evidenzia = useCallback((id: number | null) => {
-    const m = k.current;
-    if (!m) return;
-    m.punti.forEach((c, i) => c.setStyle(i === id ? { radius: 10, weight: 3, color: "#251d1c" } : { radius: 6, weight: 1.5, color: "#fff" }));
-    if (id != null) m.punti.get(id)?.bringToFront();
+  const conteggi = useMemo(() => {
+    const c: Record<Tipo, number> = { nuova: 0, potenziamento: 0, modifica: 0 };
+    istanze.forEach((a) => c[tipoDi(a.properties.tipo_intervento)]++);
+    return c;
+  }, [istanze]);
+  const operatori = useMemo(() => {
+    const o: Record<string, number> = {};
+    istanze.forEach((a) => a.properties.gestori.forEach((g) => (o[g] = (o[g] ?? 0) + 1)));
+    return Object.entries(o).sort((a, b) => b[1] - a[1]);
+  }, [istanze]);
+
+  // ------------------------------------------------------------------ 2. il radar
+  const radar = useCallback(async (lon: number, lat: number, etichetta: string | null, volaLi: boolean) => {
+    const k = m.current;
+    if (!k) return;
+    if (volaLi || !window.matchMedia("(min-width: 1024px)").matches) inquadra(k.map, [[lon - 0.0075, lat - 0.0055], [lon + 0.0075, lat + 0.0055]]);
+    setSel({ tipo: "radar", lon, lat, etichetta, c: null });
+    const src = k.map.getSource("rr-radar") as GeoJSONSource;
+    const disegna = (f: number) =>
+      src.setData({
+        type: "FeatureCollection",
+        features: ANELLI.flatMap((r, i) => {
+          const rr = r * Math.min(1, f * (1 + i * 0.12));
+          return [
+            { type: "Feature" as const, properties: { r, i }, geometry: { type: "Polygon" as const, coordinates: [cerchio(lon, lat, rr)] } },
+            { type: "Feature" as const, properties: { r, i, etichetta: `${r} m` }, geometry: { type: "Point" as const, coordinates: [lon, lat + rr / 111320] } },
+          ];
+        }),
+      });
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) disegna(1);
+    else {
+      const t0 = performance.now();
+      const giro = (t: number) => {
+        const f = Math.min(1, (t - t0) / 750);
+        disegna(1 - Math.pow(1 - f, 3));
+        if (f < 1) requestAnimationFrame(giro);
+      };
+      requestAnimationFrame(giro);
+    }
+    setCarica(true);
+    try {
+      const r = await fetch(`/api/antenne/contesto?lat=${lat.toFixed(6)}&lon=${lon.toFixed(6)}&raggio=500`);
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.errore ?? "Ricerca non riuscita");
+      setSel((s) => (s?.tipo === "radar" && s.lon === lon && s.lat === lat ? { ...s, c: d } : s));
+    } catch (e) {
+      setErrore((e as Error).message);
+    } finally {
+      setCarica(false);
+    }
+  }, []);
+
+  const togliRadar = useCallback(() => {
+    (m.current?.map.getSource("rr-radar") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: [] });
   }, []);
 
   const apriAntenna = useCallback(
-    (a: Istanza, vola: boolean) => {
-      const m = k.current;
-      m?.cerchio?.remove();
-      if (m) m.cerchio = null;
-      evidenzia(a.id);
-      setErrore(null);
-      setVista("risultato");
+    (a: Istanza, volaLi: boolean) => {
+      togliRadar();
       setSel({ tipo: "antenna", a });
-      if (vola && m) volaA(m.map, m.L, [a.geometry.coordinates[1], a.geometry.coordinates[0]], Math.max(m.map.getZoom(), 16));
+      if (volaLi && m.current) vola(m.current.map, a.geometry.coordinates[1], a.geometry.coordinates[0], 17);
     },
-    [evidenzia],
+    [togliRadar],
   );
 
-  const intorno = useCallback(
-    async (lat: number, lon: number, etichetta: string | null, vola: boolean) => {
-      const m = k.current;
-      if (m) {
-        m.cerchio?.remove();
-        m.cerchio = m.L.circle([lat, lon], { radius: RAGGIO, color: "#251d1c", weight: 1.5, dashArray: "5 5", fillOpacity: 0.04, interactive: false }).addTo(m.map);
-        if (vola) inquadra(m.map, m.cerchio.getBounds());
-      }
-      evidenzia(null);
-      setCarica(true);
-      setErrore(null);
-      setVista("risultato");
-      try {
-        const r = await fetch(`/api/antenne/contesto?lat=${lat.toFixed(6)}&lon=${lon.toFixed(6)}&raggio=${RAGGIO}`);
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.errore ?? "Ricerca non riuscita");
-        setSel({ tipo: "zona", c: d as Contesto, etichetta });
-      } catch (e) {
-        setErrore((e as Error).message);
-      } finally {
-        setCarica(false);
-      }
-    },
-    [evidenzia],
-  );
-
+  // ------------------------------------------------------------------ mappa
   const pronta = useCallback(
-    (map: Leaflet.Map, L: LeafletNS) => {
-      const gruppo = L.layerGroup().addTo(map);
-      const sens = L.layerGroup().addTo(map);
-      const vinc = L.layerGroup().addTo(map);
-      k.current = { map, L, istanze: [], punti: new Map(), cerchio: null, sens, vinc, vincCaricati: false };
+    (map: MapLibre, ml: ML) => {
+      const sotto = primoTesto(map);
+      const icone: Record<string, { svg: string; w: number; h: number }> = {
+        sensibile: punto("#7A4FD0", 9),
+        "osm-traliccio": spilla(ESISTENTE, GLIFI.traliccio, 24),
+        "osm-palo": spilla(ESISTENTE, GLIFI.traliccio, 22),
+        "osm-antenna": spilla(ESISTENTE, GLIFI.cella, 20),
+      };
+      (Object.keys(COL) as Tipo[]).forEach((t) => {
+        icone[`ant-macro-${t}`] = spilla(COL[t], GLIFI.traliccio, 32);
+        icone[`ant-piccola-${t}`] = spilla(COL[t], GLIFI.cella, 22);
+        icone[`ant-macro-${t}-c`] = spilla(COL[t], GLIFI.traliccio, 32, CONDIVISO);
+        icone[`ant-piccola-${t}-c`] = spilla(COL[t], GLIFI.cella, 22, CONDIVISO);
+      });
+      caricaIcone(map, icone);
+      const vuoto = { type: "FeatureCollection" as const, features: [] };
+      ["rr-ant", "rr-radar", "rr-sens", "rr-osm"].forEach((s) => map.addSource(s, { type: "geojson", data: vuoto }));
+      // impianti esistenti (OpenStreetMap): sotto le richieste, grigio ardesia
+      map.addLayer({
+        id: "rr-osm",
+        type: "symbol",
+        source: "rr-osm",
+        layout: {
+          "icon-image": ["concat", "osm-", ["get", "tipo"]],
+          "icon-size": ["interpolate", ["linear"], ["zoom"], 10, 0.5, 13, 0.75, 16, 1],
+          "icon-allow-overlap": true,
+          "text-field": ["step", ["zoom"], "", 16, ["coalesce", ["get", "operatore"], ""]],
+          "text-font": ["Noto Sans Bold"],
+          "text-size": 11,
+          "text-offset": [0, 1.4],
+          "text-anchor": "top",
+          "text-optional": true,
+        },
+        paint: { "text-color": ESISTENTE, "text-halo-color": "#fff", "text-halo-width": 1.6, "icon-opacity": 0.92 },
+      });
+
+      map.addLayer({ id: "rr-radar-f", type: "fill", source: "rr-radar", filter: ["==", ["geometry-type"], "Polygon"], paint: { "fill-color": "#251D1C", "fill-opacity": ["match", ["get", "i"], 0, 0.07, 1, 0.045, 0.03] } }, sotto);
+      map.addLayer({ id: "rr-radar-l", type: "line", source: "rr-radar", filter: ["==", ["geometry-type"], "Polygon"], paint: { "line-color": "#251D1C", "line-width": 1.4, "line-opacity": 0.55, "line-dasharray": [3, 3] } }, sotto);
+      map.addLayer({
+        id: "rr-sens",
+        type: "symbol",
+        source: "rr-sens",
+        minzoom: 14,
+        layout: { "icon-image": "sensibile", "icon-allow-overlap": true, "text-field": ["step", ["zoom"], "", 16.5, ["get", "nome"]], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-offset": [0, 1], "text-anchor": "top", "text-optional": true },
+        paint: { "text-color": "#5B3BA8", "text-halo-color": "#fff", "text-halo-width": 1.4 },
+      });
+      map.addLayer({
+        id: "rr-ant",
+        type: "symbol",
+        source: "rr-ant",
+        layout: {
+          "icon-image": ["concat", "ant-", ["get", "g"], "-", ["get", "t"], ["case", ["get", "c"], "-c", ""]],
+          "icon-size": ["interpolate", ["linear"], ["zoom"], 10, 0.55, 13, 0.85, 16, 1.15],
+          "icon-allow-overlap": true,
+          "symbol-sort-key": ["match", ["get", "t"], "nuova", 0, "potenziamento", 1, 2],
+          "text-field": ["step", ["zoom"], "", 15.5, ["get", "op"]],
+          "text-font": ["Noto Sans Bold"],
+          "text-size": 11.5,
+          "text-offset": [0, 1.5],
+          "text-anchor": "top",
+          "text-optional": true,
+        },
+        paint: { "text-color": "#251D1C", "text-halo-color": "#fff", "text-halo-width": 1.6 },
+      });
+      map.addLayer({ id: "rr-ant-sel", type: "circle", source: "rr-ant", filter: ["==", ["get", "id"], -1], paint: { "circle-radius": 22, "circle-opacity": 0, "circle-stroke-color": "#251D1C", "circle-stroke-width": 3 } }, "rr-ant");
+      map.addLayer({
+        id: "rr-radar-t",
+        type: "symbol",
+        source: "rr-radar",
+        filter: ["==", ["geometry-type"], "Point"],
+        layout: { "text-field": ["get", "etichetta"], "text-font": ["Noto Sans Bold"], "text-size": 11, "text-allow-overlap": true },
+        paint: { "text-color": "#251D1C", "text-halo-color": "#F3EFE7", "text-halo-width": 2 },
+      });
+
       fetch("/api/antenne/istanze")
         .then((r) => r.json())
-        .then((fc: { features: Istanza[] }) => {
-          const m = k.current!;
-          m.istanze = fc.features;
-          setTotale(fc.features.length);
-          fc.features.forEach((a) => {
-            const [lon, lat] = a.geometry.coordinates;
-            const c = L.circleMarker([lat, lon], {
-              radius: 6, color: "#fff", weight: 1.5, fillColor: nuova(a.properties.tipo_intervento) ? COLORI.nuova : COLORI.modifica, fillOpacity: 0.95,
-            }).addTo(gruppo);
-            c.bindTooltip(`${esc(a.properties.indirizzo ?? "Antenna")}<br><span style="color:#5f5654">${esc(a.properties.gestori.join(", "))}</span>`, { direction: "top", offset: [0, -6], className: "rr-etichetta-mappa" });
-            c.on("click", (e) => {
-              L.DomEvent.stopPropagation(e);
-              apriAntenna(a, false);
-            });
-            m.punti.set(a.id, c);
-          });
-        })
+        .then((fc: { features: Istanza[] }) => setIstanze(fc.features))
         .catch(() => setErrore("Le antenne non si sono caricate. Riprova tra poco."));
+      fetch("/api/antenne/impianti")
+        .then((r) => r.json())
+        .then((fc: { features: FImpianto[] }) => {
+          setImpianti(fc.features);
+          (map.getSource("rr-osm") as GeoJSONSource).setData(fc as never);
+        })
+        .catch(() => {});
 
       // scuole e ospedali: solo da vicino e solo se chiesti
       let ultimo = "";
-      const disegnaSensibili = () => {
-        if (!flag.current.sensibili || map.getZoom() < 14) {
-          sens.clearLayers();
-          ultimo = "";
-          return;
-        }
-        const b = map.getBounds().pad(0.2);
-        const chiave = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].map((x) => x.toFixed(3)).join(",");
-        if (chiave === ultimo) return;
-        ultimo = chiave;
-        fetch(`/api/antenne/siti-sensibili?bbox=${chiave}`)
+      const sens = () => {
+        if (!flag.current.sensibili || map.getZoom() < 14) return;
+        const b = map.getBounds().toArray().flat().map((x) => x.toFixed(3)).join(",");
+        if (b === ultimo) return;
+        ultimo = b;
+        fetch(`/api/antenne/siti-sensibili?bbox=${b}`)
           .then((r) => r.json())
-          .then((fc: { features: { geometry: { type: string; coordinates: [number, number] }; properties: { categoria: string; nome: string | null } }[] }) => {
-            if (chiave !== ultimo) return;
-            sens.clearLayers();
-            fc.features.forEach((f) => {
-              if (f.geometry.type !== "Point") return;
-              const [lon, lat] = f.geometry.coordinates;
-              L.circleMarker([lat, lon], { radius: 3.5, color: COLORI.sensibile, weight: 1, fillColor: COLORI.sensibile, fillOpacity: 0.55 })
-                .bindTooltip(`${esc(CATEGORIE[f.properties.categoria] ?? f.properties.categoria)}${f.properties.nome ? `: ${esc(f.properties.nome)}` : ""}`, { className: "rr-etichetta-mappa" })
-                .addTo(sens);
-            });
+          .then((fc: { features: { type: "Feature"; geometry: { type: string }; properties: { nome: string | null; categoria: string } }[] }) => {
+            if (b !== ultimo) return;
+            const features = fc.features.filter((f) => f.geometry.type === "Point").map((f) => ({ ...f, properties: { nome: f.properties.nome ?? CATEGORIE[f.properties.categoria] ?? "" } }));
+            (map.getSource("rr-sens") as GeoJSONSource).setData({ type: "FeatureCollection", features } as never);
           })
           .catch(() => {});
       };
-      map.on("moveend", disegnaSensibili);
-      (map as Leaflet.Map & { _rrSensibili?: () => void })._rrSensibili = disegnaSensibili;
-      map.on("click", (e) => intorno(e.latlng.lat, e.latlng.lng, null, false));
+      map.on("moveend", sens);
+      m.current = {
+        map,
+        ml,
+        sens: () => {
+          ultimo = "";
+          sens();
+        },
+      };
+
+      map.on("click", (e) => {
+        const f = map.queryRenderedFeatures(e.point, { layers: ["rr-ant"] })[0];
+        const o = f ? null : map.queryRenderedFeatures(e.point, { layers: ["rr-osm"] })[0];
+        if (o) {
+          const coord = (o.geometry as unknown as { coordinates: [number, number] }).coordinates;
+          if (!window.matchMedia("(min-width: 1024px)").matches) vola(map, coord[1], coord[0], map.getZoom());
+          return void setSel({ tipo: "impianto", f: { geometry: { coordinates: coord }, properties: o.properties as unknown as Impianto } });
+        }
+        if (f && !window.matchMedia("(min-width: 1024px)").matches) {
+          const [x, y] = (f.geometry as unknown as { coordinates: [number, number] }).coordinates;
+          vola(map, y, x, map.getZoom());
+        }
+        if (f) return void setSel({ tipo: "antenna", a: { id: Number(f.properties.id), geometry: { coordinates: (f.geometry as unknown as { coordinates: [number, number] }).coordinates }, properties: JSON.parse(String(f.properties.json)) } });
+        radar(e.lngLat.lng, e.lngLat.lat, null, false);
+      });
+      ["rr-ant", "rr-osm"].forEach((l) => {
+        map.on("mouseenter", l, () => (map.getCanvas().style.cursor = "pointer"));
+        map.on("mouseleave", l, () => (map.getCanvas().style.cursor = ""));
+      });
+      setPronto(true);
     },
-    [apriAntenna, intorno],
+    [radar],
   );
 
-  // "Mappa" nell'elenco (VediSuMappa): si torna alla mappa sull'antenna
+  // 1. i simboli (forma, colore, anello) dai dati
+  useEffect(() => {
+    const k = m.current;
+    if (!k || !pronto) return;
+    const features = istanze.map((a) => {
+      const p = a.properties;
+      return {
+        type: "Feature" as const,
+        geometry: { type: "Point" as const, coordinates: a.geometry.coordinates },
+        properties: {
+          id: a.id, t: tipoDi(p.tipo_intervento), g: tagliaDi(p), c: p.gestori.length > 1, anno: (p.data_pubblicazione ?? "").slice(0, 4) || "nd",
+          ops: p.gestori.join("|"), op: p.gestori.join(" · "), json: JSON.stringify(p),
+        },
+      };
+    });
+    (k.map.getSource("rr-ant") as GeoJSONSource).setData({ type: "FeatureCollection", features });
+  }, [istanze, pronto]);
+
+  // filtri: tipo, anno, operatore (sulla GPU, senza ricaricare)
+  useEffect(() => {
+    const k = m.current;
+    if (!k || !pronto) return;
+    const f: ExpressionSpecification = [
+      "all",
+      ["in", ["get", "t"], ["literal", (Object.keys(tipi) as Tipo[]).filter((t) => tipi[t])]],
+      anno ? ["==", ["get", "anno"], anno] : true,
+      operatore ? ["in", operatore, ["get", "ops"]] : true,
+    ];
+    k.map.setFilter("rr-ant", f);
+    k.map.setFilter("rr-osm", operatore ? ["==", ["coalesce", ["get", "operatore"], ""], operatore] : null);
+  }, [tipi, anno, operatore, pronto]);
+
+  useEffect(() => {
+    const k = m.current;
+    if (k && pronto) k.map.setLayoutProperty("rr-osm", "visibility", esistenti ? "visible" : "none");
+  }, [esistenti, pronto]);
+
+  useEffect(() => {
+    const k = m.current;
+    if (!k || !pronto) return;
+    if (sensibili) k.sens?.();
+    else (k.map.getSource("rr-sens") as GeoJSONSource).setData({ type: "FeatureCollection", features: [] });
+  }, [sensibili, pronto]);
+
+  useEffect(() => {
+    const k = m.current;
+    if (k?.map.getLayer("rr-ant-sel")) k.map.setFilter("rr-ant-sel", ["==", ["get", "id"], sel?.tipo === "antenna" ? sel.a.id : -1]);
+  }, [sel]);
+
+  // "Mappa" nell'elenco della Guida: si torna sulla mappa sull'antenna
   useEffect(() => {
     function apri(e: Event) {
       const d = (e as CustomEvent<{ sezione: string; id: number | string }>).detail;
       if (d?.sezione !== "antenne") return;
-      const a = k.current?.istanze.find((x) => String(x.id) === String(d.id));
-      if (a) apriAntenna(a, true);
+      const a = istanze.find((x) => String(x.id) === String(d.id));
+      if (a) {
+        setGuidaAperta(false);
+        apriAntenna(a, true);
+      }
     }
     window.addEventListener("rr:apri-su-mappa", apri);
     return () => window.removeEventListener("rr:apri-su-mappa", apri);
-  }, [apriAntenna]);
+  }, [istanze, apriAntenna]);
 
-  // accendere e spegnere i livelli facoltativi
-  useEffect(() => {
-    const m = k.current;
-    if (!m) return;
-    (m.map as Leaflet.Map & { _rrSensibili?: () => void })._rrSensibili?.();
-  }, [sensibili]);
-  useEffect(() => {
-    const m = k.current;
-    if (!m) return;
-    if (!vincoli) return void m.vinc.clearLayers();
-    fetch("/api/antenne/aree-vincolate")
-      .then((r) => r.json())
-      .then((fc) => {
-        if (!flag.current.vincoli) return;
-        m.vinc.clearLayers();
-        m.L.geoJSON(fc, { style: { color: COLORI.vincolo, weight: 1.2, fillColor: COLORI.vincolo, fillOpacity: 0.1, interactive: false } }).addTo(m.vinc);
-      })
-      .catch(() => {});
-  }, [vincoli]);
+  function trovami() {
+    navigator.geolocation?.getCurrentPosition(
+      (p) => radar(p.coords.longitude, p.coords.latitude, "La tua posizione", true),
+      () => setErrore("Non riesco a sapere dove sei: controlla il permesso di posizione"),
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  }
+  const chiudi = () => {
+    setSel(null);
+    togliRadar();
+  };
 
-  const testa = (
+  // ------------------------------------------------------------------ barra
+  const barra = (
     <div className="flex flex-col gap-2">
-      <CercaIndirizzo
+      <Cerca
         endpoint="/api/antenne/indirizzo"
         etichetta="Cerca un indirizzo"
-        segnaposto="Il tuo indirizzo, es. Via Ostiense 131"
+        segnaposto="Il tuo indirizzo: che antenne hai vicino?"
         carica={carica}
-        onScelto={(l: Luogo) => intorno(l.lat, l.lon, l.etichetta, true)}
+        onScelto={(l: Luogo) => radar(l.lon, l.lat, l.etichetta, true)}
+        coda={<Strumenti onGuida={() => setGuidaAperta(true)} onTrovami={trovami} />}
       />
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-0.5 text-[12px] font-semibold text-ink-soft">
-        <Voce colore={COLORI.nuova} testo="Nuova antenna" />
-        <Voce colore={COLORI.modifica} testo="Modifica di un impianto" />
-      </div>
-      <div className="flex gap-1.5">
-        <Interruttore attivo={sensibili} onClick={() => setSensibili((v) => !v)} colore={COLORI.sensibile}>
-          Scuole e ospedali
-        </Interruttore>
-        <Interruttore attivo={vincoli} onClick={() => setVincoli((v) => !v)} colore={COLORI.vincolo}>
-          Aree protette
-        </Interruttore>
+      <div className={`rounded-[20px] bg-panel p-1.5 shadow-[0_2px_6px_rgba(37,29,28,.08),0_10px_30px_rgba(37,29,28,.12)] ring-1 ring-black/5 ${sel ? "max-lg:hidden" : ""}`}>
+        <div role="group" aria-label="Tipi di antenne (tocca per nascondere)" className="grid grid-cols-4 gap-1">
+          {(Object.keys(COL) as Tipo[]).map((t) => {
+            const on = tipi[t];
+            return (
+              <button
+                key={t}
+                type="button"
+                aria-pressed={on}
+                onClick={() => setTipi((x) => ({ ...x, [t]: !x[t] }))}
+                className={`flex items-center gap-1.5 rounded-[12px] px-1.5 py-1.5 text-left transition sm:gap-2 sm:px-2 ${on ? "" : "opacity-45 grayscale hover:opacity-70"}`}
+                style={on ? { background: `${COL[t]}12` } : undefined}
+              >
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full sm:size-8" style={{ background: COL[t], boxShadow: on ? `0 3px 10px ${COL[t]}55` : undefined }}>
+                  <svg viewBox="0 0 24 24" className="size-[17px]" fill="none" stroke="#fff" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: GLIFI.traliccio }} />
+                </span>
+                <span className="min-w-0 leading-tight">
+                  <span className="block text-[17px] font-extrabold text-ink tabular-nums">{conteggi[t]}</span>
+                  <span className="block truncate text-[11px] font-bold text-muted sm:text-[11.5px]">{PLURALE[t]}</span>
+                </span>
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            aria-pressed={esistenti}
+            onClick={() => setEsistenti((v) => !v)}
+            className={`flex items-center gap-1.5 rounded-[12px] px-1.5 py-1.5 text-left transition sm:gap-2 sm:px-2 ${esistenti ? "" : "opacity-45 grayscale hover:opacity-70"}`}
+            style={esistenti ? { background: `${ESISTENTE}12` } : undefined}
+          >
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-full sm:size-8" style={{ background: ESISTENTE }}>
+              <svg viewBox="0 0 24 24" className="size-[17px]" fill="none" stroke="#fff" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: GLIFI.traliccio }} />
+            </span>
+            <span className="min-w-0 leading-tight">
+              <span className="block text-[17px] font-extrabold text-ink tabular-nums">{impianti.length}</span>
+              <span className="block truncate text-[11px] font-bold text-muted sm:text-[11.5px]">Esistenti</span>
+            </span>
+          </button>
+        </div>
+        <div className="mt-1.5 flex gap-1.5">
+          <label className="relative flex h-9 min-w-0 flex-1 items-center rounded-[12px] bg-bg-sink pr-2 pl-3 text-[13px] font-bold text-ink">
+            <span className="sr-only">Operatore</span>
+            <select value={operatore} onChange={(e) => setOperatore(e.target.value)} className="h-full w-full min-w-0 appearance-none bg-transparent pr-5 outline-none">
+              <option value="">Tutti gli operatori</option>
+              {operatori.map(([o, n]) => (
+                <option key={o} value={o}>
+                  {o} ({n})
+                </option>
+              ))}
+            </select>
+            <svg viewBox="0 0 20 20" className="pointer-events-none absolute right-2.5 size-3.5 text-muted" fill="none" stroke="currentColor" strokeWidth={2.4} aria-hidden="true">
+              <path d="m5 8 5 5 5-5" />
+            </svg>
+          </label>
+          <button
+            type="button"
+            aria-pressed={sensibili}
+            onClick={() => setSensibili((v) => !v)}
+            className={`flex h-9 shrink-0 items-center gap-1.5 rounded-[12px] px-3 text-[13px] font-bold transition ${sensibili ? "bg-[#5B3BA8] text-white" : "bg-bg-sink text-ink-soft hover:text-ink"}`}
+          >
+            <span className={`size-2.5 rounded-full ${sensibili ? "bg-white" : "bg-[#7A4FD0]"}`} aria-hidden="true" />
+            Scuole e ospedali
+          </button>
+        </div>
       </div>
     </div>
   );
 
-  let pannello: ReactNode;
-  if (vista === "info") {
-    pannello = (
-      <div className="flex flex-col gap-4">
-        <button type="button" onClick={() => setVista("risultato")} className="self-start text-sm font-bold text-ink-soft hover:text-ink">
-          ‹ Torna alla mappa
-        </button>
-        {info}
-      </div>
+  // ------------------------------------------------------------------ schede
+  let scheda: ReactNode;
+  if (errore) {
+    scheda = (
+      <Scheda icona={<Tondo colore="#8A807E" glifo={GLIFI.cella} />} titolo="Qualcosa non va" onChiudi={() => setErrore(null)}>
+        <p className="text-[15px] text-ink-soft">{errore}</p>
+      </Scheda>
     );
-  } else if (errore) {
-    pannello = <p role="alert" className="rounded-[12px] bg-errore-tint px-3.5 py-3 text-[15px] font-semibold text-errore">{errore}</p>;
   } else if (sel?.tipo === "antenna") {
-    pannello = <SchedaAntenna a={sel.a} onInfo={() => setVista("info")} />;
-  } else if (sel?.tipo === "zona") {
-    pannello = (
-      <SchedaZona
-        c={sel.c}
-        etichetta={sel.etichetta}
-        onAntenna={(id) => {
-          const a = k.current?.istanze.find((x) => x.id === id);
-          if (a) apriAntenna(a, true);
-        }}
-        onInfo={() => setVista("info")}
-      />
-    );
+    scheda = <SchedaAntenna a={sel.a} onChiudi={chiudi} onRadar={() => radar(sel.a.geometry.coordinates[0], sel.a.geometry.coordinates[1], sel.a.properties.indirizzo, true)} />;
+  } else if (sel?.tipo === "impianto") {
+    scheda = <SchedaImpianto f={sel.f} onChiudi={chiudi} onRadar={() => radar(sel.f.geometry.coordinates[0], sel.f.geometry.coordinates[1], sel.f.properties.nome, true)} />;
+  } else if (sel?.tipo === "radar") {
+    scheda = <SchedaRadar {...sel} istanze={istanze} impianti={impianti} onChiudi={chiudi} onAntenna={(a) => apriAntenna(a, true)} onGuida={() => setGuidaAperta(true)} />;
   } else {
-    pannello = (
-      <div className="flex flex-col gap-2">
-        <p className="text-[15px] leading-snug font-semibold text-ink">Scrivi il tuo indirizzo o tocca la mappa: ti dico che antenne ci sono entro {RAGGIO} m.</p>
-        <p className="text-[13px] text-muted">
-          In mappa {totale == null ? "le" : `le ${totale}`} richieste di antenne pubblicate da Roma Capitale. Non è il catasto completo degli impianti (circa 3.500 a Roma), che non è pubblico.
-        </p>
-        <BottoneInfo onClick={() => setVista("info")} />
-      </div>
-    );
+    scheda = <Panoramica istanze={istanze} esistenti={impianti.length} anno={anno} onAnno={setAnno} conteggi={conteggi} />;
   }
 
   return (
-    <SchermoMappa
-      mappa={<MappaLeaflet centro={[41.893, 12.4829]} zoom={12} titolo="Mappa delle antenne di telefonia mobile a Roma" onPronta={pronta} />}
-      testa={testa}
-      pannello={pannello}
-      chiave={vista + (sel?.tipo === "antenna" ? `a${sel.a.id}` : sel?.tipo === "zona" ? `${sel.c.punto.lat},${sel.c.punto.lon}` : errore ?? "")}
-      foglioAperto={aperto}
-      onFoglio={setAperto}
-      etichettaPannello={vista === "info" ? "Elenco, limiti, regole e fonti" : "Dettagli"}
+    <Schermo
+      mappa={<MappaVettoriale centro={[41.893, 12.4829]} zoom={11.6} titolo="Mappa delle antenne di telefonia mobile a Roma" onPronta={pronta} />}
+      barra={barra}
+      scheda={scheda}
+      guida={{ titolo: "Antenne a Roma", schede: guida }}
+      guidaAperta={guidaAperta}
+      onGuida={setGuidaAperta}
     />
   );
 }
 
-function SchedaAntenna({ a, onInfo }: { a: Istanza; onInfo: () => void }) {
+// ==================================================================== schede
+function SchedaAntenna({ a, onChiudi, onRadar }: { a: Istanza; onChiudi: () => void; onRadar: () => void }) {
   const p = a.properties;
-  const n = nuova(p.tipo_intervento);
+  const t = tipoDi(p.tipo_intervento), g = tagliaDi(p);
+  const s = p.sito_sensibile_vicino;
+  const scia = /SCIA/i.test(p.regime ?? ""), aut = /autorizzazione/i.test(p.regime ?? "");
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-3 rounded-[12px] bg-bg-sink px-3.5 py-3">
-        <span aria-hidden="true" className="size-4 shrink-0 rounded-full border-2 border-white" style={{ background: n ? COLORI.nuova : COLORI.modifica }} />
-        <span className="min-w-0">
-          <span className="block text-[17px] leading-6 font-bold text-ink">{p.indirizzo ?? "Indirizzo non indicato"}</span>
-          <span className="block truncate text-[13px] font-semibold text-ink-soft">
-            {n ? "Nuova antenna" : `Modifica di un impianto (${p.tipo_intervento ?? "—"})`} · {p.gestori.join(", ")}
-          </span>
-        </span>
+    <Scheda icona={<Tondo colore={COL[t]} glifo={g === "macro" ? GLIFI.traliccio : GLIFI.cella} />} sopra={`${TAGLIA[g]}${p.quartiere ? ` · ${p.quartiere}` : ""}`} titolo={p.indirizzo ?? "Indirizzo non indicato"} onChiudi={onChiudi}>
+      <div className="rounded-[16px] px-3.5 py-3" style={{ background: `${COL[t]}16` }}>
+        <p className="text-[19px] leading-6 font-extrabold tracking-[-.01em]" style={{ color: COL[t] }}>
+          {p.tipo_intervento === "adeguamento" ? "Adeguamento di un impianto" : NOME[t]}
+        </p>
+        <p className="mt-0.5 truncate text-[13px] font-semibold text-ink-soft">
+          {p.gestori.join(" + ")}
+          {p.gestori.length > 1 ? " · sito condiviso" : ""}
+        </p>
       </div>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[14px]">
-        <dt className="text-muted">Pubblicata</dt>
-        <dd className="font-semibold text-ink">{dataIt(p.data_pubblicazione)}</dd>
-        <dt className="text-muted">Procedura</dt>
-        <dd className="text-ink">{p.regime ?? "—"}</dd>
-        <dt className="text-muted">Zona</dt>
-        <dd className="text-ink">{[p.quartiere, p.municipio_nome].filter(Boolean).join(" · ") || "—"}</dd>
-        {p.sito_sensibile_vicino && (
-          <>
-            <dt className="text-muted">Sito sensibile</dt>
-            <dd className="text-ink">
-              {CATEGORIE[p.sito_sensibile_vicino.categoria] ?? p.sito_sensibile_vicino.categoria}
-              {p.sito_sensibile_vicino.nome ? ` ${p.sito_sensibile_vicino.nome}` : ""} a {p.sito_sensibile_vicino.distanza_m} m
-            </dd>
-          </>
-        )}
-      </dl>
-      {p.qualita_posizione !== "originale" && (
-        <p className="text-[13px] text-muted">Posizione {p.qualita_posizione === "corretta" ? "corretta da noi" : "ricavata dall'indirizzo"}: {p.nota_qualita}</p>
-      )}
-      {p.url_avviso && (
-        <a href={p.url_avviso} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-[10px] bg-ink px-4 text-[14px] font-bold text-white">
-          Avviso ufficiale sul sito del Comune ↗
-        </a>
-      )}
-      <p className="text-[13px] text-muted">Una richiesta pubblicata non prova che l&apos;antenna sia già attiva. I limiti di legge: 15 V/m nelle case (valore di attenzione).</p>
-      <BottoneInfo onClick={onInfo} />
-    </div>
+      <div className="mt-2.5">
+        <Fatti
+          voci={[
+            { l: "Pubblicata", v: p.data_pubblicazione ? new Date(p.data_pubblicazione).toLocaleDateString("it-IT", { day: "numeric", month: "short" }) : "—", nota: p.data_pubblicazione?.slice(0, 4) ?? "senza data" },
+            { l: "Procedura", v: scia ? "SCIA" : aut ? "Autorizz." : "—", nota: scia ? "bassa potenza" : aut ? "da approvare" : "non indicata" },
+            s ? { l: CATEGORIE[s.categoria] ?? "Sito sensibile", v: metri(s.distanza_m), nota: s.nome ?? "il più vicino" } : { l: "Sito sensibile", v: "—", nota: "nessuno vicino" },
+          ]}
+        />
+      </div>
+      <Azioni>
+        {p.url_avviso ? (
+          <Azione primaria href={p.url_avviso}>
+            Avviso ufficiale
+          </Azione>
+        ) : null}
+        <Azione onClick={onRadar}>Cosa c&apos;è intorno</Azione>
+      </Azioni>
+    </Scheda>
   );
 }
 
-function SchedaZona({ c, etichetta, onAntenna, onInfo }: { c: Contesto; etichetta: string | null; onAntenna: (id: number) => void; onInfo: () => void }) {
-  const n = c.istanze_srb_nel_raggio.length;
+function SchedaImpianto({ f, onChiudi, onRadar }: { f: FImpianto; onChiudi: () => void; onRadar: () => void }) {
+  const p = f.properties;
+  const tipo = p.tipo === "traliccio" ? "Traliccio" : p.tipo === "palo" ? "Palo" : "Antenna";
   return (
-    <div className="flex flex-col gap-3.5">
-      <div className="rounded-[12px] bg-antenne-tint px-3.5 py-3 text-antenne-ink">
-        <span className="block text-[17px] leading-6 font-bold">
-          {n === 0 ? `Nessuna richiesta di antenna entro ${RAGGIO} m` : n === 1 ? `1 richiesta di antenna entro ${RAGGIO} m` : `${n} richieste di antenne entro ${RAGGIO} m`}
-        </span>
-        <span className="block truncate text-[13px] font-semibold opacity-80">
-          {etichetta ?? "Punto scelto sulla mappa"}
-          {c.quartiere ? ` · ${c.quartiere.nome}` : ""}
-          {c.municipio ? ` · ${c.municipio.nome}` : ""}
-        </span>
+    <Scheda icona={<Tondo colore={ESISTENTE} glifo={p.tipo === "antenna" ? GLIFI.cella : GLIFI.traliccio} />} sopra="Impianto esistente · OpenStreetMap" titolo={p.nome ?? `${tipo} per telecomunicazioni`} onChiudi={onChiudi}>
+      <div className="rounded-[16px] px-3.5 py-3" style={{ background: `${ESISTENTE}12` }}>
+        <p className="text-[19px] leading-6 font-extrabold tracking-[-.01em]" style={{ color: ESISTENTE }}>
+          {p.mobile ? "Telefonia mobile" : "Telecomunicazioni"}
+        </p>
+        <p className="mt-0.5 truncate text-[13px] font-semibold text-ink-soft">{p.operatore ?? "Operatore non indicato"} · censito su OpenStreetMap</p>
       </div>
-      {n > 0 && (
-        <ul className="flex flex-col">
-          {c.istanze_srb_nel_raggio.slice(0, 8).map((i) => (
-            <li key={i.id}>
-              <button
-                type="button"
-                onClick={() => onAntenna(i.id)}
-                className="grid min-h-11 w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[9px] px-2 py-1.5 text-left hover:bg-bg-sink"
-              >
-                <span aria-hidden="true" className="size-3 rounded-full" style={{ background: nuova(i.tipo_intervento) ? COLORI.nuova : COLORI.modifica }} />
-                <span className="min-w-0">
-                  <span className="block truncate text-[15px] font-semibold text-ink">{i.indirizzo ?? "Senza indirizzo"}</span>
-                  <span className="block truncate text-[13px] text-muted">
-                    {i.gestori.join(", ")} · {dataIt(i.data_pubblicazione)}
-                  </span>
-                </span>
-                <span className="text-sm font-bold text-ink-soft">{Math.round(i.distanza_m)} m</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      {c.siti_sensibili_piu_vicini.length > 0 && (
-        <div>
-          <h3 className="mb-1 text-xs font-bold tracking-wide text-muted uppercase">Siti sensibili più vicini</h3>
-          <ul className="flex flex-col gap-1 text-[14px] text-ink">
-            {c.siti_sensibili_piu_vicini.slice(0, 3).map((s, i) => (
-              <li key={i} className="flex justify-between gap-3">
-                <span className="truncate">
-                  {CATEGORIE[s.categoria] ?? s.categoria}
-                  {s.nome ? ` ${s.nome}` : ""}
-                </span>
-                <span className="shrink-0 font-semibold text-ink-soft">{Math.round(s.distanza_m)} m</span>
-              </li>
+      <div className="mt-2.5">
+        <Fatti
+          voci={[
+            { l: "Tipo", v: tipo, nota: "struttura" },
+            { l: "Altezza", v: p.altezza_m ? `${Math.round(Number(p.altezza_m))} m` : "—", nota: p.altezza_m ? "dichiarata" : "non indicata" },
+            { l: "Cellulari", v: p.mobile ? "Sì" : "—", nota: p.mobile ? "dichiarato" : "non indicato" },
+          ]}
+        />
+      </div>
+      <Azioni>
+        <Azione primaria href={`https://www.openstreetmap.org/${p.osm}`}>
+          Su OpenStreetMap
+        </Azione>
+        <Azione onClick={onRadar}>Cosa c&apos;è intorno</Azione>
+      </Azioni>
+    </Scheda>
+  );
+}
+
+function SchedaRadar({ lon, lat, etichetta, c, istanze, impianti, onChiudi, onAntenna, onGuida }: { lon: number; lat: number; etichetta: string | null; c: Contesto | null; istanze: Istanza[]; impianti: FImpianto[]; onChiudi: () => void; onAntenna: (a: Istanza) => void; onGuida: () => void }) {
+  const vicine = istanze.map((a) => ({ a, d: distanza([lon, lat], a.geometry.coordinates) })).sort((x, y) => x.d - y.d);
+  const esist = impianti.map((f) => ({ f, d: distanza([lon, lat], f.geometry.coordinates) })).sort((x, y) => x.d - y.d);
+  const prima = vicine[0];
+  const primoEsist = esist[0];
+  const esistPiuVicino = !!primoEsist && (!prima || primoEsist.d < prima.d);
+  const per = ANELLI.map((r) => vicine.filter((x) => x.d <= r).length + esist.filter((x) => x.d <= r).length);
+  const perE = ANELLI.map((r) => esist.filter((x) => x.d <= r).length);
+  const t = prima ? tipoDi(prima.a.properties.tipo_intervento) : "modifica";
+  const s = c?.siti_sensibili_piu_vicini[0];
+  return (
+    <Scheda icona={<Tondo colore="#251D1C" glifo={GLIFI.cella} />} sopra={c?.quartiere ? `${c.quartiere.nome}${c.municipio ? ` · ${c.municipio.nome}` : ""}` : "Raggio di 500 m"} titolo={etichetta ? maiuscola(etichetta) : "Punto scelto sulla mappa"} onChiudi={onChiudi}>
+      <div className="flex items-center gap-3 rounded-[16px] bg-bg-sink px-3.5 py-3">
+        <p className="shrink-0 text-[34px] leading-none font-extrabold tracking-[-.03em] tabular-nums" style={{ color: esistPiuVicino ? ESISTENTE : prima && prima.d <= 500 ? COL[t] : "#251D1C" }}>
+          {esistPiuVicino ? metri(primoEsist.d) : prima ? metri(prima.d) : "—"}
+        </p>
+        {esistPiuVicino ? (
+          <span className="min-w-0">
+            <span className="block text-[13px] font-bold text-ink">l&apos;impianto più vicino</span>
+            <span className="block truncate text-[12.5px] font-semibold text-ink-soft">
+              {primoEsist.f.properties.operatore ?? "operatore non indicato"} · esistente{prima ? ` · richiesta a ${metri(prima.d)}` : ""}
+            </span>
+          </span>
+        ) : (
+          <button type="button" disabled={!prima} onClick={() => prima && onAntenna(prima.a)} className="min-w-0 text-left">
+            <span className="block text-[13px] font-bold text-ink">l&apos;antenna più vicina</span>
+            <span className="block truncate text-[12.5px] font-semibold text-ink-soft underline decoration-line underline-offset-2">{prima ? `${prima.a.properties.indirizzo ?? ""} · ${prima.a.properties.gestori.join(", ")}` : ""}</span>
+          </button>
+        )}
+      </div>
+      <div className="mt-2.5">
+        <Fatti voci={ANELLI.map((r, i) => ({ l: `Entro ${r} m`, v: String(per[i]), nota: perE[i] ? `${perE[i]} ${perE[i] === 1 ? "esistente" : "esistenti"}` : per[i] === 1 ? "richiesta" : "richieste" }))} />
+      </div>
+      <p className="mt-2.5 truncate text-[13px] text-ink-soft">
+        {s ? (
+          <>
+            <b className="text-ink">{CATEGORIE[s.categoria] ?? "Sito sensibile"}</b> {s.nome ?? ""} a {metri(s.distanza_m)}
+          </>
+        ) : c ? (
+          "Nessun sito sensibile vicino"
+        ) : (
+          "Cerco scuole e ospedali vicini…"
+        )}
+        {c?.aree_vincolate[0] ? ` · ${c.aree_vincolate[0].nome}` : ""}
+      </p>
+      <Azioni>
+        <Azione primaria href={ARPA}>
+          Chiedi una misura
+        </Azione>
+        <Azione onClick={onGuida}>Limiti di legge</Azione>
+      </Azioni>
+    </Scheda>
+  );
+}
+
+/** Quando non c'e' niente di scelto: legenda (forma e colore) e linea del tempo delle richieste. */
+function Panoramica({ istanze, esistenti, anno, onAnno, conteggi }: { istanze: Istanza[]; esistenti: number; anno: string | null; onAnno: (a: string | null) => void; conteggi: Record<Tipo, number> }) {
+  const mesi = useMemo(() => {
+    const c = new Map<string, number>();
+    istanze.forEach((a) => {
+      const d = a.properties.data_pubblicazione?.slice(0, 7);
+      if (d) c.set(d, (c.get(d) ?? 0) + 1);
+    });
+    const tutti = [...c.keys()].sort();
+    if (!tutti.length) return [];
+    const out: { m: string; n: number }[] = [];
+    let [a, mm] = tutti[0].split("-").map(Number);
+    const [a1, m1] = tutti[tutti.length - 1].split("-").map(Number);
+    while (a < a1 || (a === a1 && mm <= m1)) {
+      const k = `${a}-${String(mm).padStart(2, "0")}`;
+      out.push({ m: k, n: c.get(k) ?? 0 });
+      if (mm === 12) {
+        a++;
+        mm = 1;
+      } else mm++;
+    }
+    return out;
+  }, [istanze]);
+  const max = Math.max(1, ...mesi.map((x) => x.n));
+  const anni = [...new Set(mesi.map((x) => x.m.slice(0, 4)))];
+  const senzaData = istanze.filter((a) => !a.properties.data_pubblicazione).length;
+  return (
+    <div className="pointer-events-auto rounded-[20px] bg-panel/95 px-4 py-3.5 shadow-[0_6px_24px_rgba(37,29,28,.16)] ring-1 ring-black/5 backdrop-blur">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-[14px] font-bold text-ink">
+          {istanze.length || "…"} richieste <span className="font-semibold text-muted">· {esistenti || "…"} impianti esistenti</span>
+        </p>
+        <p className="shrink-0 text-[12px] text-muted">tocca: radar 500 m</p>
+      </div>
+      <ul className="rr-scorri mt-2 flex gap-x-3.5 overflow-x-auto text-[12.5px] font-semibold whitespace-nowrap text-ink-soft">
+        <li className="flex items-center gap-1.5">
+          <Mini glifo={GLIFI.traliccio} grande /> Stazione radio base
+        </li>
+        <li className="flex items-center gap-1.5">
+          <Mini glifo={GLIFI.cella} /> Piccola antenna
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span className="size-3.5 rounded-full border-[2.5px] border-ink bg-[#3366CC]" aria-hidden="true" /> Condivisa
+        </li>
+      </ul>
+      {mesi.length > 0 && (
+        <div className="mt-3">
+          <div className="flex h-8 items-end gap-[2px] lg:h-10" role="img" aria-label="Richieste pubblicate mese per mese">
+            {mesi.map((x) => (
+              <div
+                key={x.m}
+                title={`${new Date(`${x.m}-01`).toLocaleDateString("it-IT", { month: "long", year: "numeric" })}: ${x.n}`}
+                className="min-w-0 flex-1 rounded-t-[2px] transition-colors"
+                style={{ height: `${x.n ? Math.max(8, (x.n / max) * 100) : 3}%`, background: !anno || x.m.startsWith(anno) ? "#251D1C" : "#DAD3C8" }}
+              />
             ))}
-          </ul>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {[null, ...anni].map((x) => (
+              <button
+                key={x ?? "tutte"}
+                type="button"
+                aria-pressed={anno === x}
+                onClick={() => onAnno(x)}
+                className={`h-8 rounded-full px-3 text-[12.5px] font-bold ${anno === x ? "bg-ink text-white" : "bg-bg-sink text-ink-soft hover:text-ink"}`}
+              >
+                {x ?? "Tutte"}
+                <span className="ml-1 font-semibold opacity-70 tabular-nums">{x ? istanze.filter((i) => i.properties.data_pubblicazione?.startsWith(x)).length : istanze.length}</span>
+              </button>
+            ))}
+            {senzaData > 0 && <span className="text-[11.5px] text-muted">+{senzaData} senza data</span>}
+          </div>
         </div>
       )}
-      {c.aree_vincolate.length > 0 && <p className="text-[14px] text-ink">Dentro: {c.aree_vincolate.map((a) => a.nome).join(", ")}.</p>}
-      <p className="text-[13px] text-muted">
-        Il regolamento di Roma non fissa distanze minime dai siti sensibili. Per una misura a casa tua puoi chiedere ad ARPA Lazio: trovi come in «Limiti e misure».
+      <p className="sr-only">
+        {(Object.keys(COL) as Tipo[]).map((t) => `${PLURALE[t]}: ${conteggi[t]}`).join(", ")}
       </p>
-      <BottoneInfo onClick={onInfo} />
     </div>
   );
 }
 
-function Voce({ colore, testo }: { colore: string; testo: string }) {
+function Mini({ glifo, grande }: { glifo: string; grande?: boolean }) {
   return (
-    <span className="flex items-center gap-1.5">
-      <span aria-hidden="true" className="size-2.5 rounded-full" style={{ background: colore }} />
-      {testo}
+    <span className={`flex shrink-0 items-center justify-center rounded-full bg-[#6F6560] ${grande ? "size-5" : "size-3.5"}`} aria-hidden="true">
+      <svg viewBox="0 0 24 24" className={grande ? "size-3.5" : "size-2.5"} fill="none" stroke="#fff" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: glifo }} />
     </span>
   );
-}
-
-function Interruttore({ attivo, onClick, colore, children }: { attivo: boolean; onClick: () => void; colore: string; children: ReactNode }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={attivo}
-      onClick={onClick}
-      className={`flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-[13px] font-semibold ${attivo ? "border-ink bg-ink text-white" : "border-line bg-panel text-ink-soft hover:border-campo"}`}
-    >
-      <span aria-hidden="true" className="size-2 rounded-full" style={{ background: attivo ? "#fff" : colore }} />
-      {children}
-    </button>
-  );
-}
-
-function BottoneInfo({ onClick }: { onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick} className="mt-1 min-h-11 w-full rounded-[10px] border border-line text-[14px] font-bold text-ink-soft hover:bg-bg-sink hover:text-ink">
-      Elenco, limiti, regole e fonti
-    </button>
-  );
-}
-
-function esc(s: string) {
-  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 }
