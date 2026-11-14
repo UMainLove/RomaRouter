@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import "./globals.css";
 
@@ -26,10 +25,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="it" className={`${montserrat.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col bg-bg font-sans text-ink">
+      {/* schermo singolo: la testata in alto, sotto la pagina che riempie lo spazio. Le sezioni con la mappa non
+          scorrono mai; le pagine di testo (home, operatori) scorrono solo dentro il loro spazio. */}
+      <body className="flex h-dvh flex-col overflow-hidden bg-bg font-sans text-ink">
         <Header />
-        <div className="flex flex-1 flex-col">{children}</div>
-        <Footer />
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
       </body>
     </html>
   );

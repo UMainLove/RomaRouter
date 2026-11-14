@@ -25,7 +25,7 @@ export function Schermo({
   onGuida: (aperta: boolean) => void;
 }) {
   return (
-    <main className="relative isolate h-[calc(100svh-7.1rem)] min-h-[520px] overflow-hidden bg-[#F3EEE4] lg:h-[calc(100dvh-4rem)]">
+    <main className="relative isolate min-h-0 flex-1 overflow-hidden bg-[#F3EEE4]">
       {mappa}
 
       <div className="pointer-events-none absolute inset-x-3 top-3 z-20 flex flex-col gap-2 lg:right-auto lg:left-4 lg:top-4 lg:w-[420px]">
