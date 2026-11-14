@@ -16,3 +16,8 @@
 @media (prefers-reduced-motion: reduce) { .rr-pulsa::before, .rr-pulsa::after { animation: none; opacity: .2; } }
 .rr-scorri { scrollbar-width: none; }
 .rr-scorri::-webkit-scrollbar { display: none; }
+
+/* schede: entrata morbida (vetro che sale e si posa) */
+.rr-entra { animation: rr-entra .42s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes rr-entra { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .rr-entra { animation: none; } }

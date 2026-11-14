@@ -3,7 +3,8 @@
 import type { ExpressionSpecification, Map as MapLibre } from "maplibre-gl";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Cerca, type Luogo } from "../mappa-rr/Cerca";
-import { dati, inquadra, MappaVettoriale, type ML, viva, vola } from "../mappa-rr/MappaVettoriale";
+import { dati, inclina, inquadra, MappaVettoriale, riposa, type ML, viva, vola } from "../mappa-rr/MappaVettoriale";
+import { alone, comparsa } from "../mappa-rr/cinema";
 import { Azione, Azioni, Fatti, Scheda, Schermo, Strumenti, Tondo } from "../mappa-rr/Schermo";
 import { primoTesto } from "../mappa-rr/stile";
 import { assicuraSpille } from "../mappa-rr/spille";
@@ -201,6 +202,7 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
       // tutti i luoghi come puntini (si vede subito dove sono, anche a migliaia), e sopra le spille:
       // da lontano solo quelle che non si sovrappongono (prima comunali e gratis, poi le piu' grandi),
       // da vicino tutte. La spilla scelta si ingrandisce.
+      alone(map, "rr-luoghi-alone", "rr-luoghi", colore);
       map.addLayer({
         id: "rr-luoghi-c",
         type: "circle",
@@ -284,7 +286,7 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
         if (f) {
           const l = tutti.current.find((x) => x.id === Number(f.properties.id));
           if (l) {
-            if (!window.matchMedia("(min-width: 1024px)").matches) map.easeTo({ center: l.geometry.coordinates, duration: 450 });
+            inclina(map, l.geometry.coordinates[0], l.geometry.coordinates[1]);
             return void apri(l, false);
           }
         }
@@ -326,7 +328,9 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
     const colori = Object.fromEntries(ACCESSI.map((a) => [a, ACCESSO[a].c]));
     let vivo = true;
     assicuraSpille(k.map, features.map((x) => `pin-${x.properties.k}-${x.properties.a}-${x.properties.b}`), colori).then(() => {
-      if (vivo) dati(k.map, "rr-luoghi", { type: "FeatureCollection", features } as never);
+      if (!vivo) return;
+      dati(k.map, "rr-luoghi", { type: "FeatureCollection", features } as never);
+      comparsa(k.map, ["rr-luoghi"]);
     });
     return () => {
       vivo = false;
@@ -378,6 +382,7 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
   const chiudi = () => {
     setSel(null);
     togliAnelli();
+    riposa(m.current?.map);
   };
   const soloGratis = ACCESSI.every((a) => accessi[a] === (a === "libero"));
 
@@ -391,7 +396,7 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
         onScelto={(l: Luogo) => vicino(l.lon, l.lat, l.etichetta, true)}
         coda={<Strumenti onGuida={() => setGuidaAperta(true)} onTrovami={trovami} />}
       />
-      <div className={`rounded-[20px] bg-panel p-1.5 shadow-[0_2px_6px_rgba(37,29,28,.08),0_10px_30px_rgba(37,29,28,.12)] ring-1 ring-black/5 ${sel ? "max-lg:hidden" : ""}`}>
+      <div className={`rounded-[20px] bg-panel/88 backdrop-blur-xl backdrop-saturate-150 p-1.5 shadow-[0_2px_6px_rgba(37,29,28,.08),0_12px_34px_rgba(37,29,28,.16)] ring-1 ring-white/60 ${sel ? "max-lg:hidden" : ""}`}>
         <div role="group" aria-label="Che sport vuoi fare" className="grid grid-cols-5 gap-1">
           {SPORT.map((s) => {
             const on = gruppo === s.k;

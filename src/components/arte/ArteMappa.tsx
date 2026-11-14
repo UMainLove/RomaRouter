@@ -6,7 +6,7 @@ import { orologio, type AttivitaArte } from "@/lib/orari-arte";
 import type { VerificaLuogo } from "@/lib/artisti";
 import { Cerca, type Luogo } from "../mappa-rr/Cerca";
 import { avatar, caricaIcone, GLIFI, palco, piazza, righe } from "../mappa-rr/icone";
-import { dati, inquadra, MappaVettoriale, type ML, viva, vola } from "../mappa-rr/MappaVettoriale";
+import { dati, inclina, inquadra, MappaVettoriale, riposa, type ML, viva, vola } from "../mappa-rr/MappaVettoriale";
 import { Azione, Azioni, Fatti, Scheda, Schermo, Strumenti, Tondo } from "../mappa-rr/Schermo";
 import { primoTesto } from "../mappa-rr/stile";
 import { ATT, att } from "./attivita";
@@ -319,9 +319,9 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
         const f = map.queryRenderedFeatures(e.point, { layers: cliccabili })[0] as MapGeoJSONFeature | undefined;
         if (f) {
           segnaPunto(null);
-          if (!window.matchMedia("(min-width: 1024px)").matches) {
+          {
             const [x, y] = (f.geometry as unknown as { coordinates: [number, number] }).coordinates;
-            vola(map, y, x, map.getZoom());
+            inclina(map, x, y);
           }
           const g = { type: "Feature" as const, geometry: f.geometry as FEsib["geometry"], properties: f.properties };
           if (f.layer.id === "rr-artisti") setSel({ tipo: "artista", f: g as unknown as FEsib });
@@ -436,6 +436,7 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
   const chiudi = () => {
     setSel(null);
     segnaPunto(null);
+    riposa(m.current?.map);
   };
 
   // ------------------------------------------------------------------ barra
@@ -449,7 +450,7 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
         onScelto={(l: Luogo) => tocca(l.lon, l.lat, l.etichetta, true)}
         coda={<Strumenti onGuida={() => setGuidaAperta(true)} onTrovami={trovami} />}
       />
-      <div className={`rounded-[20px] bg-panel p-1.5 shadow-[0_2px_6px_rgba(37,29,28,.08),0_10px_30px_rgba(37,29,28,.12)] ring-1 ring-black/5 ${sel ? "max-lg:hidden" : ""}`}>
+      <div className={`rounded-[20px] bg-panel/88 backdrop-blur-xl backdrop-saturate-150 p-1.5 shadow-[0_2px_6px_rgba(37,29,28,.08),0_12px_34px_rgba(37,29,28,.16)] ring-1 ring-white/60 ${sel ? "max-lg:hidden" : ""}`}>
         <div role="group" aria-label="Cosa vuoi fare" className="grid grid-cols-2 rounded-[14px] bg-bg-sink p-[3px]">
           {(
             [

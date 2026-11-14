@@ -4,7 +4,8 @@ import type { ExpressionSpecification, Map as MapLibre } from "maplibre-gl";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { MACRO_AREE } from "@/lib/oggetti/costanti";
 import { Cerca, type Luogo } from "../mappa-rr/Cerca";
-import { dati, inquadra, MappaVettoriale, viva, vola, type ML } from "../mappa-rr/MappaVettoriale";
+import { dati, inclina, inquadra, MappaVettoriale, riposa, type ML, viva, vola } from "../mappa-rr/MappaVettoriale";
+import { alone, comparsa } from "../mappa-rr/cinema";
 import { Azione, Azioni, Fatti, Scheda, Schermo, Strumenti, Tondo } from "../mappa-rr/Schermo";
 import { assicuraSpille } from "../mappa-rr/spille";
 import { primoTesto } from "../mappa-rr/stile";
@@ -159,6 +160,7 @@ export function OggettiMappa({ guida }: { guida: { id: string; nome: string; con
       const colore = ["match", ["get", "t"], ...TIPI_PUNTO.flatMap((t) => [t, PUNTI[t].c]), "#5F6B7A"] as unknown as ExpressionSpecification;
       map.addLayer({ id: "rr-anelli-f", type: "fill", source: "rr-anelli", filter: ["==", ["geometry-type"], "Polygon"], paint: { "fill-color": "#251D1C", "fill-opacity": ["match", ["get", "i"], 0, 0.07, 0.035] } }, sotto);
       map.addLayer({ id: "rr-anelli-l", type: "line", source: "rr-anelli", filter: ["==", ["geometry-type"], "Polygon"], paint: { "line-color": "#251D1C", "line-width": 1.4, "line-opacity": 0.55, "line-dasharray": [3, 3] } }, sotto);
+      alone(map, "rr-punti-alone", "rr-punti", colore);
       map.addLayer({
         id: "rr-punti-c",
         type: "circle",
@@ -211,7 +213,7 @@ export function OggettiMappa({ guida }: { guida: { id: string; nome: string; con
         if (f) {
           const p = tutti.current.find((x) => x.id === String(f.properties.id));
           if (p) {
-            if (!window.matchMedia("(min-width: 1024px)").matches) map.easeTo({ center: [p.lon, p.lat], duration: 450 });
+            inclina(map, p.lon, p.lat);
             return void apriPunto(p, false);
           }
         }
@@ -240,7 +242,9 @@ export function OggettiMappa({ guida }: { guida: { id: string; nome: string; con
     const glifi = Object.fromEntries(TIPI_PUNTO.map((t) => [t, PUNTI[t].g]));
     let vivo = true;
     assicuraSpille(k.map, features.map((f) => `pin-${f.properties.t}-${f.properties.t}-${f.properties.b}`), colori, glifi).then(() => {
-      if (vivo) dati(k.map, "rr-punti", { type: "FeatureCollection", features });
+      if (!vivo) return;
+      dati(k.map, "rr-punti", { type: "FeatureCollection", features });
+      comparsa(k.map, ["rr-punti"]);
     });
     return () => {
       vivo = false;
@@ -262,6 +266,7 @@ export function OggettiMappa({ guida }: { guida: { id: string; nome: string; con
   const chiudi = () => {
     setSel(null);
     togliAnelli();
+    riposa(m.current?.map);
   };
   const citt = sessione && ["cittadino", "turista"].includes(sessione.ruolo);
   // i due percorsi: prima si entra (se serve), poi i tre passi
@@ -283,7 +288,7 @@ export function OggettiMappa({ guida }: { guida: { id: string; nome: string; con
         onScelto={(l: Luogo) => vicino(l.lon, l.lat, l.etichetta, true)}
         coda={<Strumenti onGuida={() => setGuidaAperta(true)} onTrovami={trovami} />}
       />
-      <div className={`rounded-[20px] bg-panel p-1.5 shadow-[0_2px_6px_rgba(37,29,28,.08),0_10px_30px_rgba(37,29,28,.12)] ring-1 ring-black/5 ${sel ? "max-lg:hidden" : ""}`}>
+      <div className={`rounded-[20px] bg-panel/88 backdrop-blur-xl backdrop-saturate-150 p-1.5 shadow-[0_2px_6px_rgba(37,29,28,.08),0_12px_34px_rgba(37,29,28,.16)] ring-1 ring-white/60 ${sel ? "max-lg:hidden" : ""}`}>
         <div className="grid grid-cols-2 gap-1.5">
           <Grande colore={VERDE} glifo={`<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21Z"/><path d="m9.4 10.2 1.9 1.9 3.4-3.6"/>`} titolo="Ho trovato" sotto="qualcosa per strada" onClick={() => inizia("trovato")} />
           {segnalazione ? (

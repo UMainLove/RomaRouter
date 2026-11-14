@@ -4,7 +4,8 @@ import type { ExpressionSpecification, Map as MapLibre } from "maplibre-gl";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Cerca, type Luogo } from "../mappa-rr/Cerca";
 import { caricaIcone, GLIFI, punto, spilla } from "../mappa-rr/icone";
-import { dati, inquadra, MappaVettoriale, type ML, viva, vola } from "../mappa-rr/MappaVettoriale";
+import { dati, inclina, inquadra, MappaVettoriale, riposa, type ML, viva, vola } from "../mappa-rr/MappaVettoriale";
+import { alone, comparsa } from "../mappa-rr/cinema";
 import { Azione, Azioni, Fatti, Scheda, Schermo, Strumenti, Tondo } from "../mappa-rr/Schermo";
 import { primoTesto } from "../mappa-rr/stile";
 
@@ -187,6 +188,8 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
       // antenne in funzione (siti stimati dalle misure dei telefoni): tutte visibili, una per una.
       // Da lontano un punto (migliaia di punti restano leggeri sulla GPU), da vicino l'icona.
       map.addSource("rr-siti", { type: "geojson", data: vuoto });
+      // le antenne in funzione brillano da lontano: si vede subito dove la citta' e' piu' coperta
+      alone(map, "rr-siti-alone", "rr-siti", IN_FUNZIONE);
       map.addLayer({
         id: "rr-siti-c",
         type: "circle",
@@ -322,18 +325,18 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
         const st = f ? null : map.queryRenderedFeatures(e.point, { layers: ["rr-siti"] })[0] ?? map.queryRenderedFeatures(vicino, { layers: ["rr-siti-c"] })[0];
         if (st) {
           const coord = (st.geometry as unknown as { coordinates: [number, number] }).coordinates;
-          if (!window.matchMedia("(min-width: 1024px)").matches) vola(map, coord[1], coord[0], map.getZoom());
+          inclina(map, coord[0], coord[1]);
           return void setSel({ tipo: "sito", f: { type: "Feature", geometry: { type: "Point", coordinates: coord }, properties: st.properties as unknown as Sito } });
         }
         const o = f ? null : map.queryRenderedFeatures(e.point, { layers: ["rr-osm"] })[0];
         if (o) {
           const coord = (o.geometry as unknown as { coordinates: [number, number] }).coordinates;
-          if (!window.matchMedia("(min-width: 1024px)").matches) vola(map, coord[1], coord[0], map.getZoom());
+          inclina(map, coord[0], coord[1]);
           return void setSel({ tipo: "impianto", f: { geometry: { coordinates: coord }, properties: o.properties as unknown as Impianto } });
         }
-        if (f && !window.matchMedia("(min-width: 1024px)").matches) {
+        if (f) {
           const [x, y] = (f.geometry as unknown as { coordinates: [number, number] }).coordinates;
-          vola(map, y, x, map.getZoom());
+          inclina(map, x, y);
         }
         if (f) return void setSel({ tipo: "antenna", a: { id: Number(f.properties.id), geometry: { coordinates: (f.geometry as unknown as { coordinates: [number, number] }).coordinates }, properties: JSON.parse(String(f.properties.json)) } });
         radar(e.lngLat.lng, e.lngLat.lat, null, false);
@@ -363,6 +366,7 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
       };
     });
     dati(k.map, "rr-ant", { type: "FeatureCollection", features });
+    comparsa(k.map, ["rr-ant"]);
   }, [istanze, pronto]);
 
   // filtri: tipo, anno, operatore (sulla GPU, senza ricaricare)
@@ -430,6 +434,7 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
   const chiudi = () => {
     setSel(null);
     togliRadar();
+    riposa(m.current?.map);
   };
 
   // ------------------------------------------------------------------ barra
@@ -443,7 +448,7 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
         onScelto={(l: Luogo) => radar(l.lon, l.lat, l.etichetta, true)}
         coda={<Strumenti onGuida={() => setGuidaAperta(true)} onTrovami={trovami} />}
       />
-      <div className={`rounded-[20px] bg-panel p-1.5 shadow-[0_2px_6px_rgba(37,29,28,.08),0_10px_30px_rgba(37,29,28,.12)] ring-1 ring-black/5 ${sel ? "max-lg:hidden" : ""}`}>
+      <div className={`rounded-[20px] bg-panel/88 backdrop-blur-xl backdrop-saturate-150 p-1.5 shadow-[0_2px_6px_rgba(37,29,28,.08),0_12px_34px_rgba(37,29,28,.16)] ring-1 ring-white/60 ${sel ? "max-lg:hidden" : ""}`}>
         <div role="group" aria-label="Tipi di antenne (tocca per nascondere)" className="grid grid-cols-4 gap-1">
           {(Object.keys(COL) as Tipo[]).map((t) => {
             const on = tipi[t];

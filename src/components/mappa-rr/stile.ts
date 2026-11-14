@@ -82,7 +82,8 @@ function ricolora(s: StyleSpecification): StyleSpecification {
       p["fill-outline-color"] = ROMA.bordoEdificio;
     } else if (id === "building-3d") {
       p["fill-extrusion-color"] = ROMA.edificio3d;
-      p["fill-extrusion-opacity"] = ["interpolate", ["linear"], ["zoom"], 15, 0, 16, 0.75];
+      p["fill-extrusion-opacity"] = ["interpolate", ["linear"], ["zoom"], 14.6, 0, 15.6, 0.88];
+      p["fill-extrusion-vertical-gradient"] = true;
     } else if (/one_way_arrow|shield|poi_r7|poi_r20/.test(id)) nascondi();
     else if (l.type === "line" && /rail/.test(id)) p["line-color"] = ROMA.ferrovia;
     else if (l.type === "line" && /casing/.test(id)) p["line-color"] = ROMA.bordoStrada;

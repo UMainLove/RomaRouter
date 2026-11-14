@@ -4,6 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import "./mappa.css";
 import type { GeoJSONSource, Map as MapLibre } from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
+import { atmosfera } from "./cinema";
 import { stileRoma } from "./stile";
 
 export type ML = typeof import("maplibre-gl");
@@ -45,7 +46,10 @@ export function MappaVettoriale({
         container: div.current,
         style: stile,
         center: [centro[1], centro[0]],
-        zoom,
+        // entrata da film: si parte un po' piu' lontano e ruotati, poi la camera arriva (vedi load)
+        zoom: fermo() || !conPannelli ? zoom : zoom - 1.25,
+        bearing: fermo() || !conPannelli ? 0 : -14,
+        maxPitch: 60,
         minZoom: 9.5,
         maxZoom: 19,
         maxBounds: [
@@ -70,8 +74,10 @@ export function MappaVettoriale({
       m.on("error", (e) => console.warn("Mappa:", e.error?.message ?? e));
       m.once("load", () => {
         if (!vivo) return;
+        atmosfera(m);
         setVista(true);
         pulisci = pronta.current(m, ml);
+        if (!fermo() && conPannelli) m.easeTo({ zoom, bearing: 0, duration: 2600, easing: (t) => 1 - Math.pow(1 - t, 3) });
       });
     });
     return () => {
@@ -123,13 +129,38 @@ export function vola(map: MapLibre, lat: number, lon: number, zoom?: number, con
   const p = margini(map);
   if ((map as MapLibre & { rrSenzaPannelli?: boolean }).rrSenzaPannelli) conScheda = false;
   const largo = p.left > 0;
+  const z = zoom ?? Math.max(map.getZoom(), 16);
+  const vicino = z >= 15 && !(map as MapLibre & { rrSenzaPannelli?: boolean }).rrSenzaPannelli;
   map.flyTo({
     center: [lon, lat],
-    zoom: zoom ?? Math.max(map.getZoom(), 16),
+    zoom: z,
+    // da vicino la camera si inclina sui palazzi in rilievo, con un filo di rotazione: si vede la citta' in 3D
+    pitch: vicino ? 52 : 0,
+    bearing: vicino ? -14 : 0,
     padding: largo ? p : { ...p, bottom: conScheda ? Math.round(window.innerHeight * 0.4) : p.bottom },
-    duration: fermo() ? 0 : 900,
+    duration: fermo() ? 0 : 1500,
+    curve: 1.35,
     essential: true,
   });
+}
+
+/**
+ * Toccando un simbolo: da vicino la camera si inclina dolcemente su di lui (stesso zoom, niente salti);
+ * da lontano resta ferma, sul telefono lo porta solo sopra la scheda.
+ */
+export function inclina(map: MapLibre, lon: number, lat: number) {
+  if (!viva(map)) return;
+  const telefono = !window.matchMedia("(min-width: 1024px)").matches;
+  const p = margini(map);
+  const padding = telefono ? { ...p, bottom: Math.round(window.innerHeight * 0.4) } : p;
+  if (map.getZoom() >= 14.5) map.easeTo({ center: [lon, lat], pitch: 50, bearing: -12, padding, duration: fermo() ? 0 : 1300, easing: (t) => 1 - Math.pow(1 - t, 3) });
+  else if (telefono) map.easeTo({ center: [lon, lat], padding, duration: fermo() ? 0 : 450 });
+}
+
+/** Chiudendo una scheda la camera torna dritta, dall'alto. */
+export function riposa(map?: MapLibre | null) {
+  if (!viva(map) || (map.getPitch() < 1 && Math.abs(map.getBearing()) < 1)) return;
+  map.easeTo({ pitch: 0, bearing: 0, duration: fermo() ? 0 : 900 });
 }
 
 /** Inquadra un'area. Il margine dei pannelli e' gia' nella mappa (setPadding): qui solo un po' d'aria in piu'. */
@@ -138,8 +169,8 @@ export function inquadra(map: MapLibre, b: [[number, number], [number, number]],
   const senza = (map as MapLibre & { rrSenzaPannelli?: boolean }).rrSenzaPannelli;
   const largo = senza || margini(map).left > 0;
   map.setPadding(margini(map));
-  map.fitBounds(b, {
-    padding: largo ? { top: 30, bottom: 30, left: 30, right: 30 } : { top: 20, left: 20, right: 20, bottom: conScheda ? Math.round(window.innerHeight * 0.4) : 20 },
-    duration: fermo() ? 0 : 900,
-  });
+  const padding = largo ? { top: 30, bottom: 30, left: 30, right: 30 } : { top: 20, left: 20, right: 20, bottom: conScheda ? Math.round(window.innerHeight * 0.4) : 20 };
+  const camera = map.cameraForBounds(b, { padding, bearing: 0 });
+  if (!camera) return;
+  map.easeTo({ ...camera, pitch: 0, bearing: 0, duration: fermo() ? 0 : 1100, easing: (t) => 1 - Math.pow(1 - t, 3) });
 }

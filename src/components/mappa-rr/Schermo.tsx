@@ -89,11 +89,12 @@ export function Scheda({
   }, [titolo]);
   return (
     <section
+      key={titolo}
       ref={ref}
       tabIndex={-1}
       aria-labelledby={id}
       onKeyDown={(e) => e.key === "Escape" && onChiudi()}
-      className="max-h-[min(62svh,440px)] overflow-hidden rounded-[22px] bg-panel p-4 shadow-[0_10px_40px_rgba(37,29,28,.22)] ring-1 ring-black/5 outline-none"
+      className="rr-entra max-h-[min(62svh,440px)] overflow-hidden rounded-[22px] bg-panel/92 p-4 shadow-[0_18px_50px_rgba(37,29,28,.26),0_2px_8px_rgba(37,29,28,.08)] ring-1 ring-white/60 backdrop-blur-xl backdrop-saturate-150 outline-none"
     >
       <div className="flex items-start gap-3">
         <div className="shrink-0">{icona}</div>

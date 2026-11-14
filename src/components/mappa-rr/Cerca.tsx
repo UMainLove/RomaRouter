@@ -113,7 +113,7 @@ export function Cerca({
       <label htmlFor={`${id}-in`} className="sr-only">
         {etichetta}
       </label>
-      <div className="flex h-[52px] items-center gap-2 rounded-[18px] bg-panel pr-1.5 pl-4 shadow-[0_2px_6px_rgba(37,29,28,.08),0_10px_30px_rgba(37,29,28,.12)] ring-1 ring-black/5 focus-within:ring-2 focus-within:ring-ink">
+      <div className="flex h-[52px] items-center gap-2 rounded-[18px] bg-panel/88 backdrop-blur-xl backdrop-saturate-150 pr-1.5 pl-4 shadow-[0_2px_6px_rgba(37,29,28,.08),0_12px_34px_rgba(37,29,28,.16)] ring-1 ring-white/60 focus-within:ring-2 focus-within:ring-ink">
         <svg viewBox="0 0 20 20" className="size-[18px] shrink-0 text-muted" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
           <circle cx="8.5" cy="8.5" r="5.5" />
           <path d="m13 13 4 4" strokeLinecap="round" />
