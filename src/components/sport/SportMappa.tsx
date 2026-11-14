@@ -130,7 +130,7 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
   const vicino = useCallback((lon: number, lat: number, etichetta: string | null, volaLi: boolean) => {
     const k = m.current;
     if (!k) return;
-    if (volaLi || !window.matchMedia("(min-width: 1024px)").matches) inquadra(k.map, [[lon - 0.019, lat - 0.0142], [lon + 0.019, lat + 0.0142]]);
+    if (volaLi || !window.matchMedia("(min-width: 1024px)").matches) inquadra(k.map, [[lon - 0.0068, lat - 0.0051], [lon + 0.0068, lat + 0.0051]]);
     setSel({ tipo: "vicino", lon, lat, etichetta });
     const src = k.map.getSource("rr-anelli") as GeoJSONSource;
     const disegna = (f: number) =>
