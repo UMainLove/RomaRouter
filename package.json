@@ -23,7 +23,8 @@
     "luoghi:indice": "node --env-file=.env.local scripts/luoghi/indice.mts",
     "artisti:copertura": "node --env-file=.env.local scripts/artisti/copertura.mts",
     "sport:import": "node --env-file=.env.local scripts/sport/import.mts",
-    "sport:esporta": "node --env-file=.env.local scripts/sport/esporta.mts"
+    "sport:esporta": "node --env-file=.env.local scripts/sport/esporta.mts",
+    "oggetti:esporta": "node scripts/oggetti/esporta.mts"
   },
   "dependencies": {
     "maplibre-gl": "^6.18.0",

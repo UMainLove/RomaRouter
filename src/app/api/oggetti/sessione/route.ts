@@ -129,6 +129,7 @@ export async function POST(req: NextRequest) {
 
     const s: SessioneOggetti = {
       ...profilo,
+      sub: profilo.ruolo === "cittadino" ? `${profilo.sub}:${crypto.randomUUID().slice(0, 12)}` : profilo.sub,
       scadeIl: new Date(Date.now() + 12 * 3_600_000).toISOString(),
     };
     await impostaSessione(s);

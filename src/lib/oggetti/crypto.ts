@@ -7,12 +7,19 @@ import { createCipheriv, createDecipheriv, createHmac, randomBytes, timingSafeEq
  * non usano mai la stessa sottochiave.
  */
 
+let avvisato = false;
 function leggiSegretoMaster(): string {
   const s = process.env.OGGETTI_SEGRETO;
-  if (!s || s.length < 32 || s.includes("CAMBIAMI")) {
-    throw new Error("OGGETTI_SEGRETO mancante o troppo corto in .env.local (servono almeno 32 caratteri)");
+  if (s && s.length >= 32 && !s.includes("CAMBIAMI")) return s;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("OGGETTI_SEGRETO mancante o troppo corto (servono almeno 32 caratteri)");
   }
-  return s;
+  // sviluppo: un segreto stabile ricavato da questa installazione, cosi' la sezione funziona subito
+  if (!avvisato) {
+    avvisato = true;
+    console.warn("[oggetti] OGGETTI_SEGRETO non impostato in .env.local: uso un segreto di sviluppo (non usarlo in produzione)");
+  }
+  return createHmac("sha256", "romarouter:oggetti:sviluppo").update(process.env.DATABASE_URL_SMARRITI ?? "locale").digest("hex");
 }
 
 function sottochiave(dominio: "aes" | "hmac" | "sessione"): Buffer {

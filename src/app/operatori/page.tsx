@@ -3,19 +3,15 @@ import Link from "next/link";
 import { AreaOperatori } from "@/components/operatori/AreaOperatori";
 import { contenitore } from "@/components/ui/stili";
 
-export const metadata: Metadata = { title: "Area operatori · Livello 3" };
+export const metadata: Metadata = { title: "Area operatori" };
 
 export default function PaginaOperatori() {
   return (
     <main className={`${contenitore} flex flex-col gap-6 py-8`}>
       <div>
-        <p className="text-sm font-bold tracking-[0.06em] text-muted uppercase">
-          Area operatori · Livello 3 · Reparto Oggetti Rinvenuti, Custodi e Forze dell&apos;Ordine
-        </p>
-        <h1 className="text-[30px] leading-[38px] font-bold">Gestione protetta e restituzione</h1>
-        <p className="text-base text-ink-soft">
-          Catalogo completo con Audit Log, inbox match pseudonima, verifica con domande aperte, semaforo documenti e passaggi di consegna.
-        </p>
+        <p className="text-sm font-bold tracking-[0.06em] text-muted uppercase">Area operatori · Oggetti smarriti</p>
+        <h1 className="text-[30px] leading-[38px] font-bold">Consegne e restituzioni</h1>
+        <p className="text-base text-ink-soft">Prendi in consegna gli oggetti, verifica chi li cerca e restituiscili. I dati dei cittadini restano cifrati.</p>
       </div>
       <AreaOperatori />
       <Link href="/operatori/arte" className="flex items-center gap-4 rounded-panel border border-line bg-panel p-5 hover:bg-bg-sink">

@@ -22,7 +22,7 @@ const testo = (v: unknown, max: number) => (typeof v === "string" ? v.trim().sli
  * POST /api/oggetti/match/[id]/azioni — STEP 5 Verifica, quiz a domande aperte, rifiuto motivato,
  * appuntamento sicuro (solo Punto H24 / Comando / Ufficio) con numero mascherato, e conferma bilaterale.
  */
-export async function POST(req: NextRequest, ctx: RouteContext<"/api/oggetti/match/[id]/azioni">) {
+export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   await connection();
   const s = await leggiSessione();
   if (!s) return Response.json({ errore: "Accesso richiesto." }, { status: 401 });
@@ -258,7 +258,7 @@ export async function POST(req: NextRequest, ctx: RouteContext<"/api/oggetti/mat
     }
 
     const { rows: pRows } = await queryOggetti<{ id: string; nome: string; indirizzo: string }>(
-      "SELECT id, nome, indirizzo FROM smarriti.punti_consegna WHERE id = $1 AND tipo IN ('punto_h24', 'comando', 'ufficio')",
+      "SELECT id, nome, indirizzo FROM smarriti.punti_consegna WHERE id = $1 AND tipo IN ('punto_h24', 'comando', 'ufficio', 'forze_ordine', 'misericordia')",
       [puntoId],
     );
     const punto = pRows[0];

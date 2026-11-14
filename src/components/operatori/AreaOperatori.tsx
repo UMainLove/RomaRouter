@@ -1,1046 +1,391 @@
 "use client";
 
-import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
-import {
-  CATEGORIE_OGGETTI,
-  LUOGHI_TIPO,
-  MACRO_AREE,
-  MOTIVI_RIFIUTO,
-  PROVENIENZE_UTENTE,
-  RUOLI_CUSTODE,
-  STATI_OGGETTO_ETICHETTE,
-  TIPI_RECAPITO_ML,
-  type CategoriaOggetto,
-  type MacroArea,
-  type MotivoRifiuto,
-  type ProvenienzaUtente,
-  type RuoloCustode,
-  type TipoRecapitoMl,
-} from "@/lib/oggetti/costanti";
-import { formattaData } from "@/lib/formato";
-import { Icon } from "../Icon";
-import { AccessoOggetti, type SessioneClient } from "../oggetti/AccessoOggetti";
-import { PillolaColore } from "../oggetti/PillolaColore";
-import { btnPrimario, btnSecondario, campo } from "../ui/stili";
-import { Avviso, Etichetta, NotaPrivacy } from "../ui/Varie";
-import { SceltaChip } from "../vista/Filtri";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { CATEGORIE_OGGETTI, MACRO_AREE, MOTIVI_RIFIUTO } from "@/lib/oggetti/costanti";
+import { COSE } from "../oggetti/linguaggio";
 import { RegistraOggetto } from "./RegistraOggetto";
 
-interface MatchCustode {
-  id: string;
-  oggettoId: number;
-  oggettoChiave: string;
-  oggettoCategoria: CategoriaOggetto;
-  oggettoDescrizione: string;
-  oggettoMacroArea: MacroArea | null;
-  oggettoFascia: string | null;
-  oggettoStato: string;
-  oggettoBloccato: boolean;
-  tentativiFalliti: number;
-  dettaglioRiservato: string | null;
-  richiedentePseudonimo: string;
-  segnalazioneArea: MacroArea;
-  segnalazioneFascia: string;
-  segnalazioneData: string;
-  punteggio: number;
-  esatto: boolean;
-  stato: string;
-  motivoCodice: string | null;
-  motivo: string | null;
-  messaggi: { id: number; mittente: string; tipo: string; testo: string; creatoIl: string }[];
-  appuntamento: {
-    punto_id: string;
-    punto_nome: string;
-    punto_indirizzo: string;
-    quando: string;
-    numero_mascherato: string;
-    conferma_custode_il: string | null;
-    conferma_richiedente_il: string | null;
-  } | null;
-  contattoAppuntamento?: {
-    provenienza: string | null;
-    tipoRecapito: string | null;
-    canale: string;
-    recapito: string | null;
-    nomeStruttura: string | null;
-    cliccatoIl: string;
-  } | null;
+/*
+ * Area operatori degli oggetti smarriti, in ordine:
+ *  1. entri (profili di prova: Forze dell'Ordine, Ufficio, punto H24, guardia, volontario);
+ *  2. prendi in consegna l'oggetto che un cittadino ti porta, con il suo codice;
+ *  3. segui le richieste dei proprietari: un passo alla volta, il pulsante dice cosa fare ora;
+ *  4. controlli un documento (solo Forze dell'Ordine e Ufficio) o registri un oggetto senza codice.
+ */
+
+type Sessione = { sub: string; ruolo: string; etichetta?: string } | null;
+type Messaggio = { id: number; mittente: string; tipo: string; testo: string };
+type Richiesta = {
+  id: string; oggettoChiave: string; oggettoCategoria: string; oggettoMacroArea: string | null; oggettoStato: string; oggettoBloccato: boolean;
+  dettaglioRiservato: string | null; richiedentePseudonimo: string; punteggio: number; esatto: boolean; stato: string; tentativiFalliti: number;
+  messaggi: Messaggio[]; appuntamento: { quando?: string; punto_nome?: string } | null;
+  contattoAppuntamento: { canale: string; recapito: string | null } | null;
+};
+type Punto = { id: string; categoria: string; nome: string; lat: number; lon: number; h24: boolean; fonte?: string };
+
+const PROFILI: [string, string, string][] = [
+  ["forze_ordine", "Forze dell'Ordine", "vede tutte le richieste, anche i documenti"],
+  ["ufficio", "Ufficio Oggetti Rinvenuti", "Roma Capitale, deposito centrale"],
+  ["punto_h24", "Punto amico H24", "attività convenzionata"],
+  ["guardia_giurata", "Guardia giurata", "istituto convenzionato"],
+  ["volontario", "Volontario", "residente con CIE"],
+];
+const STATI: Record<string, { n: string; c: string }> = {
+  proposto: { n: "Da controllare", c: "#E07A1F" },
+  contatto: { n: "In verifica", c: "#1F63D1" },
+  verificato: { n: "Verificato", c: "#16955A" },
+  appuntamento: { n: "Appuntamento", c: "#7A4FD0" },
+  restituito: { n: "Restituito", c: "#5F6B7A" },
+  respinto: { n: "Respinto", c: "#D2372F" },
+};
+const campo = "h-11 w-full min-w-0 rounded-[12px] border-0 bg-bg-sink px-3 text-[15px] font-semibold text-ink placeholder:font-normal placeholder:text-muted focus:ring-2 focus:ring-ink focus:outline-none";
+const bottone = "h-11 shrink-0 rounded-[14px] bg-ink px-4 text-[14px] font-bold text-white hover:bg-ink-soft disabled:opacity-50";
+const secondario = "h-11 shrink-0 rounded-[14px] bg-bg-sink px-4 text-[14px] font-bold text-ink hover:bg-line disabled:opacity-50";
+
+async function chiama<T>(url: string, init?: RequestInit): Promise<T> {
+  const r = await fetch(url, { ...init, headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) } });
+  const d = await r.json().catch(() => ({ errore: "Il servizio non risponde: riprova tra poco." }));
+  if (!r.ok) throw new Error((d as { errore?: string }).errore ?? "Qualcosa non è andato");
+  return d as T;
 }
 
-interface OggettoLivello3 {
-  id: number;
-  chiave: string;
-  categoria: CategoriaOggetto;
-  descrizione: string;
-  dataRitrovamento: string | null;
-  enteCustode: string;
-  stato: string;
-  pubblico: boolean;
-  macroArea: MacroArea | null;
-  custodeId: string | null;
-  bloccato: boolean;
-  bloccatoMotivo: string | null;
-  tentativiFalliti: number;
-  dettaglioRiservato: string | null;
+function Riquadro({ n, titolo, sotto, children }: { n: number; titolo: string; sotto?: string; children: ReactNode }) {
+  return (
+    <section className="rounded-[22px] bg-panel p-4 shadow-[0_2px_6px_rgba(37,29,28,.06),0_10px_30px_rgba(37,29,28,.08)] ring-1 ring-black/5 sm:p-5">
+      <div className="mb-3 flex items-start gap-3">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-ink text-[14px] font-extrabold text-white">{n}</span>
+        <div>
+          <h2 className="text-[18px] leading-6 font-bold text-ink">{titolo}</h2>
+          {sotto && <p className="text-[13.5px] text-ink-soft">{sotto}</p>}
+        </div>
+      </div>
+      {children}
+    </section>
+  );
 }
-
-interface CustodeRecord {
-  id: string;
-  ruolo: RuoloCustode;
-  pseudonimo: string;
-  macro_area: string | null;
-  stato: string;
-  residente_dal: string | null;
-  istituto_vigilanza: string | null;
-  conferma_istituto: boolean;
-  matricola: string | null;
-  decreto_prefettizio: string | null;
-  ha_foto_badge: boolean;
-  municipio: string | null;
-  tipo_soggetto: string | null;
-  ragione_sociale: string | null;
-  partita_iva: string | null;
-  indirizzo_sede: string | null;
-  impegno_accettato: boolean;
-  impegno_testo: string | null;
-}
-
-interface PassaggioRecord {
-  id: number;
-  oggetto_chiave: string;
-  da_nome: string | null;
-  a_nome: string | null;
-  motivo: string;
-  creato_il: string;
-}
-
-interface PuntoConsegna {
-  id: string;
-  nome: string;
-  tipo: string;
-  indirizzo: string;
-  h24: boolean;
-}
-
-interface RichiestaPubblicaRecord {
-  id: string;
-  oggettoId: number;
-  oggettoChiave: string;
-  oggettoDescrizione: string;
-  stato: string;
-  chiRitira: string | null;
-  quando: string | null;
-  elementiProva: string | null;
-  creataIl: string;
-}
-
-interface AuditRecord {
-  id: number;
-  quando: string;
-  attore: string;
-  ruolo: string;
-  azione: string;
-  oggetto_id: number | null;
-  dettagli: Record<string, unknown>;
-}
-
-type SchedaOp = "inbox" | "catalogo" | "documenti" | "custodi";
 
 export function AreaOperatori() {
-  const [sessione, setSessione] = useState<SessioneClient | null>(null);
-  const [scheda, setScheda] = useState<SchedaOp>("inbox");
+  const [sessione, setSessione] = useState<Sessione>(null);
+  const [caricato, setCaricato] = useState(false);
   const [errore, setErrore] = useState<string | null>(null);
-  const [esito, setEsito] = useState<string | null>(null);
-
-  // Dati livello 3
-  const [matches, setMatches] = useState<MatchCustode[]>([]);
-  const [oggetti, setOggetti] = useState<OggettoLivello3[]>([]);
-  const [custodi, setCustodi] = useState<CustodeRecord[]>([]);
-  const [passaggi, setPassaggi] = useState<PassaggioRecord[]>([]);
-  const [punti, setPunti] = useState<PuntoConsegna[]>([]);
-  const [richiestePubbliche, setRichiestePubbliche] = useState<RichiestaPubblicaRecord[]>([]);
-  const [audit, setAudit] = useState<AuditRecord[]>([]);
-
-  // Filtri Livello 3
-  const [qCat3, setQCat3] = useState("");
-  const [categoriaCat3, setCategoriaCat3] = useState("");
-  const [luogoCat3, setLuogoCat3] = useState("");
-  const [coloreCat3, setColoreCat3] = useState("");
-  const [statoCat3, setStatoCat3] = useState("");
-  const [zonaCat3, setZonaCat3] = useState("");
-  const [visibilitaCat3, setVisibilitaCat3] = useState<"" | "pubblico" | "riservato">("");
-
-  // Stato azioni chat / verifica
-  const [domande, setDomande] = useState<Record<string, string>>({});
-  const [rifiutoCodice, setRifiutoCodice] = useState<Record<string, MotivoRifiuto>>({});
-  const [rifiutoTesto, setRifiutoTesto] = useState<Record<string, string>>({});
-  const [appPunto, setAppPunto] = useState<Record<string, string>>({});
-  const [appQuando, setAppQuando] = useState<Record<string, string>>({});
-  const [codiceRitiroInput, setCodiceRitiroInput] = useState<Record<string, string>>({});
-
-  // Presa in consegna & passaggio di consegna
-  const [codiceConsegnaInput, setCodiceConsegnaInput] = useState("");
-  const [destPassaggio, setDestPassaggio] = useState<Record<number, string>>({});
-  const [motivoPassaggio, setMotivoPassaggio] = useState<Record<number, string>>({});
-
-  // Semaforo documenti FF.OO.
-  const [docNumero, setDocNumero] = useState("");
-  const [docTipo, setDocTipo] = useState("Carta d'identità");
-  const [docArea, setDocArea] = useState<MacroArea>("centro");
-  const [docEsito, setDocEsito] = useState<{ semaforo: string; messaggio: string } | null>(null);
-
-
-  const eCustode =
-    sessione && ["volontario", "guardia_giurata", "forze_ordine", "punto_h24", "ufficio"].includes(sessione.ruolo);
-  const eForzeOUfficio = sessione && ["forze_ordine", "ufficio"].includes(sessione.ruolo);
-
-  const ricarica = useCallback(async () => {
-    if (!eCustode) return;
-    const qs = new URLSearchParams();
-    if (qCat3) qs.set("q", qCat3);
-    if (categoriaCat3) qs.set("categoria", categoriaCat3);
-    if (luogoCat3) qs.set("luogo", luogoCat3);
-    if (coloreCat3.trim()) qs.set("colore", coloreCat3.trim());
-    if (statoCat3) qs.set("stato", statoCat3);
-    if (zonaCat3) qs.set("zona", zonaCat3);
-    if (visibilitaCat3) qs.set("visibilita", visibilitaCat3);
-
-    const [rMatch, rCust] = await Promise.all([
-      fetch("/api/oggetti/match", { cache: "no-store" }),
-      fetch(`/api/oggetti/custodia?${qs.toString()}`, { cache: "no-store" }),
-    ]);
-    if (rMatch.ok) {
-      const dm = await rMatch.json();
-      setMatches(dm.match ?? []);
-    }
-    if (rCust.ok) {
-      const dc = await rCust.json();
-      setOggetti(dc.oggetti ?? []);
-      setCustodi(dc.custodi ?? []);
-      setPassaggi(dc.passaggi ?? []);
-      setPunti(dc.puntiConsegna ?? []);
-      setRichiestePubbliche(dc.richiestePubbliche ?? []);
-      setAudit(dc.audit ?? []);
-    }
-  }, [eCustode, qCat3, categoriaCat3, luogoCat3, coloreCat3, statoCat3, zonaCat3, visibilitaCat3]);
 
   useEffect(() => {
-    if (!eCustode) return;
-    let attivo = true;
-    const qs = new URLSearchParams();
-    if (qCat3) qs.set("q", qCat3);
-    if (categoriaCat3) qs.set("categoria", categoriaCat3);
-    if (luogoCat3) qs.set("luogo", luogoCat3);
-    if (coloreCat3.trim()) qs.set("colore", coloreCat3.trim());
-    if (statoCat3) qs.set("stato", statoCat3);
-    if (zonaCat3) qs.set("zona", zonaCat3);
-    if (visibilitaCat3) qs.set("visibilita", visibilitaCat3);
-    (async () => {
-      const [rMatch, rCust] = await Promise.all([
-        fetch("/api/oggetti/match", { cache: "no-store" }),
-        fetch(`/api/oggetti/custodia?${qs.toString()}`, { cache: "no-store" }),
-      ]);
-      if (!attivo) return;
-      if (rMatch.ok) {
-        const dm = await rMatch.json();
-        setMatches(dm.match ?? []);
-      }
-      if (rCust.ok) {
-        const dc = await rCust.json();
-        setOggetti(dc.oggetti ?? []);
-        setCustodi(dc.custodi ?? []);
-        setPassaggi(dc.passaggi ?? []);
-        setPunti(dc.puntiConsegna ?? []);
-        setRichiestePubbliche(dc.richiestePubbliche ?? []);
-        setAudit(dc.audit ?? []);
-      }
-    })();
-    return () => {
-      attivo = false;
-    };
-  }, [eCustode, qCat3, categoriaCat3, luogoCat3, coloreCat3, statoCat3, zonaCat3, visibilitaCat3]);
+    chiama<{ sessione: Sessione }>("/api/oggetti/sessione")
+      .then((d) => setSessione(d.sessione))
+      .catch(() => {})
+      .finally(() => setCaricato(true));
+  }, []);
 
-  const eseguiAzioneMatch = async (matchId: string, payload: Record<string, unknown>) => {
+  async function entra(profilo: string) {
     setErrore(null);
-    setEsito(null);
-    const r = await fetch(`/api/oggetti/match/${matchId}/azioni`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const d = await r.json();
-    if (!r.ok) {
-      setErrore(d.errore ?? "Operazione non riuscita");
-      return;
+    try {
+      const d = await chiama<{ sessione: Sessione }>("/api/oggetti/sessione", { method: "POST", body: JSON.stringify({ azione: "accedi_demo", profilo }) });
+      setSessione(d.sessione);
+    } catch (e) {
+      setErrore((e as Error).message);
     }
-    setEsito(d.messaggio ?? `Pratica aggiornata (${d.stato ?? "ok"}).`);
-    setDomande((prev) => ({ ...prev, [matchId]: "" }));
-    await ricarica();
-  };
+  }
+  async function esci() {
+    await fetch("/api/oggetti/sessione", { method: "DELETE" }).catch(() => {});
+    setSessione(null);
+  }
 
-  const eseguiAzioneCustodia = async (payload: Record<string, unknown>) => {
-    setErrore(null);
-    setEsito(null);
-    const r = await fetch("/api/oggetti/custodia", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const d = await r.json();
-    if (!r.ok) {
-      setErrore(d.errore ?? "Operazione non riuscita");
-      return;
-    }
-    setEsito(d.messaggio ?? "Operazione registrata su PostgreSQL e nell'Audit Log.");
-    setCodiceConsegnaInput("");
-    await ricarica();
-  };
-
-  const verificaSemaforo = async (registra: boolean) => {
-    setErrore(null);
-    setDocEsito(null);
-    const r = await fetch("/api/oggetti/documenti/semaforo", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        numero_documento: docNumero,
-        tipo_documento: docTipo,
-        macro_area: docArea,
-        registra,
-      }),
-    });
-    const d = await r.json();
-    if (!r.ok) {
-      setErrore(d.errore ?? "Errore controllo semaforo");
-      return;
-    }
-    setDocEsito({ semaforo: d.semaforo, messaggio: d.messaggio });
-    await ricarica();
-  };
-
-  const destinatariPassaggio = custodi.filter(
-    (c) => c.stato === "approvato" && (c.ruolo === "forze_ordine" || c.ruolo === "ufficio"),
-  );
-
-  return (
-    <div className="flex flex-col gap-6">
-      <AccessoOggetti mostraProfiliOperatore onCambioSessione={setSessione} />
-
-      {errore && <Avviso icona="attenzione">{errore}</Avviso>}
-      {esito && (
-        <p role="status" className="flex items-center gap-2 rounded-card bg-ok-tint px-4 py-3 text-sm font-bold text-ok">
-          <Icon name="spunta" size={18} strokeWidth={2.4} />
-          <span>{esito}</span>
-        </p>
-      )}
-
-      {!eCustode ? (
-        <div className="flex flex-col gap-4">
-          <NotaPrivacy>
-            Seleziona qui sopra un profilo operatore/custode (es. <b>Volontario CIE</b>, <b>Punto Amico H24</b>, <b>Polizia Locale</b> o <b>Ufficio Oggetti Rinvenuti</b>) per aprire il Catalogo Livello 3 e l&apos;inbox match.
-          </NotaPrivacy>
-
-          <section className="flex flex-col gap-3 rounded-panel border border-line bg-panel p-5">
-            <h2 className="text-lg font-bold">Collaborazioni con Comune e Municipi</h2>
-            <p className="text-sm text-ink-soft">
-              La candidatura a custode volontario o attività convenzionata non si compila qui dentro: va inviata tramite la richiesta formale separata rivolta al Comune o Municipio competente, riservata a <b>privati cittadini</b> e <b>aziende</b> che si impegnano a collaborare.
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <Link href="/operatori/richiesta-abilitazione" className={btnPrimario}>
-                <Icon name="scudo" size={16} /> Richiesta al Comune / Municipio (Privati e Aziende)
-              </Link>
-            </div>
-          </section>
+  const operatore = sessione && !["cittadino", "turista"].includes(sessione.ruolo);
+  if (!caricato) return <p className="text-muted">Un attimo…</p>;
+  if (!operatore) {
+    return (
+      <Riquadro n={1} titolo="Entra come operatore" sotto="Versione dimostrativa: scegli un profilo di prova. Nella versione vera si entra con SPID o CIE e badge.">
+        <div className="grid gap-2 sm:grid-cols-2">
+          {PROFILI.map(([id, n, d]) => (
+            <button key={id} type="button" onClick={() => entra(id)} className="flex flex-col items-start rounded-[16px] bg-bg-sink px-4 py-3 text-left hover:bg-line">
+              <span className="text-[15px] font-bold text-ink">{n}</span>
+              <span className="text-[13px] text-ink-soft">{d}</span>
+            </button>
+          ))}
         </div>
-      ) : (
-        <>
-          <div role="tablist" aria-label="Strumenti operatori Livello 3" className="flex flex-wrap gap-2">
-            {[
-              { id: "inbox" as const, label: `1. Inbox Match (${matches.length})` },
-              { id: "catalogo" as const, label: `2. Catalogo Livello 3 & Passaggi (${oggetti.length})` },
-              { id: "documenti" as const, label: "3. Semaforo Documenti & Registra" },
-              { id: "custodi" as const, label: `4. Custodi, Guardie & Audit (${audit.length})` },
-            ].map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                role="tab"
-                aria-selected={scheda === t.id}
-                onClick={() => setScheda(t.id)}
-                className={`min-h-11 rounded-full border px-4 text-sm font-bold ${
-                  scheda === t.id ? "border-ink bg-ink text-white" : "border-line bg-panel text-ink hover:border-campo"
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+        {errore && <p className="mt-2 text-[14px] font-semibold text-errore" role="alert">{errore}</p>}
+      </Riquadro>
+    );
+  }
 
-          {scheda === "inbox" && (
-            <section className="flex flex-col gap-4">
-              <NotaPrivacy>
-                <b>STEP 4 e 5 · Verifica protetta:</b> vedi solo candidati pseudonimi. Il richiedente descrive per primo oggetto, luogo e ora; poi puoi inviare domande aperte (mai prese dall&apos;elenco pubblico INF39645) oppure motivare un rifiuto.
-              </NotaPrivacy>
-
-              {matches.length === 0 ? (
-                <p className="rounded-panel border border-dashed border-line bg-panel p-5 text-sm text-ink-soft">
-                  Nessun match attivo per i tuoi oggetti in custodia. Registra una segnalazione &ldquo;Ho perso&rdquo; nella pagina <b>Oggetti</b> con stessa macro-area e categoria per vedere comparire qui il candidato pseudonimo!
-                </p>
-              ) : (
-                matches.map((m) => {
-                  const haDescrizione = m.messaggi.some((msg) => msg.mittente === "richiedente" && msg.tipo === "descrizione");
-                  return (
-                    <article key={m.id} className="flex flex-col gap-3 rounded-panel border border-line bg-panel p-4">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                          <p className="text-xs font-bold uppercase text-muted">
-                            {m.oggettoChiave} · {CATEGORIE_OGGETTI[m.oggettoCategoria] ?? m.oggettoCategoria} ·{" "}
-                            {m.oggettoMacroArea ? MACRO_AREE[m.oggettoMacroArea]?.nome : ""}
-                          </p>
-                          <h3 className="text-base font-bold">
-                            {m.richiedentePseudonimo} · compatibilità {m.punteggio}% {m.esatto ? "(MATCH ESATTO DOCUMENTO)" : ""}
-                          </h3>
-                          <p className="text-xs text-ink-soft">
-                            Segnalazione persa del {formattaData(m.segnalazioneData, false)} ({m.segnalazioneFascia}) · tentativi falliti sull&apos;oggetto:{" "}
-                            {m.tentativiFalliti}/3
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          <Etichetta tono={m.stato === "restituito" ? "ok" : m.stato === "respinto" ? "neutro" : "attenzione"}>
-                            {m.stato}
-                          </Etichetta>
-                          {m.oggettoBloccato && (
-                            <Etichetta tono="attenzione" icona="lucchetto">
-                              Oggetto bloccato (solo sportello)
-                            </Etichetta>
-                          )}
-                        </div>
-                      </div>
-
-                      {m.dettaglioRiservato && (
-                        <div className="rounded-card bg-bg-sink p-3 text-sm">
-                          <p className="flex items-center gap-1.5 text-xs font-bold uppercase text-muted">
-                            <Icon name="lucchetto" size={14} />
-                            Dettaglio riservato custode (decifrato solo per te)
-                          </p>
-                          <p className="mt-1 text-ink">{m.dettaglioRiservato}</p>
-                        </div>
-                      )}
-
-                      {m.contattoAppuntamento && m.contattoAppuntamento.recapito && (
-                        <div className="rounded-card border border-ok/40 bg-ok-tint p-3 text-sm">
-                          <p className="flex items-center gap-1.5 text-xs font-bold uppercase text-ok">
-                            <Icon name="spunta" size={14} />
-                            Contatto Magic Link per fissare l&apos;appuntamento
-                          </p>
-                          <p className="mt-1 text-ink">
-                            <b>
-                              {m.contattoAppuntamento.provenienza && m.contattoAppuntamento.provenienza in PROVENIENZE_UTENTE
-                                ? PROVENIENZE_UTENTE[m.contattoAppuntamento.provenienza as ProvenienzaUtente]
-                                : "Richiedente"}
-                            </b>{" "}
-                            ·{" "}
-                            {m.contattoAppuntamento.tipoRecapito && m.contattoAppuntamento.tipoRecapito in TIPI_RECAPITO_ML
-                              ? TIPI_RECAPITO_ML[m.contattoAppuntamento.tipoRecapito as TipoRecapitoMl]
-                              : m.contattoAppuntamento.canale}
-                            {m.contattoAppuntamento.nomeStruttura ? ` (${m.contattoAppuntamento.nomeStruttura})` : ""}:{" "}
-                            <b>{m.contattoAppuntamento.recapito}</b>
-                          </p>
-                        </div>
-                      )}
-
-                      {m.messaggi.length > 0 && (
-                        <ul className="flex flex-col gap-2">
-                          {m.messaggi.map((msg) => (
-                            <li
-                              key={msg.id}
-                              className={`rounded-card px-3 py-2 text-sm ${
-                                msg.mittente === "custode"
-                                  ? "ml-6 bg-oggetti-tint text-ink"
-                                  : msg.mittente === "sistema"
-                                    ? "bg-bg-sink text-ink-soft"
-                                    : "mr-6 border border-line bg-panel text-ink"
-                              }`}
-                            >
-                              <span className="block text-[11px] font-bold uppercase text-muted">
-                                {msg.mittente} · {msg.tipo}
-                              </span>
-                              {msg.testo}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-
-                      {!m.oggettoBloccato && m.stato === "proposto" && (
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => void eseguiAzioneMatch(m.id, { azione: "avvia_contatto" })}
-                            className={btnPrimario}
-                          >
-                            Avvia contatto cifrato con {m.richiedentePseudonimo}
-                          </button>
-                        </div>
-                      )}
-
-                      {!m.oggettoBloccato && m.stato === "contatto" && (
-                        <div className="flex flex-col gap-3 rounded-card border border-line p-3">
-                          {!haDescrizione ? (
-                            <p className="text-sm text-attenzione">
-                              In attesa che il richiedente invii per primo descrizione dell&apos;oggetto, luogo e ora in cui si è accorto dello smarrimento.
-                            </p>
-                          ) : (
-                            <div className="flex flex-col gap-2">
-                              <label className="text-xs font-bold">Invia domanda aperta di controllo (no scelte multiple)</label>
-                              <div className="flex flex-wrap gap-2">
-                                <input
-                                  className={`${campo} flex-1`}
-                                  value={domande[m.id] ?? ""}
-                                  onChange={(e) => setDomande((p) => ({ ...p, [m.id]: e.target.value }))}
-                                  placeholder="Es. Cosa c'era dentro la tasca anteriore o che adesivo ha?"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => void eseguiAzioneMatch(m.id, { azione: "invia_domanda", testo: domande[m.id] ?? "" })}
-                                  className={btnSecondario}
-                                >
-                                  Invia domanda
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => void eseguiAzioneMatch(m.id, { azione: "approva_verifica" })}
-                                  className={btnPrimario}
-                                >
-                                  Approva proprietà
-                                </button>
-                              </div>
-                            </div>
-                          )}
-
-                          <details className="pt-1">
-                            <summary className="cursor-pointer text-xs font-bold text-amaranto">Rifiuta con motivo obbligatorio</summary>
-                            <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                              <select
-                                className={campo}
-                                value={rifiutoCodice[m.id] ?? "risposte_errate"}
-                                onChange={(e) => setRifiutoCodice((p) => ({ ...p, [m.id]: e.target.value as MotivoRifiuto }))}
-                              >
-                                {Object.entries(MOTIVI_RIFIUTO).map(([k, v]) => (
-                                  <option key={k} value={k}>
-                                    {v}
-                                  </option>
-                                ))}
-                              </select>
-                              <input
-                                className={campo}
-                                value={rifiutoTesto[m.id] ?? ""}
-                                onChange={(e) => setRifiutoTesto((p) => ({ ...p, [m.id]: e.target.value }))}
-                                placeholder="Spiega il motivo del rifiuto"
-                              />
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  void eseguiAzioneMatch(m.id, {
-                                    azione: "rifiuta",
-                                    motivo_codice: rifiutoCodice[m.id] ?? "risposte_errate",
-                                    motivo: rifiutoTesto[m.id] ?? "",
-                                  })
-                                }
-                                className={btnSecondario}
-                              >
-                                Registra rifiuto motivato
-                              </button>
-                            </div>
-                          </details>
-                        </div>
-                      )}
-
-                      {!m.oggettoBloccato && m.stato === "verificato" && (
-                        <div className="grid gap-2 rounded-card bg-ok-tint p-3 sm:grid-cols-3">
-                          <select
-                            className={campo}
-                            value={appPunto[m.id] ?? punti[0]?.id ?? ""}
-                            onChange={(e) => setAppPunto((p) => ({ ...p, [m.id]: e.target.value }))}
-                          >
-                            {punti.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.nome} ({p.tipo})
-                              </option>
-                            ))}
-                          </select>
-                          <input
-                            type="datetime-local"
-                            className={campo}
-                            value={appQuando[m.id] ?? ""}
-                            onChange={(e) => setAppQuando((p) => ({ ...p, [m.id]: e.target.value }))}
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              void eseguiAzioneMatch(m.id, {
-                                azione: "fissa_appuntamento",
-                                punto_id: appPunto[m.id] ?? punti[0]?.id,
-                                quando: appQuando[m.id] || new Date(Date.now() + 3_600_000).toISOString(),
-                              })
-                            }
-                            className={btnPrimario}
-                          >
-                            Fissa appuntamento (numero mascherato)
-                          </button>
-                        </div>
-                      )}
-
-                      {m.appuntamento && (
-                        <div className="flex flex-col gap-2 rounded-card bg-bg-sink p-3 text-sm">
-                          <p>
-                            <b>Appuntamento:</b> {m.appuntamento.punto_nome} · {new Date(m.appuntamento.quando).toLocaleString("it-IT")}
-                          </p>
-                          <p>Numero mascherato: {m.appuntamento.numero_mascherato}</p>
-                          <p className="text-xs text-muted">
-                            Conferma bilaterale: custode {m.appuntamento.conferma_custode_il ? "✓" : "in attesa"} · proprietario{" "}
-                            {m.appuntamento.conferma_richiedente_il ? "✓" : "in attesa"}
-                          </p>
-                          {m.stato === "appuntamento" && !m.appuntamento.conferma_custode_il && (
-                            <div className="flex flex-wrap gap-2">
-                              <input
-                                className={`${campo} max-w-[240px]`}
-                                value={codiceRitiroInput[m.id] ?? ""}
-                                onChange={(e) => setCodiceRitiroInput((p) => ({ ...p, [m.id]: e.target.value }))}
-                                placeholder="Codice ritiro (es. RIT-123456)"
-                              />
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  void eseguiAzioneMatch(m.id, {
-                                    azione: "conferma_riconsegna",
-                                    codice_ritiro: codiceRitiroInput[m.id] ?? "",
-                                  })
-                                }
-                                className={btnPrimario}
-                              >
-                                Conferma riconsegna (parte custode)
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </article>
-                  );
-                })
-              )}
-            </section>
-          )}
-
-          {scheda === "catalogo" && (
-            <section className="flex flex-col gap-5">
-              <div className="flex flex-wrap items-end gap-2 rounded-panel border border-line bg-panel p-4">
-                <label className="flex flex-1 flex-col gap-1 text-xs font-bold">
-                  Prendi in consegna un oggetto dal ritrovatore (inserisci codice consegna)
-                  <input
-                    className={campo}
-                    value={codiceConsegnaInput}
-                    onChange={(e) => setCodiceConsegnaInput(e.target.value)}
-                    placeholder="es. CNS-ABC-123"
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={() => void eseguiAzioneCustodia({ azione: "prendi_in_consegna", codice_consegna: codiceConsegnaInput })}
-                  className={btnPrimario}
-                >
-                  Registra presa in consegna
-                </button>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {(
-                  [
-                    ["", "Tutti gli oggetti"],
-                    ["pubblico", "Registro INF39645 (solo backend)"],
-                    ["riservato", "Solo custodia riservata"],
-                  ] as const
-                ).map(([val, lab]) => (
-                  <button
-                    key={val || "tutti"}
-                    type="button"
-                    onClick={() => setVisibilitaCat3(val)}
-                    className={`min-h-10 rounded-pill border px-3.5 text-xs font-bold ${
-                      visibilitaCat3 === val ? "border-ink bg-ink text-white" : "border-campo bg-panel text-ink hover:bg-bg-sink"
-                    }`}
-                  >
-                    {lab}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex flex-wrap items-start gap-2">
-                <SceltaChip
-                  etichetta="Tipologia oggetto"
-                  vuoto="Seleziona tipologia oggetto"
-                  valore={categoriaCat3}
-                  opzioni={Object.entries(CATEGORIE_OGGETTI).map(([k, v]) => ({ valore: k, etichetta: v }))}
-                  onChange={setCategoriaCat3}
-                />
-                <SceltaChip
-                  etichetta="Dove è stato trovato"
-                  vuoto="Ovunque"
-                  valore={luogoCat3}
-                  opzioni={Object.entries(LUOGHI_TIPO).map(([k, v]) => ({ valore: k, etichetta: v }))}
-                  onChange={setLuogoCat3}
-                />
-                <PillolaColore valore={coloreCat3} onChange={setColoreCat3} onInvio={() => void ricarica()} />
-              </div>
-
-              <div className="grid gap-2 sm:grid-cols-4">
-                <input
-                  className={campo}
-                  value={qCat3}
-                  onChange={(e) => setQCat3(e.target.value)}
-                  placeholder="Cerca chiave, custodia…"
-                />
-                <select className={campo} value={statoCat3} onChange={(e) => setStatoCat3(e.target.value)}>
-                  <option value="">Tutti gli stati</option>
-                  {Object.entries(STATI_OGGETTO_ETICHETTE).map(([k, v]) => (
-                    <option key={k} value={k}>
-                      {v}
-                    </option>
-                  ))}
-                </select>
-                <select className={campo} value={zonaCat3} onChange={(e) => setZonaCat3(e.target.value)}>
-                  <option value="">Tutte le macro-aree</option>
-                  {Object.entries(MACRO_AREE).map(([k, v]) => (
-                    <option key={k} value={k}>
-                      {v.nome}
-                    </option>
-                  ))}
-                </select>
-                <button type="button" onClick={() => void ricarica()} className={btnSecondario}>
-                  Aggiorna catalogo
-                </button>
-              </div>
-
-              {eForzeOUfficio && richiestePubbliche.length > 0 && (
-                <div className="rounded-panel border border-line bg-bg-sink p-4">
-                  <h3 className="mb-2 text-sm font-bold">Pratiche pregresse da Catalogo Pubblico INF39645</h3>
-                  <ul className="flex flex-col gap-2 text-xs">
-                    {richiestePubbliche.map((r) => (
-                      <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-card bg-panel px-3 py-2">
-                        <div>
-                          <p className="font-bold">
-                            {r.oggettoChiave} · {r.oggettoDescrizione} ({r.stato})
-                          </p>
-                          <p className="text-ink-soft">
-                            Ritiro: {r.chiRitira ?? "persona"}
-                            {r.quando ? ` · ${new Date(r.quando).toLocaleString("it-IT")}` : ""}
-                            {r.elementiProva ? ` · Prova cifrata: ${r.elementiProva}` : ""}
-                          </p>
-                        </div>
-                        {r.stato === "appuntamento" && (
-                          <div className="flex gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                void eseguiAzioneCustodia({
-                                  azione: "gestisci_richiesta_pubblica",
-                                  richiesta_id: r.id,
-                                  esito: "restituito",
-                                })
-                              }
-                              className="min-h-9 rounded-card bg-ink px-2.5 font-bold text-white"
-                            >
-                              Restituito allo sportello
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                void eseguiAzioneCustodia({
-                                  azione: "gestisci_richiesta_pubblica",
-                                  richiesta_id: r.id,
-                                  esito: "respinta",
-                                })
-                              }
-                              className="min-h-9 rounded-card border border-campo px-2.5 font-bold"
-                            >
-                              Respingi
-                            </button>
-                          </div>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <div className="flex flex-col gap-2.5">
-                {oggetti.map((o) => (
-                  <div key={o.id} className="flex flex-col gap-2 rounded-panel border border-line bg-panel p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-bold">
-                          {o.chiave} · {o.descrizione}
-                        </p>
-                        <p className="text-xs text-ink-soft">
-                          {CATEGORIE_OGGETTI[o.categoria] ?? o.categoria} ·{" "}
-                          {o.macroArea ? MACRO_AREE[o.macroArea]?.nome : "Roma"} · custode: <b>{o.enteCustode}</b> ·{" "}
-                          {o.pubblico ? "Livello 1 INF39645" : "Riservato (no vetrina)"}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        <Etichetta tono={o.stato === "restituito" ? "ok" : "attenzione"}>
-                          {STATI_OGGETTO_ETICHETTE[o.stato] ?? o.stato}
-                        </Etichetta>
-                        {o.bloccato && <Etichetta icona="lucchetto">Bloccato</Etichetta>}
-                      </div>
-                    </div>
-
-                    {o.dettaglioRiservato && (
-                      <p className="rounded-card bg-bg-sink px-3 py-2 text-xs text-ink">
-                        <b>Dettaglio cifrato:</b> {o.dettaglioRiservato}
-                      </p>
-                    )}
-
-                    <div className="flex flex-wrap items-center gap-2 pt-1">
-                      {!o.pubblico && o.stato !== "restituito" && destinatariPassaggio.length > 0 && (
-                        <>
-                          <select
-                            className="h-10 rounded-card border border-campo bg-panel px-2.5 text-xs"
-                            value={destPassaggio[o.id] ?? destinatariPassaggio[0].id}
-                            onChange={(e) => setDestPassaggio((p) => ({ ...p, [o.id]: e.target.value }))}
-                          >
-                            {destinatariPassaggio.map((d) => (
-                              <option key={d.id} value={d.id}>
-                                Passa a: {d.pseudonimo}
-                              </option>
-                            ))}
-                          </select>
-                          <input
-                            className="h-10 rounded-card border border-campo bg-panel px-2.5 text-xs"
-                            value={motivoPassaggio[o.id] ?? ""}
-                            onChange={(e) => setMotivoPassaggio((p) => ({ ...p, [o.id]: e.target.value }))}
-                            placeholder="Motivo (fine turno / dubbi volontario)"
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              void eseguiAzioneCustodia({
-                                azione: "passaggio_consegna",
-                                oggetto_id: o.id,
-                                a_custode_id: destPassaggio[o.id] ?? destinatariPassaggio[0].id,
-                                motivo: motivoPassaggio[o.id] ?? "Passaggio di consegna a fine turno / verifica comando",
-                              })
-                            }
-                            className="min-h-10 rounded-card border border-campo px-3 text-xs font-bold hover:bg-bg-sink"
-                          >
-                            Passaggio di consegna
-                          </button>
-                        </>
-                      )}
-
-                      {sessione?.ruolo === "ufficio" &&
-                        o.categoria !== "documenti" &&
-                        !o.bloccato &&
-                        o.stato === "in_deposito" && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              void eseguiAzioneCustodia({
-                                azione: "pubblica_catalogo",
-                                oggetto_id: o.id,
-                                pubblico: !o.pubblico,
-                              })
-                            }
-                            className="min-h-10 rounded-card border border-campo px-3 text-xs font-bold hover:bg-bg-sink"
-                          >
-                            {o.pubblico ? "Rimuovi da registro INF39645" : "Marca registro INF39645"}
-                          </button>
-                        )}
-
-                      {o.bloccato && eForzeOUfficio && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            void eseguiAzioneCustodia({
-                              azione: "sblocca_oggetto",
-                              oggetto_id: o.id,
-                              nota: "Documento identità verificato allo sportello",
-                            })
-                          }
-                          className="min-h-10 rounded-card bg-amaranto px-3 text-xs font-bold text-white"
-                        >
-                          Sblocca allo sportello (dopo documento)
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {passaggi.length > 0 && (
-                <div className="rounded-panel border border-line bg-panel p-4">
-                  <h3 className="mb-2 text-base font-bold">Catena di custodia (ultimi passaggi di consegna)</h3>
-                  <ul className="flex flex-col gap-1.5 text-sm">
-                    {passaggi.map((p) => (
-                      <li key={p.id} className="rounded-card bg-bg-sink px-3 py-2">
-                        <b>{p.oggetto_chiave}</b>: {p.da_nome ?? "Ritrovatore"} → {p.a_nome ?? "Comando/Ufficio"} ({p.motivo})
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </section>
-          )}
-
-          {scheda === "documenti" && (
-            <section className="flex flex-col gap-6">
-              <div className="flex flex-col gap-3 rounded-panel border border-line bg-panel p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <h2 className="text-lg font-bold">Semaforo Documenti (Forze dell&apos;Ordine / Ufficio)</h2>
-                    <p className="text-sm text-ink-soft">
-                      Confronto esatto sull&apos;impronta HMAC-SHA256 del numero documento senza salvare dati personali in chiaro.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setDocNumero("CA482910AA")}
-                    className="text-xs font-bold text-amaranto hover:underline"
-                  >
-                    Simula scansione OCR documento trovato
-                  </button>
-                </div>
-
-                {!eForzeOUfficio ? (
-                  <Avviso icona="lucchetto">
-                    Funzione attiva solo per i profili <b>Polizia Locale / Forze dell&apos;Ordine</b> o <b>Ufficio Oggetti Rinvenuti</b>. Cambia ruolo nel pannello in alto per provarla.
-                  </Avviso>
-                ) : (
-                  <>
-                    <div className="grid gap-2.5 sm:grid-cols-3">
-                      <input
-                        className={campo}
-                        value={docNumero}
-                        onChange={(e) => setDocNumero(e.target.value)}
-                        placeholder="Numero documento (es. CA482910AA)"
-                      />
-                      <input
-                        className={campo}
-                        value={docTipo}
-                        onChange={(e) => setDocTipo(e.target.value)}
-                        placeholder="Tipo documento"
-                      />
-                      <select className={campo} value={docArea} onChange={(e) => setDocArea(e.target.value as MacroArea)}>
-                        {Object.entries(MACRO_AREE).map(([k, v]) => (
-                          <option key={k} value={k}>
-                            {v.nome}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <button type="button" onClick={() => void verificaSemaforo(false)} className={btnSecondario}>
-                        Controlla solo semaforo
-                      </button>
-                      <button type="button" onClick={() => void verificaSemaforo(true)} className={btnPrimario}>
-                        Verifica e registra documento trovato
-                      </button>
-                    </div>
-                    {docEsito && (
-                      <div
-                        className={`rounded-card p-3 text-sm font-bold ${
-                          docEsito.semaforo === "verde" ? "bg-ok-tint text-ok" : "bg-bg-sink text-ink"
-                        }`}
-                      >
-                        {docEsito.messaggio}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-
-              <RegistraOggetto puoPubblicareINF={Boolean(eForzeOUfficio)} onRegistrato={() => void ricarica()} />
-            </section>
-          )}
-
-          {scheda === "custodi" && (
-            <section className="flex flex-col gap-5">
-              <div className="flex flex-col gap-2.5 rounded-panel border border-line bg-panel p-4">
-                <h2 className="text-lg font-bold">Elenco custodi e collaborazioni Comune / Municipi</h2>
-                <p className="text-xs text-ink-soft">
-                  Riepilogo di privati cittadini, aziende convenzionate e istituti di vigilanza che hanno inviato richiesta formale con impegno verso il Comune o Municipio.
-                </p>
-                {custodi.map((c) => (
-                  <div key={c.id} className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-bg-sink p-3">
-                    <div className="flex flex-col gap-1">
-                      <p className="text-sm font-bold">
-                        {c.pseudonimo} · {RUOLI_CUSTODE[c.ruolo]} ({c.macro_area ?? "Roma"})
-                        {c.tipo_soggetto && (
-                          <span className="ml-2 rounded-full bg-panel px-2 py-0.5 text-[11px] font-bold uppercase text-muted border border-line">
-                            {c.tipo_soggetto === "azienda" ? "Azienda" : "Privato"}
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-xs text-ink-soft">
-                        Stato: <b>{c.stato}</b>
-                        {c.municipio ? ` · Ente: ${c.municipio}` : ""}
-                        {c.ragione_sociale ? ` · ${c.ragione_sociale}` : ""}
-                        {c.partita_iva ? ` (P.IVA ${c.partita_iva})` : ""}
-                        {c.indirizzo_sede ? ` · Sede: ${c.indirizzo_sede}` : ""}
-                        {c.residente_dal ? ` · residente dal ${c.residente_dal}` : ""}
-                        {c.istituto_vigilanza ? ` · ${c.istituto_vigilanza} (conferma istituto: ${c.conferma_istituto ? "sì" : "no"})` : ""}
-                        {c.matricola ? ` · matricola ${c.matricola}` : ""}
-                        {c.decreto_prefettizio ? ` · decreto ${c.decreto_prefettizio}` : ""}
-                        {c.ruolo === "guardia_giurata"
-                          ? c.ha_foto_badge
-                            ? " · foto badge cifrata presente"
-                            : " · foto badge rimossa"
-                          : ""}
-                      </p>
-                      {c.impegno_testo && (
-                        <p className="text-xs text-ink">
-                          <b>Impegno:</b> {c.impegno_testo}
-                        </p>
-                      )}
-                    </div>
-                    {eForzeOUfficio && c.stato !== "approvato" && (
-                      <div className="flex flex-wrap gap-2">
-                        {c.ruolo === "guardia_giurata" && !c.conferma_istituto && (
-                          <button
-                            type="button"
-                            onClick={() => void eseguiAzioneCustodia({ azione: "conferma_istituto", custode_id: c.id })}
-                            className={btnSecondario}
-                          >
-                            Simula conferma istituto
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => void eseguiAzioneCustodia({ azione: "approva_custode", custode_id: c.id })}
-                          className={btnPrimario}
-                        >
-                          {c.ruolo === "guardia_giurata" ? "Approva e cancella foto badge" : "Approva collaborazione"}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex flex-col gap-2 rounded-panel border border-line bg-panel p-4">
-                <h2 className="text-lg font-bold">Audit Log in sola aggiunta (smarriti.audit)</h2>
-                <ul className="flex flex-col gap-1.5 text-xs">
-                  {audit.map((a) => (
-                    <li key={a.id} className="rounded-card bg-bg-sink px-3 py-2">
-                      <span className="font-bold text-oggetti-ink">{a.azione}</span> · attore {a.attore} ({a.ruolo}) ·{" "}
-                      {new Date(a.quando).toLocaleString("it-IT")}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </section>
-          )}
-        </>
-      )}
+  const forze = sessione.ruolo === "forze_ordine" || sessione.ruolo === "ufficio";
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-center gap-3 rounded-[18px] bg-ok-tint px-4 py-3">
+        <span className="size-2.5 rounded-full bg-ok" aria-hidden="true" />
+        <p className="min-w-0 flex-1 text-[15px] font-semibold text-ink">
+          Sei dentro come <b>{PROFILI.find((p) => p.at(0) === sessione.ruolo)?.[1] ?? sessione.etichetta ?? sessione.ruolo}</b> (prova)
+        </p>
+        <button type="button" onClick={esci} className="h-9 rounded-full bg-panel px-4 text-[13px] font-bold text-ink hover:bg-bg-sink">
+          Esci
+        </button>
+      </div>
+      <PresaInConsegna />
+      <Richieste forze={forze} />
+      {forze && <Documento />}
+      <Riquadro n={forze ? 5 : 4} titolo="Registra un oggetto arrivato senza codice" sotto="Per chi lo consegna di persona senza essere passato dal sito.">
+        <RegistraOggetto />
+      </Riquadro>
     </div>
   );
 }
+
+function PresaInConsegna() {
+  const [codice, setCodice] = useState("");
+  const [esito, setEsito] = useState<{ ok: boolean; testo: string } | null>(null);
+  async function prendi() {
+    setEsito(null);
+    try {
+      const d = await chiama<{ chiave: string }>("/api/oggetti/custodia", { method: "POST", body: JSON.stringify({ azione: "prendi_in_consegna", codice_consegna: codice }) });
+      setEsito({ ok: true, testo: `Preso in consegna: ${d.chiave}. Se qualcuno lo cerca, comparirà qui sotto.` });
+      setCodice("");
+    } catch (e) {
+      setEsito({ ok: false, testo: (e as Error).message });
+    }
+  }
+  return (
+    <Riquadro n={2} titolo="Prendi in consegna" sotto="Il cittadino ti mostra il codice che il sito gli ha dato quando ha segnalato l'oggetto.">
+      <div className="flex gap-2">
+        <label className="min-w-0 flex-1">
+          <span className="sr-only">Codice di consegna</span>
+          <input value={codice} onChange={(e) => setCodice(e.target.value.toUpperCase())} placeholder="CNS-XXX-XXX" className={`${campo} tracking-wider uppercase`} />
+        </label>
+        <button type="button" disabled={codice.length < 5} onClick={prendi} className={bottone}>
+          Prendi
+        </button>
+      </div>
+      {esito && (
+        <p className={`mt-2 text-[14px] font-semibold ${esito.ok ? "text-ok" : "text-errore"}`} role={esito.ok ? "status" : "alert"}>
+          {esito.testo}
+        </p>
+      )}
+    </Riquadro>
+  );
+}
+
+function Richieste({ forze }: { forze: boolean }) {
+  const [elenco, setElenco] = useState<Richiesta[] | null>(null);
+  const [punti, setPunti] = useState<Punto[]>([]);
+  const [errore, setErrore] = useState<string | null>(null);
+  const carica = useCallback(() => {
+    chiama<{ match: Richiesta[] }>("/api/oggetti/match")
+      .then((d) => setElenco(d.match))
+      .catch((e: Error) => setErrore(e.message));
+  }, []);
+  useEffect(() => {
+    carica();
+    fetch("/api/oggetti/punti")
+      .then((r) => r.json())
+      .then((d: { punti: Punto[] }) => setPunti(d.punti.filter((p) => p.fonte !== "custode_approvato" && ["forze_ordine", "ufficio", "affiliato_h24", "misericordia"].includes(p.categoria))))
+      .catch(() => {});
+  }, [carica]);
+
+  const aperte = (elenco ?? []).filter((r) => r.stato !== "restituito" && r.stato !== "respinto");
+  const chiuse = (elenco ?? []).filter((r) => r.stato === "restituito" || r.stato === "respinto");
+  return (
+    <Riquadro n={3} titolo="Richieste dei proprietari" sotto={forze ? "Tutte le richieste di Roma. Il pulsante dice cosa fare adesso." : "Le richieste sugli oggetti che custodisci. Il pulsante dice cosa fare adesso."}>
+      {errore && <p className="text-[14px] font-semibold text-errore" role="alert">{errore}</p>}
+      {!elenco ? (
+        <p className="text-muted">Carico…</p>
+      ) : !aperte.length ? (
+        <p className="rounded-[14px] bg-bg-sink px-4 py-3 text-[14px] text-ink-soft">Nessuna richiesta aperta. Quando qualcuno segnala un oggetto simile a uno che custodisci, compare qui.</p>
+      ) : (
+        <ul className="flex flex-col gap-3">
+          {aperte.map((r) => (
+            <RigaRichiesta key={r.id} r={r} punti={punti} onCambio={carica} />
+          ))}
+        </ul>
+      )}
+      {chiuse.length > 0 && <p className="mt-3 text-[13px] text-muted">{chiuse.length} richieste chiuse (restituite o respinte).</p>}
+    </Riquadro>
+  );
+}
+
+const quandoIt = (s: string) => new Date(s).toLocaleString("it-IT", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" });
+
+function RigaRichiesta({ r, punti, onCambio }: { r: Richiesta; punti: Punto[]; onCambio: () => void }) {
+  const [testo, setTesto] = useState("");
+  const [motivo, setMotivo] = useState("risposte_errate");
+  const [punto, setPunto] = useState("");
+  const [quando, setQuando] = useState("");
+  const [errore, setErrore] = useState<string | null>(null);
+  const [invio, setInvio] = useState(false);
+  const cosa = COSE.find((c) => c.k === r.oggettoCategoria);
+  const stato = STATI[r.stato] ?? STATI.proposto;
+  const ha = (mittente: string, tipo: string) => r.messaggi.some((m) => m.mittente === mittente && m.tipo === tipo);
+  const descrizione = r.messaggi.find((m) => m.mittente === "richiedente" && m.tipo === "descrizione");
+  const risposta = [...r.messaggi].reverse().find((m) => m.mittente === "richiedente" && m.tipo === "risposta");
+  const domanda = [...r.messaggi].reverse().find((m) => m.mittente === "custode" && m.tipo === "domanda");
+  // i punti adatti per l'appuntamento, i piu' vicini alla zona dell'oggetto
+  const zona = r.oggettoMacroArea && r.oggettoMacroArea in MACRO_AREE ? MACRO_AREE[r.oggettoMacroArea as keyof typeof MACRO_AREE] : MACRO_AREE.centro;
+  const vicini = [...punti].sort((a, b) => Math.hypot(a.lat - zona.lat, a.lon - zona.lon) - Math.hypot(b.lat - zona.lat, b.lon - zona.lon)).slice(0, 8);
+
+  async function azione(nome: string, extra: Record<string, unknown> = {}) {
+    setInvio(true);
+    setErrore(null);
+    try {
+      await chiama(`/api/oggetti/match/${r.id}/azioni`, { method: "POST", body: JSON.stringify({ azione: nome, ...extra }) });
+      setTesto("");
+      onCambio();
+    } catch (e) {
+      setErrore((e as Error).message);
+    } finally {
+      setInvio(false);
+    }
+  }
+
+  let passo: ReactNode;
+  if (r.oggettoBloccato) passo = <p className="text-[14px] font-semibold text-errore">Bloccato dopo {r.tentativiFalliti} tentativi falliti: si sblocca solo allo sportello.</p>;
+  else if (r.stato === "proposto")
+    passo = (
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="min-w-0 flex-1 text-[14px] text-ink-soft">Somiglia a un oggetto che custodisci ({r.punteggio}% di somiglianza{r.esatto ? ", documento identico" : ""}). Apri il contatto: il proprietario dovrà descriverlo.</p>
+        <button type="button" disabled={invio} onClick={() => azione("avvia_contatto")} className={bottone}>
+          Apri il contatto
+        </button>
+      </div>
+    );
+  else if (r.stato === "contatto" && !descrizione) passo = <p className="text-[14px] text-ink-soft">Aspettiamo che il proprietario descriva l&apos;oggetto.</p>;
+  else if (r.stato === "contatto" && !domanda)
+    passo = (
+      <div className="grid gap-2">
+        <p className="text-[14px] text-ink">
+          <b>Descrizione del proprietario:</b> {descrizione?.testo}
+        </p>
+        <p className="text-[13px] text-muted">Il dettaglio segreto di chi l&apos;ha trovato: «{r.dettaglioRiservato ?? "—"}». Fai una domanda che solo il vero proprietario sa.</p>
+        <div className="flex gap-2">
+          <input value={testo} onChange={(e) => setTesto(e.target.value)} placeholder="Es. che cosa c'è disegnato sul quaderno?" className={campo} />
+          <button type="button" disabled={invio || testo.length < 5} onClick={() => azione("invia_domanda", { testo })} className={bottone}>
+            Chiedi
+          </button>
+        </div>
+      </div>
+    );
+  else if (r.stato === "contatto" && !risposta) passo = <p className="text-[14px] text-ink-soft">Domanda inviata: «{domanda?.testo}». Aspettiamo la risposta.</p>;
+  else if (r.stato === "contatto")
+    passo = (
+      <div className="grid gap-2">
+        <p className="text-[14px] text-ink">
+          <b>Risposta:</b> {risposta?.testo} <span className="text-muted">· dettaglio segreto: «{r.dettaglioRiservato ?? "—"}»</span>
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" disabled={invio} onClick={() => azione("approva_verifica")} className={bottone}>
+            È lui, approva
+          </button>
+          <select value={motivo} onChange={(e) => setMotivo(e.target.value)} className={`${campo} w-auto flex-1`} aria-label="Motivo del rifiuto">
+            {Object.entries(MOTIVI_RIFIUTO).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </select>
+          <button type="button" disabled={invio} onClick={() => azione("rifiuta", { motivo_codice: motivo, motivo: MOTIVI_RIFIUTO[motivo as keyof typeof MOTIVI_RIFIUTO] })} className={secondario}>
+            Rifiuta
+          </button>
+        </div>
+      </div>
+    );
+  else if (r.stato === "verificato")
+    passo = (
+      <div className="grid gap-2">
+        <p className="text-[14px] text-ink-soft">
+          Verificato. {r.contattoAppuntamento?.recapito ? `Recapito del proprietario: ${r.contattoAppuntamento.recapito}. ` : ""}Fissa dove e quando ritira.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <select value={punto} onChange={(e) => setPunto(e.target.value)} className={`${campo} w-auto min-w-[220px] flex-1`} aria-label="Punto di ritiro">
+            <option value="">Scegli il punto di ritiro…</option>
+            {vicini.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.nome.replace(/\s+—\s+.*$/, "")}
+                {p.h24 ? " · 24h" : ""}
+              </option>
+            ))}
+          </select>
+          <input type="datetime-local" value={quando} onChange={(e) => setQuando(e.target.value)} className={`${campo} w-auto`} aria-label="Data e ora" />
+          <button type="button" disabled={invio || !punto || !quando} onClick={() => azione("fissa_appuntamento", { punto_id: punto, quando: new Date(quando).toISOString() })} className={bottone}>
+            Fissa
+          </button>
+        </div>
+      </div>
+    );
+  else if (r.stato === "appuntamento")
+    passo = (
+      <div className="grid gap-2">
+        <p className="text-[14px] text-ink-soft">
+          Appuntamento {r.appuntamento?.quando ? quandoIt(r.appuntamento.quando) : ""} {r.appuntamento?.punto_nome ? `· ${r.appuntamento.punto_nome}` : ""}. Al ritiro chiedi il codice e un documento.
+        </p>
+        <div className="flex gap-2">
+          <input value={testo} onChange={(e) => setTesto(e.target.value.toUpperCase())} placeholder="Codice di ritiro (RIT-…)" className={`${campo} tracking-wider uppercase`} />
+          <button type="button" disabled={invio || testo.length < 4} onClick={() => azione("conferma_riconsegna", { codice_ritiro: testo })} className={bottone}>
+            Restituito
+          </button>
+        </div>
+      </div>
+    );
+
+  return (
+    <li className="rounded-[18px] border border-line p-3.5">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <span className="flex size-8 items-center justify-center rounded-full" style={{ background: stato.c }}>
+          <svg viewBox="0 0 24 24" className="size-[16px]" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: cosa?.g ?? "" }} />
+        </span>
+        <p className="min-w-0 flex-1 text-[15px] font-bold text-ink">
+          {CATEGORIE_OGGETTI[r.oggettoCategoria as keyof typeof CATEGORIE_OGGETTI] ?? r.oggettoCategoria} · {r.oggettoChiave}
+          <span className="block text-[12.5px] font-semibold text-muted">
+            cercato da {r.richiedentePseudonimo}
+            {r.oggettoMacroArea && r.oggettoMacroArea in MACRO_AREE ? ` · ${MACRO_AREE[r.oggettoMacroArea as keyof typeof MACRO_AREE].nome}` : ""}
+          </span>
+        </p>
+        <span className="rounded-full px-2.5 py-1 text-[12px] font-bold text-white" style={{ background: stato.c }}>
+          {stato.n}
+        </span>
+      </div>
+      {passo}
+      {errore && <p className="mt-2 text-[13.5px] font-semibold text-errore" role="alert">{errore}</p>}
+      {ha("sistema", "avviso") && r.stato === "restituito" && <p className="mt-2 text-[13px] text-muted">Pratica chiusa.</p>}
+    </li>
+  );
+}
+
+function Documento() {
+  const [numero, setNumero] = useState("");
+  const [esito, setEsito] = useState<{ semaforo?: string; messaggio?: string; errore?: string } | null>(null);
+  async function controlla(registra = false) {
+    setEsito(null);
+    try {
+      const d = await chiama<{ semaforo: string; messaggio?: string; oggettoRegistrato?: { chiave: string } | null }>("/api/oggetti/documenti/semaforo", {
+        method: "POST",
+        body: JSON.stringify({ numero_documento: numero, registra }),
+      });
+      setEsito(d.oggettoRegistrato ? { semaforo: "registrato", messaggio: `Registrato come ${d.oggettoRegistrato.chiave}: il proprietario comparirà tra le richieste.` } : d);
+    } catch (e) {
+      setEsito({ errore: (e as Error).message });
+    }
+  }
+  const verde = esito?.semaforo === "verde";
+  return (
+    <Riquadro n={4} titolo="Controlla un documento" sotto="Scrivi il numero: ti diciamo se qualcuno l'ha denunciato smarrito. Il numero non viene salvato.">
+      <div className="flex gap-2">
+        <label className="min-w-0 flex-1">
+          <span className="sr-only">Numero del documento</span>
+          <input value={numero} onChange={(e) => setNumero(e.target.value.toUpperCase())} placeholder="Numero del documento" className={`${campo} uppercase`} />
+        </label>
+        <button type="button" disabled={numero.length < 4} onClick={() => controlla()} className={bottone}>
+          Controlla
+        </button>
+        {verde && (
+          <button type="button" onClick={() => controlla(true)} className={secondario}>
+            Prendilo in consegna
+          </button>
+        )}
+      </div>
+      {esito && (
+        <p className={`mt-2 flex items-center gap-2 text-[14px] font-semibold ${esito.errore ? "text-errore" : verde ? "text-ok" : "text-ink-soft"}`} role="status">
+          {!esito.errore && <span className={`size-3 rounded-full ${verde ? "bg-ok" : "bg-[#9AA0A6]"}`} aria-hidden="true" />}
+          {esito.errore ?? (verde ? "Verde: il proprietario lo sta cercando. Prendilo in consegna: la richiesta compare qui sopra." : esito.semaforo === "registrato" ? esito.messaggio : "Grigio: nessuno lo cerca per ora.")}
+        </p>
+      )}
+    </Riquadro>
+  );
+}
+

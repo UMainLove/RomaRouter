@@ -104,7 +104,8 @@ export async function GET() {
         ),
       ]);
 
-      const ml = mlRows[0];
+      // il recapito si vede solo dopo che il proprietario ha superato la verifica
+      const ml = ["verificato", "appuntamento", "restituito"].includes(String(m.stato)) ? mlRows[0] : undefined;
       const contattoAppuntamento = ml
         ? {
             provenienza: ml.provenienza,

@@ -221,19 +221,6 @@ export async function GET(req: NextRequest) {
     }));
   }
 
-  await registraAudit({
-    attore: s.sub,
-    ruolo: s.ruolo,
-    azione: "ricerca_catalogo_livello_3",
-    dettagli: {
-      q: q || null,
-      categoria: categoria || null,
-      stato: stato || null,
-      zona: zona || null,
-      visibilita: visibilita || null,
-      risultati: oggetti.length,
-    },
-  });
 
   return Response.json(
     { oggetti, custodi, passaggi, puntiConsegna: punti, richiestePubbliche, audit },

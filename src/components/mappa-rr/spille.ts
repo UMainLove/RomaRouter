@@ -23,7 +23,8 @@ const PR = 2;
 const W = 40, H = 50;
 
 /** SVG di una spilla: goccia colorata, glifo bianco, bollino col numero di campi (n >= 2). */
-export function svgSpilla(colore: string, glifo: string, n = 0) {
+export function svgSpilla(colore: string, glifo: string, n: number | string = 0): string {
+  if (typeof n === "string") return svgSpillaTesto(colore, glifo, n);
   const bollino =
     n >= 2
       ? `<g><circle cx="${W - 8}" cy="9" r="8" fill="#fff" stroke="${colore}" stroke-width="1.6"/>
@@ -46,13 +47,21 @@ export function svgSpilla(colore: string, glifo: string, n = 0) {
   </svg>`;
 }
 
+/** Spilla con un bollino di testo (es. «24h»). */
+function svgSpillaTesto(colore: string, glifo: string, t: string) {
+  return svgSpilla(colore, glifo, 0).replace(
+    /<\/svg>\s*$/,
+    `<g><rect x="${W - 22}" y="1.5" width="21" height="13" rx="6.5" fill="#fff" stroke="${colore}" stroke-width="1.5"/><text x="${W - 11.5}" y="11.2" text-anchor="middle" font-family="Montserrat, 'Noto Sans', Arial, sans-serif" font-size="8.4" font-weight="800" fill="${colore}">${t}</text></g></svg>`,
+  );
+}
+
 /** Prepara le spille che servono (nomi «pin-<glifo>-<accesso>-<n>») prima di mostrarle: niente spille vuote. */
-export function assicuraSpille(map: MapLibre, nomi: Iterable<string>, colori: Record<string, string>) {
+export function assicuraSpille(map: MapLibre, nomi: Iterable<string>, colori: Record<string, string>, glifi: Record<string, string> = GLIFI_PIN) {
   return Promise.all(
     [...new Set(nomi)].map(
       (nome) =>
         new Promise<void>((ok) => {
-          const m = nome.match(/^pin-(\w+)-(\w+)-(\d+)$/);
+          const m = nome.match(/^pin-(\w+)-(\w+)-(\w+)$/);
           if (!m || (map as MapLibre & { _removed?: boolean })._removed || map.hasImage(nome)) return ok();
           const img = new Image(W * PR, H * PR);
           img.onload = () => {
@@ -61,7 +70,7 @@ export function assicuraSpille(map: MapLibre, nomi: Iterable<string>, colori: Re
             ok();
           };
           img.onerror = () => ok();
-          img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgSpilla(colori[m[2]] ?? "#5F6B7A", GLIFI_PIN[m[1]] ?? GLIFI_PIN.altro, Number(m[3])));
+          img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgSpilla(colori[m[2]] ?? "#5F6B7A", glifi[m[1]] ?? GLIFI_PIN.altro, /^\d+$/.test(m[3]) ? Number(m[3]) : m[3]));
         }),
     ),
   );

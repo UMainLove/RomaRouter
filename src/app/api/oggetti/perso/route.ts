@@ -93,14 +93,14 @@ export async function GET() {
 
   const statoSintetico =
     attiva.stato === "restituito"
-      ? "Oggetto restituito con conferma di entrambi."
+      ? "Oggetto restituito: confermato da te e dal custode."
       : aperti.length > 0
-        ? "Il custode ha avviato la verifica tramite messaggio cifrato."
+        ? "Il custode ti ha scritto: rispondi qui sotto per farti riconoscere."
         : attivi.length > 0
-          ? "Possibile corrispondenza trovata lato server: il custode sta esaminando i candidati e ti contatterà con un messaggio cifrato."
+          ? "C’è un oggetto simile al tuo. Il custode lo sta controllando e ti scriverà qui."
           : attiva.categoria === "documenti"
-            ? "Semaforo grigio: nessuna denuncia/documento abbinato per ora. Il confronto si ripete automaticamente all'arrivo di nuove registrazioni."
-            : "Nessuna corrispondenza per ora. Riceverai un messaggio cifrato non appena un custode avvierà la verifica.";
+            ? "Il tuo documento non è ancora arrivato. Lo confrontiamo da soli con ogni nuovo documento consegnato."
+            : "Nessun oggetto simile per ora. Lo confrontiamo da soli con ogni nuovo oggetto consegnato.";
 
   const conversazioni = await Promise.all(
     aperti.map(async (m) => {

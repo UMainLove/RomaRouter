@@ -261,7 +261,7 @@ function rispostaOggetti(t: string, risposte: Record<string, string>, adesso: Da
     return { ambito: "oggetti", messaggio: "Mi dispiace!", entita, domanda, perche: perche(t, "oggetti"), fonte: FONTI.oggetti };
   }
 
-  const destinazione: Destinazione = { base: "/oggetti", parametri, etichetta: "Vedi gli oggetti simili" };
+  const destinazione: Destinazione = { base: "/oggetti", parametri, etichetta: "Segnala che l'hai perso" };
   const dal = giorno ? ` dal ${giorno.breve} in poi` : "";
   return {
     ambito: "oggetti",

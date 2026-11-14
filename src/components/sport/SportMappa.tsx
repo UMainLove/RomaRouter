@@ -6,7 +6,7 @@ import { Cerca, type Luogo } from "../mappa-rr/Cerca";
 import { dati, inquadra, MappaVettoriale, type ML, viva, vola } from "../mappa-rr/MappaVettoriale";
 import { Azione, Azioni, Fatti, Scheda, Schermo, Strumenti, Tondo } from "../mappa-rr/Schermo";
 import { primoTesto } from "../mappa-rr/stile";
-import { assicuraSpille } from "./spille";
+import { assicuraSpille } from "../mappa-rr/spille";
 import { ACCESSO, GLIFI_SPORT, NOMI_DISCIPLINA, PRIORITA, SPORT, TIPO, type Accesso, type Gruppo } from "./sport";
 
 /*

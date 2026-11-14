@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
 
   const { rows: punti } = await queryOggetti<{ id: string; nome: string; tipo: string; indirizzo: string; h24: boolean }>(
     `SELECT id, nome, tipo, indirizzo, h24 FROM smarriti.punti_consegna
-     WHERE ($1::boolean = false OR tipo IN ('comando', 'ufficio'))
+     WHERE ($1::boolean = false OR tipo IN ('comando', 'ufficio', 'forze_ordine'))
      ORDER BY (macro_area = $2) DESC, h24 DESC, nome`,
     [richiedeFFOO, macroArea],
   );
@@ -161,7 +161,6 @@ export async function POST(req: NextRequest) {
       istruzioni,
       puntiConsigliati: punti,
       matching: { creati: matching.creati, esatto: matching.esatto },
-      contattiAppuntamento: matching.contattiAppuntamento,
     },
     { status: 201 },
   );

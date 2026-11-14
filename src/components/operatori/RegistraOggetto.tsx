@@ -26,13 +26,7 @@ const PROPOSTA = {
 
 const campoCls = "h-12 w-full rounded-[10px] border-[1.5px] border-campo bg-panel px-3 text-base";
 
-export function RegistraOggetto({
-  puoPubblicareINF = false,
-  onRegistrato,
-}: {
-  puoPubblicareINF?: boolean;
-  onRegistrato?: () => void;
-}) {
+export function RegistraOggetto({ onRegistrato }: { onRegistrato?: () => void }) {
   const [foto, setFoto] = useState<string | null>(null);
   const [analizzata, setAnalizzata] = useState(false);
   const [categoria, setCategoria] = useState<CategoriaOggetto>("borse");
@@ -43,8 +37,7 @@ export function RegistraOggetto({
   const [luogo, setLuogo] = useState<LuogoTipo>("mezzi");
   const [macroArea, setMacroArea] = useState<MacroArea>("ostiense");
   const [fascia, setFascia] = useState<FasciaOraria>("mattina");
-  const [data, setData] = useState(() => new Date().toISOString().slice(0, 10));
-  const [pubblico, setPubblico] = useState(false);
+  const [data, setData] = useState(() => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Rome" }).format(new Date()));
   const [esito, setEsito] = useState<string | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
   const [salvataggio, setSalvataggio] = useState(false);
@@ -85,7 +78,7 @@ export function RegistraOggetto({
           macro_area: macroArea,
           fascia,
           data,
-          pubblico: puoPubblicareINF && pubblico,
+          pubblico: false,
         }),
       });
       const d = await r.json();
@@ -94,7 +87,7 @@ export function RegistraOggetto({
         return;
       }
       setEsito(
-        `Registrato ${d.chiave} su PostgreSQL (${d.pubblico ? "elenco pubblico INF39645" : "custodia protetta · non in vetrina"}). Match generati: ${d.matching?.creati ?? 0}.`,
+        `Registrato ${d.chiave}. ${d.matching?.creati ? `Ci sono ${d.matching.creati} segnalazioni simili: le trovi tra le richieste.` : "Nessuna segnalazione simile per ora."}`,
       );
       onRegistrato?.();
     } finally {
@@ -135,7 +128,7 @@ export function RegistraOggetto({
             />
           </label>
           <button type="button" onClick={analizza} disabled={!foto} className={btnPrimario}>
-            Simula analisi foto
+            Controlla la foto (prova)
           </button>
           <ul aria-label="Controlli privacy" className="flex flex-col gap-1.5 text-sm">
             {["Volti", "Numeri di documento e carte", "Nomi, indirizzi e targhe"].map((v) => (
@@ -146,7 +139,7 @@ export function RegistraOggetto({
             ))}
           </ul>
           <p className="text-[13px] leading-[18px] text-muted">
-            Il dettaglio di verifica viene cifrato con AES-256-GCM in schema separato (riservato.dettagli_oggetto).
+            Il dettaglio di verifica resta cifrato: lo vedono solo gli operatori.
           </p>
         </section>
 
@@ -186,7 +179,7 @@ export function RegistraOggetto({
           </div>
 
           <label className="flex flex-col gap-1.5 text-sm font-bold">
-            Descrizione scheda (visibile solo ai custodi, oppure in Livello 1 se INF39645)
+            Descrizione (la vedono solo gli operatori)
             <textarea
               rows={2}
               required
@@ -249,17 +242,6 @@ export function RegistraOggetto({
             </label>
           </div>
 
-          {puoPubblicareINF && (
-            <label className="flex items-center gap-2 rounded-card bg-bg-sink p-2.5 text-sm">
-              <input
-                type="checkbox"
-                checked={pubblico}
-                onChange={(e) => setPubblico(e.target.checked)}
-                className="size-4 accent-amaranto"
-              />
-              <span>Pubblica anche nel Livello 1 (solo elenco pubblico INF39645 dell&apos;Ufficio Oggetti Rinvenuti)</span>
-            </label>
-          )}
 
           <div className="flex flex-wrap gap-2.5 pt-1">
             <button type="submit" disabled={salvataggio} className={btnPrimario}>
@@ -302,7 +284,7 @@ export function RegistraOggetto({
               {MACRO_AREE[macroArea].nome} · {LUOGHI_TIPO[luogo].toLowerCase()}
             </span>
             <span className="mt-1 block text-[13px] text-ink-soft">
-              {pubblico ? "Pubblico solo come scheda INF39645 (verifica allo sportello)" : "Riservato: usato solo per il matching nascosto."}
+              Non è pubblico: serve solo a riconoscere chi lo cerca.
             </span>
           </span>
         </div>
