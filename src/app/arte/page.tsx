@@ -138,9 +138,13 @@ export default function PaginaArte() {
         },
         {
           id: "preavviso",
-          nome: "Preavviso",
+          nome: "Pass e preavviso",
           contenuto: (
-            <Blocco id="contatti" titolo="A chi mandare il preavviso" testo="Almeno 3 giorni prima, al Gruppo di Polizia Locale del Municipio dove ti esibisci (art. 10). Dalla scheda di un punto il messaggio è già scritto.">
+            <Blocco
+              id="contatti"
+              titolo="Il Pass artista: il preavviso lo mandiamo noi"
+              testo="Crea il Pass una volta sola (chi sei, cosa fai, tre risposte sì/no, la delega). Poi tocchi un punto verde o un palco e premi «Ci sarò»: controlliamo orari, zone e turni, e ogni sera lo sportello manda al Gruppo di Polizia Locale una sola comunicazione con tutte le esibizioni del suo territorio (art. 10), l'elenco SIAE per chi suona brani di altri e le richieste di nulla osta ai Municipi. Si prenota da 3 giorni a un mese prima. Versione dimostrativa: le comunicazioni si preparano ma non partono. Se preferisci farlo da te, questi sono i Gruppi di Polizia Locale."
+            >
               <Suspense fallback={<Attesa cosa="i contatti" />}>
                 <Contatti />
               </Suspense>

@@ -9,6 +9,8 @@ import { avatar, caricaIcone, GLIFI, palco, piazza, righe } from "../mappa-rr/ic
 import { inquadra, MappaVettoriale, vola, type ML } from "../mappa-rr/MappaVettoriale";
 import { Azione, Azioni, Fatti, Scheda, Schermo, Strumenti, Tondo } from "../mappa-rr/Schermo";
 import { primoTesto } from "../mappa-rr/stile";
+import { ATT, att } from "./attivita";
+import { PassBottone, SchedaCiSaro, SchedaPass, SchedaRegistrazione, usePass } from "./PassArtista";
 
 /*
  * Arte di strada. Tre idee:
@@ -37,14 +39,6 @@ function caricaDati<T>(api: string, copia: string): Promise<T> {
 }
 
 const COL = { no: "#D32F2F", limitato: "#EF7D00", palchi: "#6D3FD0", dedicata: "#0B7A47", cond: "#C9A227", libero: "#12905F", occupato: "#C2185B", chiuso: "#8A807E", si: "#22A35A", nonAdatto: "#C0584B", piazza: "#1B8A50" };
-const ATT: { k: AttivitaArte; n: string; g: string; c: string; verbo: string }[] = [
-  { k: "musica", n: "Musica", g: GLIFI.chitarra, c: "#C2185B", verbo: "suonare" },
-  { k: "silenziosa", n: "Silenziosa", g: GLIFI.maschera, c: "#7B4FD0", verbo: "esibirti" },
-  { k: "fuoco", n: "Fuoco", g: GLIFI.fuoco, c: "#E4572E", verbo: "fare il fuoco" },
-  { k: "figurativa", n: "Ritratti", g: GLIFI.pennello, c: "#1E7FD8", verbo: "fare ritratti" },
-  { k: "esoterica", n: "Tarocchi", g: GLIFI.stella, c: "#795548", verbo: "leggere le carte" },
-];
-const att = (k: string) => ATT.find((a) => a.k === k) ?? ATT[0];
 const PALCHI_PER: Record<AttivitaArte, string[]> = {
   musica: ["postazione_allegatoB", "area_consentita"],
   silenziosa: ["postazione_allegatoB", "area_consentita"],
@@ -74,7 +68,9 @@ type Sel =
   | { tipo: "palco"; f: FPalco }
   | { tipo: "artista"; f: FEsib }
   | { tipo: "vicino"; lon: number; lat: number; etichetta: string | null }
-  | { tipo: "annuncio"; lon: number; lat: number; luogo: string; fatto?: boolean }
+  | { tipo: "annuncio"; lon: number; lat: number; luogo: string }
+  | { tipo: "pass" }
+  | { tipo: "registrazione"; poi?: { lon: number; lat: number; luogo: string } }
   | null;
 
 export function ArteMappa({ guida }: { guida: { id: string; nome: string; contenuto: ReactNode }[] }) {
@@ -90,6 +86,10 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
   const [zone, setZone] = useState<FZona[] | null>(null);
   const [piazze, setPiazze] = useState<FPiazza[]>([]);
   const [pronto, setPronto] = useState(false);
+  // il Pass dell'artista (registrazione una volta, poi «Ci sarò» con un tocco)
+  const { stato: passStato, setStato: setPassStato, ricarica: ricaricaPass } = usePass();
+  const ciSaro = (lon: number, lat: number, luogo: string) =>
+    setSel(passStato?.pass ? { tipo: "annuncio", lon, lat, luogo } : { tipo: "registrazione", poi: { lon, lat, luogo } });
   // l'ora si legge solo nel browser (la pagina si prepara sul server senza orologio)
   const [oraVera, setOraVera] = useState<Date | null>(null);
   const adesso = oraVera ?? PRIMA;
@@ -519,11 +519,11 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
           </div>
         )}
         {modo === "esibirmi" && (
-          <p className={`mt-1 flex items-center gap-2 rounded-[12px] px-2.5 py-1.5 text-[12.5px] font-bold ${clock.aperto ? "bg-ok-tint text-ok" : "bg-attenzione-tint text-attenzione"}`}>
+          <div className={`mt-1 flex items-center gap-2 rounded-[12px] py-1 pr-1 pl-2.5 text-[12.5px] font-bold ${clock.aperto ? "bg-ok-tint text-ok" : "bg-attenzione-tint text-attenzione"}`}>
             <span className={`size-2 rounded-full ${clock.aperto ? "bg-ok" : "bg-attenzione"}`} aria-hidden="true" />
             {clock.testo}
-            <span className="ml-auto font-semibold opacity-75">max 2 ore</span>
-          </p>
+            <PassBottone pass={passStato?.pass} onClick={() => setSel(passStato?.pass ? { tipo: "pass" } : { tipo: "registrazione" })} />
+          </div>
         )}
       </div>
     </div>
@@ -544,7 +544,7 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
         attivita={attivita}
         clock={clock}
         onChiudi={chiudi}
-        onAnnuncia={() => setSel({ tipo: "annuncio", lon: sel.v.punto.lon, lat: sel.v.punto.lat, luogo: sel.v.luogo?.etichetta ?? "Punto scelto sulla mappa" })}
+        onAnnuncia={() => ciSaro(sel.v.punto.lon, sel.v.punto.lat, titoloLuogo(sel.v.luogo?.etichetta))}
         onPalco={() => apriPalcoVicino(sel.v.punto.lat, sel.v.punto.lon)}
         onGuida={() => setGuidaAperta(true)}
       />
@@ -557,7 +557,7 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
         clock={clock}
         adesso={adesso}
         onChiudi={chiudi}
-        onPrenota={() => setSel({ tipo: "annuncio", lon: sel.f.geometry.coordinates[0], lat: sel.f.geometry.coordinates[1], luogo: sel.f.properties.nome })}
+        onPrenota={() => ciSaro(sel.f.geometry.coordinates[0], sel.f.geometry.coordinates[1], sel.f.properties.nome)}
         onArtista={(f) => setSel({ tipo: "artista", f })}
       />
     );
@@ -585,16 +585,51 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
         onInquadra={(b) => m.current && inquadra(m.current.map, b)}
       />
     );
-  } else if (sel?.tipo === "annuncio") {
+  } else if (sel?.tipo === "annuncio" && passStato?.pass) {
     scheda = (
-      <SchedaAnnuncio
-        {...sel}
+      <SchedaCiSaro
+        key={`${sel.lon},${sel.lat}`}
+        stato={passStato}
+        lon={sel.lon}
+        lat={sel.lat}
+        luogo={sel.luogo}
+        onChiudi={chiudi}
+        onPass={() => setSel({ tipo: "pass" })}
+        onFatto={() => {
+          ricaricaPass();
+          fetch("/api/artisti/esibizioni?giorni=2").then((r) => r.json()).then((fc: { features: FEsib[] }) => setEsib(fc.features)).catch(() => {});
+        }}
+      />
+    );
+  } else if (sel?.tipo === "registrazione" || sel?.tipo === "annuncio") {
+    const poi = sel.tipo === "registrazione" ? sel.poi : { lon: sel.lon, lat: sel.lat, luogo: sel.luogo };
+    scheda = (
+      <SchedaRegistrazione
         attivita={attivita}
         onChiudi={chiudi}
-        onFatto={() => {
-          fetch("/api/artisti/esibizioni?giorni=2").then((r) => r.json()).then((fc: { features: FEsib[] }) => setEsib(fc.features)).catch(() => {});
-          setSel({ ...sel, fatto: true });
+        onCreato={(st) => {
+          setPassStato(st);
+          if (st.pass) setAttivita(st.pass.attivita);
+          setSel(poi ? { tipo: "annuncio", ...poi } : { tipo: "pass" });
         }}
+      />
+    );
+  } else if (sel?.tipo === "pass" && passStato?.pass) {
+    scheda = (
+      <SchedaPass
+        stato={passStato}
+        onChiudi={chiudi}
+        onEsci={() => {
+          fetch("/api/artisti/pass", { method: "DELETE" }).then((r) => r.json()).then(setPassStato).catch(() => {});
+          chiudi();
+        }}
+        onAnnulla={(id) => {
+          fetch(`/api/artisti/pass?prenotazione=${id}`, { method: "DELETE" })
+            .then((r) => r.json())
+            .then((d) => (d.errore ? setErrore(d.errore) : setPassStato(d)))
+            .catch(() => {});
+        }}
+        onTurno={(t) => m.current && vola(m.current.map, t.lat, t.lon, 17)}
       />
     );
   }
@@ -665,25 +700,6 @@ const TONO: Record<string, { bg: string; fg: string }> = {
   errore: { bg: "bg-errore-tint", fg: "text-errore" },
 };
 
-function preavviso(v: Risultato) {
-  const pl = v.contatti_polizia_locale;
-  if (!pl?.pec_pl) return null;
-  const oggetto = "Comunicazione esibizione arte di strada – art. 10 DAC 24/2012";
-  const corpo = [
-    `Al ${pl.gruppo_pl ?? "Gruppo di Polizia Locale"},`,
-    "",
-    `il/la sottoscritto/a [nome e cognome] comunica, ai sensi dell'art. 10 del Regolamento per l'arte di strada (DAC 24/2012), che si esibirà (${v.attivita.nome.toLowerCase()}):`,
-    `- luogo: ${v.luogo?.etichetta ?? `${v.punto.lat.toFixed(5)}, ${v.punto.lon.toFixed(5)}`}${v.municipio ? ` (Municipio ${v.municipio.numero_romano})` : ""}`,
-    "- giorno: [gg/mm/aaaa]",
-    `- orario: [dalle … alle …] (fasce: ${v.orario?.testo ?? "art. 6"}, massimo 2 ore)`,
-    "",
-    "Occuperà al massimo 1 m² lasciando 2 m di marciapiede liberi.",
-    "",
-    "[nome e cognome, recapito]",
-  ].join("\n");
-  return `mailto:${pl.pec_pl}?subject=${encodeURIComponent(oggetto)}&body=${encodeURIComponent(corpo)}`;
-}
-
 function SchedaVerdetto({ v, attivita, clock, onChiudi, onAnnuncia, onPalco, onGuida }: { v: Risultato; attivita: AttivitaArte; clock: ReturnType<typeof orologio>; onChiudi: () => void; onAnnuncia: () => void; onPalco: () => void; onGuida: () => void }) {
   const a = att(attivita);
   const t = TONO[v.esito.tono];
@@ -691,7 +707,6 @@ function SchedaVerdetto({ v, attivita, clock, onChiudi, onAnnuncia, onPalco, onG
   // il palco piu' vicino adatto a quello che fai (non l'area dei cartomanti per chi suona)
   const palco = v.postazioni_vicine.find((p) => PALCHI_PER[attivita].includes(p.tipo));
   const consentito = ["si", "si_condizioni"].includes(v.esito.codice) || (v.esito.codice === "solo_postazioni" && !!palco && palco.distanza_m <= 20);
-  const mail = preavviso(v);
   return (
     <Scheda icona={<Tondo colore={a.c} glifo={a.g} />} sopra={`${v.municipio ? `Municipio ${v.municipio.numero_romano} · ` : ""}${a.n}`} titolo={titoloLuogo(v.luogo?.etichetta)} onChiudi={onChiudi}>
       <div className={`rounded-[16px] px-3.5 py-3 ${t.bg}`}>
@@ -712,13 +727,13 @@ function SchedaVerdetto({ v, attivita, clock, onChiudi, onAnnuncia, onPalco, onG
       </div>
       <Azioni>
         {consentito ? (
-          <Azione primaria onClick={onAnnuncia}>Annuncia qui</Azione>
+          <Azione primaria onClick={onAnnuncia}>Ci sarò</Azione>
         ) : palco ? (
           <Azione primaria onClick={onPalco}>Vai al palco</Azione>
         ) : (
           <Azione primaria onClick={onGuida}>Dove si può</Azione>
         )}
-        {mail ? <Azione href={mail}>Preavviso PEC</Azione> : <Azione onClick={onGuida}>Le regole</Azione>}
+        <Azione onClick={onGuida}>Le regole</Azione>
       </Azioni>
     </Scheda>
   );
@@ -874,92 +889,6 @@ function SchedaVicino({ lon, lat, etichetta, esib, inScena, oggi, adesso, onChiu
           </Azione>
         </Azioni>
       )}
-    </Scheda>
-  );
-}
-
-function SchedaAnnuncio({ lon, lat, luogo, fatto, attivita, onChiudi, onFatto }: { lon: number; lat: number; luogo: string; fatto?: boolean; attivita: AttivitaArte; onChiudi: () => void; onFatto: () => void }) {
-  const [errore, setErrore] = useState<string | null>(null);
-  const [invio, setInvio] = useState(false);
-  const a = att(attivita);
-  const oggi = ROMA(new Date());
-  async function invia(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const f = new FormData(e.currentTarget);
-    setInvio(true);
-    setErrore(null);
-    try {
-      const r = await fetch("/api/artisti/esibizioni", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lat, lon, luogo, attivita,
-          nome_arte: f.get("nome"),
-          disciplina: f.get("disciplina") || a.n.toLowerCase(),
-          inizio: new Date(`${f.get("giorno")}T${f.get("ora")}`).toISOString(),
-          durata_min: Number(f.get("durata")),
-          sito_web: f.get("sito_web"),
-        }),
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.errore ?? "Annuncio non riuscito");
-      onFatto();
-    } catch (err) {
-      setErrore((err as Error).message);
-    } finally {
-      setInvio(false);
-    }
-  }
-  if (fatto) {
-    return (
-      <Scheda icona={<Tondo colore={COL.libero} glifo={a.g} />} sopra="Annuncio pubblicato" titolo={breve(luogo)} onChiudi={onChiudi}>
-        <div className="rounded-[16px] bg-ok-tint px-3.5 py-3">
-          <p className="text-[19px] leading-6 font-extrabold text-ok">Sei sulla mappa</p>
-          <p className="mt-0.5 text-[13px] text-ink-soft">Chi guarda la mappa ti vede. Ricordati il preavviso alla Polizia Locale 3 giorni prima.</p>
-        </div>
-        <Azioni>
-          <Azione primaria onClick={onChiudi}>Fatto</Azione>
-        </Azioni>
-      </Scheda>
-    );
-  }
-  const campo = "h-11 w-full min-w-0 rounded-[12px] border-0 bg-bg-sink px-3 text-[15px] font-semibold text-ink placeholder:font-normal placeholder:text-muted focus:ring-2 focus:ring-ink focus:outline-none";
-  return (
-    <Scheda icona={<Tondo colore={a.c} glifo={a.g} />} sopra="Annuncia la tua esibizione" titolo={breve(luogo)} onChiudi={onChiudi}>
-      <form onSubmit={invia} className="relative grid grid-cols-6 gap-2">
-        <input name="sito_web" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] size-0 opacity-0" />
-        <label className="col-span-3">
-          <span className="sr-only">Nome d&apos;arte</span>
-          <input name="nome" required minLength={2} maxLength={60} placeholder="Nome d'arte" className={campo} />
-        </label>
-        <label className="col-span-3">
-          <span className="sr-only">Disciplina</span>
-          <input name="disciplina" maxLength={60} placeholder={a.k === "musica" ? "es. chitarra e voce" : `es. ${a.n.toLowerCase()}`} className={campo} />
-        </label>
-        <label className="col-span-2">
-          <span className="sr-only">Giorno</span>
-          <input name="giorno" type="date" required defaultValue={oggi} min={oggi} className={campo} />
-        </label>
-        <label className="col-span-2">
-          <span className="sr-only">Ora</span>
-          <input name="ora" type="time" required step={900} defaultValue="17:00" className={campo} />
-        </label>
-        <label className="col-span-2">
-          <span className="sr-only">Durata</span>
-          <select name="durata" defaultValue="90" className={campo}>
-            <option value="30">30 min</option>
-            <option value="60">1 ora</option>
-            <option value="90">1 h 30</option>
-            <option value="120">2 ore</option>
-          </select>
-        </label>
-        <p className={`col-span-6 text-[12.5px] ${errore ? "font-semibold text-errore" : "text-muted"}`} role={errore ? "alert" : undefined}>
-          {errore ?? "Nome d'arte e disciplina saranno visibili a tutti. Luogo e orario li controlliamo noi."}
-        </p>
-        <button type="submit" disabled={invio} className="col-span-6 h-11 rounded-[14px] bg-ink text-[14px] font-bold text-white disabled:opacity-60">
-          {invio ? "Invio…" : "Pubblica l'annuncio"}
-        </button>
-      </form>
     </Scheda>
   );
 }

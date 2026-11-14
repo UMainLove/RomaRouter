@@ -77,3 +77,25 @@ Sopra: divieti (rosso a righe), solo silenzio (arancio), solo palchi (viola), fu
 le 1.556 piazze pedonali libere come luoghi consigliati; 58 artisti dimostrativi in tutti i 15 Municipi.
 La verifica di un punto usa gli esagoni esatti («Qui non c'e' spazio adatto»). Rifare:
 `node --env-file=.env.local scripts/artisti/copertura.mts`, poi `npm run artisti:esporta`.
+
+## Pass artista e sportello unico (demo, novembre 2026)
+
+Prima l'artista doveva fare da solo: preavviso PEC alla Polizia Locale per ogni esibizione (art. 10),
+licenza SIAE se suona brani di altri, nulla osta del Municipio per gli spettacoli di tipo 1. Ora:
+
+1. **Pass artista** (una volta sola, 3 passi nella mappa): chi sei (SPID/CIE, nella demo identità di prova),
+   cosa fai (nome d'arte, arte, tre risposte sì/no: gruppo grande, amplificazione, brani di altri), firma della delega.
+   Il Pass vive in un cookie httpOnly (`rr_pass`) con un codice casuale: niente password.
+2. **«Ci sarò»**: tocchi un punto verde o un palco, scegli giorno (da 3 giorni a un mese), ora e durata.
+   Il server controlla fasce dell'art. 6, zone e divieti, palchi dell'Allegato B (niente amplificazione),
+   parchi, posto assegnato per i ritratti, turni già presi entro 30 m (e propone l'orario dopo).
+3. **Sportello** (`/operatori/arte`): ogni sera un lotto solo. Una comunicazione per Gruppo di Polizia Locale
+   con tutte le esibizioni del suo territorio (testo, CSV allegato, file `.eml`), un elenco SIAE, una richiesta di
+   nulla osta per Municipio. Esempio con i dati dimostrativi: 20 comunicazioni al posto di oltre 650 PEC.
+
+Demo: le comunicazioni si generano complete in `artisti.invii` ma non partono (manca il collegamento PEC;
+basterà inviare lo stesso `.eml`). «Ricomincia la demo» rimette tutto in coda. Tabelle: migrazione
+`db/artisti-di-strada/migrations/009_pass_artista.sql` (`npm run db:migrate -- artisti-di-strada`).
+API: `/api/artisti/pass` (GET, POST, DELETE), `/api/artisti/prenota`, `/api/operatori/arte` (GET, DELETE),
+`/api/operatori/arte/invia`, `/api/operatori/arte/invii/<id>` (.eml). Da fare prima di andare dal vero:
+SPID vero, accesso riservato all'area operatori, invio PEC e ricevute.
