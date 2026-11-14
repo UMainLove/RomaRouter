@@ -24,11 +24,21 @@ export function Schermo({
   guidaAperta: boolean;
   onGuida: (aperta: boolean) => void;
 }) {
+  const schermo = useRef<HTMLElement>(null);
+  const alto = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const s = schermo.current, a = alto.current;
+    if (!s || !a) return;
+    // su telefono la «ⓘ» della mappa sta a destra appena sotto la barra (mappa.css): la segue quando i filtri si aprono o si chiudono
+    const ro = new ResizeObserver(() => s.style.setProperty("--rr-sotto-barra", `${a.offsetTop + a.offsetHeight + 8}px`));
+    ro.observe(a);
+    return () => ro.disconnect();
+  }, []);
   return (
-    <main className="relative isolate min-h-0 flex-1 overflow-hidden bg-[#F3EEE4]">
+    <main ref={schermo} className="relative isolate min-h-0 flex-1 overflow-hidden bg-[#F3EEE4]">
       {mappa}
 
-      <div className="pointer-events-none absolute inset-x-3 top-3 z-20 flex flex-col gap-2 lg:right-auto lg:left-4 lg:top-4 lg:w-[420px]">
+      <div ref={alto} className="pointer-events-none absolute inset-x-3 top-3 z-20 flex flex-col gap-2 lg:right-auto lg:left-4 lg:top-4 lg:w-[420px]">
         <div className="pointer-events-auto">{barra}</div>
       </div>
 

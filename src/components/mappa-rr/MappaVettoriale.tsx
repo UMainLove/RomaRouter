@@ -19,6 +19,7 @@ export function MappaVettoriale({
   titolo,
   onPronta,
   conPannelli = true,
+  fonti,
 }: {
   centro: [number, number]; // [lat, lon]
   zoom: number;
@@ -26,6 +27,11 @@ export function MappaVettoriale({
   onPronta: (map: MapLibre, ml: ML) => void | (() => void);
   /** false: mappa dentro un riquadro della pagina, senza pannelli sopra (niente margini) */
   conPannelli?: boolean;
+  /**
+   * Le fonti dei dati della sezione. Su computer le dice la nota nel riquadro in basso; su telefono e tablet
+   * la nota non c'e' (spazio per la mappa) e le fonti stanno nella «ⓘ» delle attribuzioni.
+   */
+  fonti?: string;
 }) {
   const div = useRef<HTMLDivElement>(null);
   const pronta = useRef(onPronta);
@@ -39,6 +45,8 @@ export function MappaVettoriale({
     let map: MapLibre | null = null;
     let pulisci: void | (() => void);
     let ro: ResizeObserver | null = null;
+    const telefono = window.matchMedia("(max-width: 1023.98px)");
+    let attribuisci: (() => void) | null = null;
     Promise.all([import("maplibre-gl"), stileRoma()]).then(([ml, stile]) => {
       if (!vivo || !div.current) return;
       ml.setWorkerUrl("/vendor/maplibre-worker");
@@ -56,7 +64,7 @@ export function MappaVettoriale({
           [11.95, 41.5],
           [13.05, 42.25],
         ],
-        attributionControl: { compact: true, customAttribution: "OpenFreeMap" },
+        attributionControl: false, // la «ⓘ» si mette qui sotto: cambia con lo schermo
         dragRotate: false,
         pitchWithRotate: false,
         fadeDuration: 150,
@@ -65,6 +73,18 @@ export function MappaVettoriale({
       (map as MapLibre & { rrSenzaPannelli?: boolean }).rrSenzaPannelli = !conPannelli;
       map.setPadding(margini(map));
       const m = map;
+      // la «ⓘ»: la stessa di sempre, piu' le fonti della sezione quando lo schermo e' stretto (vedi `fonti`)
+      let attribuzione: InstanceType<ML["AttributionControl"]> | null = null;
+      attribuisci = () => {
+        if (attribuzione) {
+          if (!viva(m)) return;
+          m.removeControl(attribuzione);
+        }
+        attribuzione = new ml.AttributionControl({ compact: true, customAttribution: fonti && telefono.matches ? ["OpenFreeMap", fonti] : "OpenFreeMap" });
+        m.addControl(attribuzione);
+      };
+      attribuisci();
+      if (fonti) telefono.addEventListener("change", attribuisci);
       // per le riprese del video di presentazione (video/riprese): la regia muove la camera e aspetta le tessere
       const w = window as Window & { __rrRiprese?: boolean; __rrMappa?: MapLibre };
       if (w.__rrRiprese) w.__rrMappa = m;
@@ -86,6 +106,7 @@ export function MappaVettoriale({
     return () => {
       vivo = false;
       ro?.disconnect();
+      if (attribuisci) telefono.removeEventListener("change", attribuisci);
       if (typeof pulisci === "function") pulisci();
       map?.remove();
     };

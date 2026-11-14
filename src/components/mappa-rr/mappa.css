@@ -4,7 +4,7 @@
 .maplibregl-ctrl-bottom-right { bottom: 0; }
 @media (max-width: 1023px) {
   .maplibregl-ctrl-bottom-right { bottom: auto; top: 0; }
-  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib { margin-top: 236px !important; }
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib { margin-top: var(--rr-sotto-barra, 236px) !important; }
 }
 .rr-pulsa { position: relative; width: 52px; height: 52px; pointer-events: none; }
 .rr-pulsa::before, .rr-pulsa::after {

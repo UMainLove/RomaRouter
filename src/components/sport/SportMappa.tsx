@@ -7,6 +7,7 @@ import { dati, inclina, inquadra, MappaVettoriale, riposa, type ML, viva, vola }
 import { alone, comparsa } from "../mappa-rr/cinema";
 import { Azione, Azioni, Fatti, Scheda, Schermo, Strumenti, Tondo } from "../mappa-rr/Schermo";
 import { primoTesto } from "../mappa-rr/stile";
+import { Riassunto, Tendina } from "../mappa-rr/Tendina";
 import { assicuraSpille } from "../mappa-rr/spille";
 import { ACCESSO, GLIFI_SPORT, NOMI_DISCIPLINA, PRIORITA, SPORT, TIPO, type Accesso, type Gruppo } from "./sport";
 
@@ -397,6 +398,24 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
         coda={<Strumenti onGuida={() => setGuidaAperta(true)} onTrovami={trovami} />}
       />
       <div className={`rounded-[20px] bg-panel/88 backdrop-blur-xl backdrop-saturate-150 p-1.5 shadow-[0_2px_6px_rgba(37,29,28,.08),0_12px_34px_rgba(37,29,28,.16)] ring-1 ring-white/60 ${sel ? "max-lg:hidden" : ""}`}>
+        <Tendina
+          etichetta="Filtri dello sport"
+          riassunto={
+            <Riassunto
+              icona={
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-ink" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" className="size-[15px]" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: GLIFI_SPORT[gruppo] }} />
+                </span>
+              }
+              parti={[
+                gruppo === "tutti" ? "Tutti gli sport" : SPORT.find((x) => x.k === gruppo)?.n,
+                luoghi.length > 0 && `${fmt(visibili.length)} ${visibili.length === 1 ? "luogo" : "luoghi"}`,
+                soloGratis ? "Gioca gratis" : ACCESSI.some((a) => !accessi[a]) && `senza ${ACCESSI.filter((a) => !accessi[a]).map((a) => ACCESSO[a].breve.toLowerCase()).join(", ")}`,
+                accessibili && "accessibili",
+              ]}
+            />
+          }
+        >
         <div role="group" aria-label="Che sport vuoi fare" className="grid grid-cols-5 gap-1">
           {SPORT.map((s) => {
             const on = gruppo === s.k;
@@ -460,6 +479,7 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
             </svg>
           </button>
         </div>
+        </Tendina>
       </div>
     </div>
   );
@@ -482,7 +502,7 @@ export function SportMappa({ guida }: { guida: { id: string; nome: string; conte
 
   return (
     <Schermo
-      mappa={<MappaVettoriale centro={[41.888, 12.49]} zoom={11.4} titolo="Mappa dei luoghi dove fare sport a Roma" onPronta={pronta} />}
+      mappa={<MappaVettoriale centro={[41.888, 12.49]} zoom={11.4} titolo="Mappa dei luoghi dove fare sport a Roma" fonti="Luoghi dello sport: Roma Capitale e © OpenStreetMap" onPronta={pronta} />}
       barra={barra}
       scheda={scheda}
       guida={{ titolo: "Sport a Roma", schede: guida }}
@@ -619,7 +639,7 @@ function Panoramica({ luoghi, gruppo, accessibili }: { luoghi: FLuogo[]; gruppo:
           </li>
         ))}
       </ul>
-      <p className="mt-1.5 text-[12px] text-muted">Dati di Roma Capitale e OpenStreetMap. Prezzi, lacune e fonti nella Guida.</p>
+      <p className="mt-1.5 text-[12px] text-muted max-lg:hidden">Dati di Roma Capitale e OpenStreetMap. Prezzi, lacune e fonti nella Guida.</p>
     </div>
   );
 }

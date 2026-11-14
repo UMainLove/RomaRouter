@@ -355,7 +355,7 @@ export default function Antenne(props: PageProps<"/antenne">) {
           id: "limiti",
           nome: "Limiti e misure",
           contenuto: (
-            <Blocco id="misure" titolo="Campi elettromagnetici: limiti e controlli" testo="Cosa dice la legge, chi misura e come chiedere una verifica a casa tua.">
+            <Blocco id="misure" titolo="Campi elettromagnetici: limiti e controlli" testo="Cosa dice la legge, chi misura e come chiedere una verifica a casa tua. Per vedere cosa hai intorno, tocca un punto della mappa: il radar mostra le antenne entro 500 m.">
               <Suspense fallback={<Attesa cosa="delle misure" />}><Misure /></Suspense>
             </Blocco>
           ),

@@ -8,6 +8,7 @@ import { dati, inclina, inquadra, MappaVettoriale, riposa, type ML, viva, vola }
 import { alone, comparsa } from "../mappa-rr/cinema";
 import { Azione, Azioni, Fatti, Scheda, Schermo, Strumenti, Tondo } from "../mappa-rr/Schermo";
 import { primoTesto } from "../mappa-rr/stile";
+import { Riassunto, Tendina } from "../mappa-rr/Tendina";
 
 /*
  * Antenne. Tre idee:
@@ -44,6 +45,9 @@ const TAGLIA: Record<Taglia, string> = { macro: "Stazione radio base", piccola: 
 const CONDIVISO = "#251D1C";
 const ESISTENTE = "#3F4A5C";
 const IN_FUNZIONE = "#0F7C80";
+/* le fonti nella «ⓘ» della mappa su telefono, dove la nota del riquadro in basso non c'e' (CC BY-SA chiede nome e licenza) */
+const FONTI =
+  'In funzione: celle © <a href="https://opencellid.org" target="_blank" rel="noopener">OpenCelliD</a> (<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.it" target="_blank" rel="noopener">CC BY-SA 4.0</a>) e impianti © OpenStreetMap · richieste: Roma Capitale';
 const ANELLI = [100, 250, 500];
 const CATEGORIE: Record<string, string> = {
   scuola: "Scuola", asilo_nido: "Asilo nido", ospedale: "Ospedale", casa_di_cura: "Casa di cura", rsa: "RSA",
@@ -449,6 +453,25 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
         coda={<Strumenti onGuida={() => setGuidaAperta(true)} onTrovami={trovami} />}
       />
       <div className={`rounded-[20px] bg-panel/88 backdrop-blur-xl backdrop-saturate-150 p-1.5 shadow-[0_2px_6px_rgba(37,29,28,.08),0_12px_34px_rgba(37,29,28,.16)] ring-1 ring-white/60 ${sel ? "max-lg:hidden" : ""}`}>
+        <Tendina
+          etichetta="Filtri delle antenne"
+          riassunto={
+            <Riassunto
+              icona={
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-ink" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" className="size-[15px]" fill="none" stroke="#fff" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: GLIFI.traliccio }} />
+                </span>
+              }
+              parti={[
+                (Object.keys(COL) as Tipo[]).every((t) => tipi[t]) && esistenti
+                  ? "Tutte le antenne"
+                  : [...(Object.keys(COL) as Tipo[]).filter((t) => tipi[t]).map((t) => PLURALE[t]), ...(esistenti ? ["In funzione"] : [])].join(", ") || "Nessun tipo",
+                operatore || "Tutti gli operatori",
+                sensibili && "Scuole e ospedali",
+              ]}
+            />
+          }
+        >
         <div role="group" aria-label="Tipi di antenne (tocca per nascondere)" className="grid grid-cols-4 gap-1">
           {(Object.keys(COL) as Tipo[]).map((t) => {
             const on = tipi[t];
@@ -512,6 +535,7 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
             Scuole e ospedali
           </button>
         </div>
+        </Tendina>
       </div>
     </div>
   );
@@ -538,7 +562,7 @@ export function AntenneMappa({ guida }: { guida: { id: string; nome: string; con
 
   return (
     <Schermo
-      mappa={<MappaVettoriale centro={[41.893, 12.4829]} zoom={11.6} titolo="Mappa delle antenne di telefonia mobile a Roma" onPronta={pronta} />}
+      mappa={<MappaVettoriale centro={[41.893, 12.4829]} zoom={11.6} titolo="Mappa delle antenne di telefonia mobile a Roma" fonti={FONTI} onPronta={pronta} />}
       barra={barra}
       scheda={scheda}
       guida={{ titolo: "Antenne a Roma", schede: guida }}
@@ -740,7 +764,7 @@ function Panoramica({ istanze, esistenti, anno, onAnno, conteggi }: { istanze: I
         <p className="text-[14px] font-bold text-ink">
           {esistenti ? esistenti.toLocaleString("it-IT", { useGrouping: "always" } as Intl.NumberFormatOptions) : "…"} antenne in funzione <span className="font-semibold text-muted">· {istanze.length || "…"} richieste</span>
         </p>
-        <p className="shrink-0 text-[12px] text-muted">tocca: radar 500 m</p>
+        <p className="shrink-0 text-[12px] text-muted max-lg:hidden">tocca: radar 500 m</p>
       </div>
       <ul className="rr-scorri mt-2 flex gap-x-3.5 overflow-x-auto text-[12.5px] font-semibold whitespace-nowrap text-ink-soft">
         <li className="flex items-center gap-1.5">
@@ -782,7 +806,7 @@ function Panoramica({ istanze, esistenti, anno, onAnno, conteggi }: { istanze: I
           </div>
         </div>
       )}
-      <p className="mt-2 text-[11px] leading-snug text-muted">
+      <p className="mt-2 text-[11px] leading-snug text-muted max-lg:hidden">
         In funzione: celle rilevate dai telefoni © OpenCelliD (CC BY-SA 4.0) e impianti © OpenStreetMap. Richieste: Roma Capitale.
       </p>
       <p className="sr-only">

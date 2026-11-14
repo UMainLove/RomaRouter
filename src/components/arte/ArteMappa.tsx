@@ -9,6 +9,7 @@ import { avatar, caricaIcone, GLIFI, palco, piazza, righe } from "../mappa-rr/ic
 import { dati, inclina, inquadra, MappaVettoriale, riposa, type ML, viva, vola } from "../mappa-rr/MappaVettoriale";
 import { Azione, Azioni, Fatti, Scheda, Schermo, Strumenti, Tondo } from "../mappa-rr/Schermo";
 import { primoTesto } from "../mappa-rr/stile";
+import { Riassunto, Tendina } from "../mappa-rr/Tendina";
 import { ATT, att } from "./attivita";
 import { PassBottone, SchedaCiSaro, SchedaPass, SchedaRegistrazione, usePass } from "./PassArtista";
 
@@ -469,6 +470,27 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
             </button>
           ))}
         </div>
+        <div className="max-lg:mt-1">
+        <Tendina
+          etichetta={modo === "esibirmi" ? "Cosa fai e orari" : "Quando"}
+          riassunto={
+            modo === "esibirmi" ? (
+              <>
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full" style={{ background: att(attivita).c }} aria-hidden="true">
+                  <svg viewBox="0 0 24 24" className="size-[15px]" fill="none" stroke="#fff" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: att(attivita).g }} />
+                </span>
+                <span className="min-w-0 truncate">
+                  {att(attivita).n} · <span className={clock.aperto ? "text-ok" : "text-attenzione"}>{clock.testo}</span>
+                </span>
+              </>
+            ) : (
+              <Riassunto
+                icona={<span className="ml-1 size-2.5 shrink-0 rounded-full bg-[#C2185B]" aria-hidden="true" />}
+                parti={[{ adesso: "In scena ora", oggi: "Oggi", domani: "Domani" }[quando], `${conteggi[quando]} ${conteggi[quando] === 1 ? "esibizione" : "esibizioni"}`]}
+              />
+            )
+          }
+        >
         {modo === "esibirmi" ? (
           <div role="group" aria-label="Cosa fai" className="mt-1.5 grid grid-cols-5 gap-1">
             {ATT.map((a) => {
@@ -525,6 +547,8 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
             <PassBottone pass={passStato?.pass} onClick={() => setSel(passStato?.pass ? { tipo: "pass" } : { tipo: "registrazione" })} />
           </div>
         )}
+        </Tendina>
+        </div>
       </div>
     </div>
   );
@@ -636,7 +660,7 @@ export function ArteMappa({ guida }: { guida: { id: string; nome: string; conten
 
   return (
     <Schermo
-      mappa={<MappaVettoriale centro={[41.8986, 12.4768]} zoom={14.6} titolo="Mappa dell'arte di strada a Roma" onPronta={pronta} />}
+      mappa={<MappaVettoriale centro={[41.8986, 12.4768]} zoom={14.6} titolo="Mappa dell'arte di strada a Roma" fonti="Regole e aree: Roma Capitale e Municipi, Art Spot, © OpenStreetMap" onPronta={pronta} />}
       barra={barra}
       scheda={scheda ?? <Legenda modo={modo} attivita={attivita} />}
       guida={{ titolo: "Arte di strada a Roma", schede: guida }}
@@ -668,7 +692,7 @@ function Legenda({ modo, attivita }: { modo: Modo; attivita: AttivitaArte }) {
   return (
     <div className="pointer-events-auto rounded-[20px] bg-panel/95 px-4 py-3 shadow-[0_6px_24px_rgba(37,29,28,.16)] ring-1 ring-black/5 backdrop-blur">
       <p className="text-[14px] font-bold text-ink">{modo === "guardare" ? "Tocca un artista o un punto della mappa" : "Tocca un punto: ti dico se puoi esibirti lì"}</p>
-      {modo === "guardare" && <p className="mt-0.5 text-[12px] text-muted">Chi è in scena adesso ha l&apos;onda intorno.</p>}
+      {modo === "guardare" && <p className="mt-0.5 text-[12px] text-muted max-lg:hidden">Chi è in scena adesso ha l&apos;onda intorno.</p>}
       <ul className="mt-2 flex flex-wrap gap-x-3.5 gap-y-1.5 text-[12.5px] font-semibold text-ink-soft">
         {voci.map((x) => (
           <li key={x.t} className="flex items-center gap-1.5">
@@ -677,7 +701,7 @@ function Legenda({ modo, attivita }: { modo: Modo; attivita: AttivitaArte }) {
           </li>
         ))}
       </ul>
-      {modo === "esibirmi" && !dedicate && <p className="mt-1.5 text-[12px] text-muted">{attivita === "musica" || attivita === "fuoco" ? "Rosso: divieti dei Municipi, vie sotto i 5 m, ospedali, chiese e monumenti (art. 2). " : "Rosso: divieti dei Municipi. "}Rosa: campagna, cimiteri, ferrovie, superstrade.</p>}
+      {modo === "esibirmi" && !dedicate && <p className="mt-1.5 text-[12px] text-muted max-lg:hidden">{attivita === "musica" || attivita === "fuoco" ? "Rosso: divieti dei Municipi, vie sotto i 5 m, ospedali, chiese e monumenti (art. 2). " : "Rosso: divieti dei Municipi. "}Rosa: campagna, cimiteri, ferrovie, superstrade.</p>}
     </div>
   );
 }

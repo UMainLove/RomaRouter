@@ -9,6 +9,7 @@ import { alone, comparsa } from "../mappa-rr/cinema";
 import { Azione, Azioni, Fatti, Scheda, Schermo, Strumenti, Tondo } from "../mappa-rr/Schermo";
 import { assicuraSpille } from "../mappa-rr/spille";
 import { primoTesto } from "../mappa-rr/stile";
+import { Riassunto, Tendina } from "../mappa-rr/Tendina";
 import { AMARANTO, SchedaAccesso, SchedaPerso, SchedaSegnalazione, SchedaTrovato, VERDE, type EsitoTrovato, type Sessione, type Zona } from "./Flussi";
 import { PUNTI, TIPI_PUNTO, type TipoPunto } from "./linguaggio";
 
@@ -297,6 +298,28 @@ export function OggettiMappa({ guida }: { guida: { id: string; nome: string; con
             <Grande colore={AMARANTO} glifo={`<circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 5 5"/>`} titolo="Ho perso" sotto="un oggetto o un documento" onClick={() => inizia("perso")} />
           )}
         </div>
+        <div className="max-lg:mt-1">
+        <Tendina
+          etichetta="Filtri dei punti di consegna"
+          riassunto={
+            <Riassunto
+              icona={
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-ink" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" className="size-[15px]" fill="none" stroke="#fff" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21Z" />
+                    <circle cx="12" cy="10" r="2.2" />
+                  </svg>
+                </span>
+              }
+              parti={[
+                TIPI_PUNTO.filter((t) => t !== "ufficio").every((t) => tipi[t])
+                  ? "Tutti i punti di consegna"
+                  : TIPI_PUNTO.filter((t) => t !== "ufficio" && tipi[t]).map((t) => PUNTI[t].breve).join(", ") || "Solo uffici",
+                soloH24 && "aperti 24h",
+              ]}
+            />
+          }
+        >
         <div role="group" aria-label="Tipi di punto di consegna (tocca per nascondere)" className="mt-1.5 flex flex-wrap items-center gap-1">
           {TIPI_PUNTO.filter((t) => t !== "ufficio").map((t) => (
             <button
@@ -319,6 +342,8 @@ export function OggettiMappa({ guida }: { guida: { id: string; nome: string; con
           >
             24h
           </button>
+        </div>
+        </Tendina>
         </div>
       </div>
     </div>
@@ -379,7 +404,7 @@ export function OggettiMappa({ guida }: { guida: { id: string; nome: string; con
 
   return (
     <Schermo
-      mappa={<MappaVettoriale centro={[41.893, 12.49]} zoom={11.3} titolo="Mappa dei punti dove consegnare o ritirare oggetti smarriti a Roma" onPronta={pronta} />}
+      mappa={<MappaVettoriale centro={[41.893, 12.49]} zoom={11.3} titolo="Mappa dei punti dove consegnare o ritirare oggetti smarriti a Roma" fonti="Punti di consegna: Roma Capitale e © OpenStreetMap (ODbL)" onPronta={pronta} />}
       barra={barra}
       scheda={scheda}
       guida={{ titolo: "Oggetti smarriti a Roma", schede: guida }}
@@ -525,7 +550,7 @@ function Panoramica({ totale, h24 }: { totale: number; h24: number }) {
           </li>
         ))}
       </ul>
-      <p className="mt-1.5 text-[12px] text-muted">Telefono perso, regole e fonti nella Guida.</p>
+      <p className="mt-1.5 text-[12px] text-muted max-lg:hidden">Telefono perso, regole e fonti nella Guida.</p>
     </div>
   );
 }

@@ -129,11 +129,27 @@ export default function PaginaArte() {
           id: "regole",
           nome: "Regole",
           contenuto: (
-            <Blocco id="regole" titolo="Le regole in breve" testo="Il regolamento di Roma Capitale (DAC 24/2012, come risulta dopo la sentenza del TAR Lazio n. 5494/2013) vale in tutto il Comune; i Municipi aggiungono divieti in zone precise.">
-              <Suspense fallback={<Attesa cosa="le regole" />}>
-                <Regole />
-              </Suspense>
-            </Blocco>
+            <>
+              <Blocco id="regole" titolo="Le regole in breve" testo="Il regolamento di Roma Capitale (DAC 24/2012, come risulta dopo la sentenza del TAR Lazio n. 5494/2013) vale in tutto il Comune; i Municipi aggiungono divieti in zone precise.">
+                <Suspense fallback={<Attesa cosa="le regole" />}>
+                  <Regole />
+                </Suspense>
+              </Blocco>
+              {/* su telefono queste righe non stanno nel riquadro della mappa: sono qui */}
+              <Blocco id="legenda" titolo="Come leggere la mappa">
+                <ul className="flex flex-col gap-2 text-[15px] leading-snug text-ink">
+                  <li>
+                    <span className="font-bold">Rosso, vietato:</span> i divieti dei Municipi. Per musica e fuoco anche le vie sotto i 5 m, gli ospedali, le chiese e i monumenti (art. 2).
+                  </li>
+                  <li>
+                    <span className="font-bold">Rosa, non adatto:</span> campagna, cimiteri, ferrovie, superstrade.
+                  </li>
+                  <li>
+                    <span className="font-bold">L&apos;onda intorno a un artista:</span> è in scena adesso.
+                  </li>
+                </ul>
+              </Blocco>
+            </>
           ),
         },
         {
