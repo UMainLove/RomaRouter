@@ -474,3 +474,194 @@
     stroke-dashoffset: -0.044;
   }
 }
+
+/* ── Copertina (prima visita) ──────────────────────────────────────────────────────────────
+   Il Colosseo fermo, poi la lupa; si apre a cerchio dal Miliarium. La decide uno script nel
+   <head> (data-copertina su <html>) prima del primo disegno; senza JavaScript non compare.
+   Fuori dai layer: nessuna utility deve poterla scavalcare. */
+@property --copertina-raggio {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+.copertina,
+.copertina-salta {
+  display: none;
+}
+html[data-copertina] {
+  overflow: hidden;
+}
+/* la home resta ferma al primo fotogramma finché la copertina non si apre */
+html[data-copertina] .mg *,
+html[data-copertina] .mg *::before,
+html[data-copertina] .mg *::after {
+  animation-play-state: paused !important;
+}
+html[data-copertina] .copertina,
+.copertina[data-fase="uscita"] {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  overflow: hidden;
+  background-color: #efe9df;
+  background-image: url("/copertina/poster.webp");
+  background-size: cover;
+  background-repeat: no-repeat;
+  color: var(--color-ink);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+.copertina-scena,
+.copertina-tela {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.copertina-scena {
+  opacity: 1;
+}
+.copertina[data-pronta] .copertina-tela {
+  opacity: 1;
+}
+/* velo chiaro in basso: il testo resta leggibile anche sopra gli archi (telefoni) */
+.copertina-velo {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 42%;
+  background: linear-gradient(to top, rgb(239 233 223 / 0.82), rgb(239 233 223 / 0));
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+.copertina-marchio {
+  position: absolute;
+  top: clamp(18px, 3.2vh, 32px);
+  right: clamp(20px, 4vw, 56px);
+  margin: 0;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.copertina-testo {
+  position: absolute;
+  right: clamp(20px, 4vw, 56px);
+  bottom: clamp(84px, 14vh, 150px);
+  margin: 0;
+  text-align: right;
+  transition:
+    opacity 0.5s ease,
+    translate 0.5s ease;
+}
+.copertina-testo p {
+  margin: 0;
+}
+.copertina-luogo {
+  font-size: 11.5px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+}
+.copertina-contatore {
+  font-size: clamp(72px, 11vw, 152px);
+  line-height: 0.92;
+  font-weight: 200;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums;
+}
+.copertina-motto {
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--color-ink-soft);
+}
+/* quando parte la lupa il testo lascia la scena */
+.copertina[data-corsa] .copertina-testo,
+.copertina[data-corsa] .copertina-velo {
+  opacity: 0;
+  translate: 0 10px;
+}
+html[data-copertina] .copertina-salta {
+  display: inline-flex;
+  align-items: center;
+  position: fixed;
+  z-index: 81;
+  right: clamp(16px, 4vw, 56px);
+  bottom: clamp(16px, 4vh, 40px);
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgb(37 29 28 / 0.18);
+  border-radius: 999px;
+  background: rgb(250 249 247 / 0.78);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+html[data-copertina] .copertina-salta:hover {
+  background: rgb(250 249 247 / 0.95);
+}
+html[data-copertina] .copertina-salta:focus-visible {
+  outline: 2px solid var(--color-amaranto);
+  outline-offset: 3px;
+}
+
+/* l'apertura: un cerchio dal Miliarium, con il bordo sfumato su 30vmax (opacità dinamica) */
+.copertina[data-fase="uscita"] {
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(
+    circle at var(--cx, 50%) var(--cy, 42%),
+    transparent var(--copertina-raggio),
+    #000 calc(var(--copertina-raggio) + 30vmax)
+  );
+  mask-image: radial-gradient(
+    circle at var(--cx, 50%) var(--cy, 42%),
+    transparent var(--copertina-raggio),
+    #000 calc(var(--copertina-raggio) + 30vmax)
+  );
+  animation: copertina-apri 0.95s cubic-bezier(0.55, 0, 0.2, 1) forwards;
+}
+.copertina[data-uscita="breve"] {
+  animation-duration: 0.6s;
+}
+.copertina[data-fase="uscita"] .copertina-tela {
+  scale: 1.06;
+  transition:
+    scale 0.95s cubic-bezier(0.55, 0, 0.2, 1),
+    opacity 0.3s ease;
+}
+@keyframes copertina-apri {
+  from {
+    --copertina-raggio: -30vmax;
+  }
+  to {
+    --copertina-raggio: 160vmax;
+  }
+}
+@keyframes copertina-sfuma {
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .copertina[data-fase="uscita"] {
+    -webkit-mask-image: none;
+    mask-image: none;
+    animation: copertina-sfuma 0.45s ease forwards;
+  }
+  .copertina-tela,
+  .copertina-testo,
+  .copertina-velo {
+    transition: none;
+  }
+}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { SCRIPT_AVVIO } from "@/components/copertina/costanti";
 import "./globals.css";
 
 // Montserrat variabile (100–900), latino, licenza SIL OFL 1.1 (fonts/OFL-Montserrat.txt).
@@ -25,7 +26,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="it" className={`${montserrat.variable} h-full antialiased`}>
+    // suppressHydrationWarning: lo script della copertina aggiunge data-copertina prima di React
+    <html lang="it" className={`${montserrat.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_AVVIO }} />
+      </head>
       <body className="flex min-h-full flex-col bg-bg font-sans text-ink">
         <Header />
         <div className="flex flex-1 flex-col">{children}</div>
