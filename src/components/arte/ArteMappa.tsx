@@ -690,7 +690,7 @@ function Legenda({ modo, attivita }: { modo: Modo; attivita: AttivitaArte }) {
             { c: COL.piazza, t: "Piazze libere", tondo: true },
           ];
   return (
-    <div className="pointer-events-auto rounded-[20px] bg-panel/95 px-4 py-3 shadow-[0_6px_24px_rgba(37,29,28,.16)] ring-1 ring-black/5 backdrop-blur">
+    <div className="pointer-events-auto hidden rounded-[20px] bg-panel/95 px-4 py-3 shadow-[0_6px_24px_rgba(37,29,28,.16)] ring-1 ring-black/5 backdrop-blur lg:block">
       <p className="text-[14px] font-bold text-ink">{modo === "guardare" ? "Tocca un artista o un punto della mappa" : "Tocca un punto: ti dico se puoi esibirti lì"}</p>
       {modo === "guardare" && <p className="mt-0.5 text-[12px] text-muted max-lg:hidden">Chi è in scena adesso ha l&apos;onda intorno.</p>}
       <ul className="mt-2 flex flex-wrap gap-x-3.5 gap-y-1.5 text-[12.5px] font-semibold text-ink-soft">

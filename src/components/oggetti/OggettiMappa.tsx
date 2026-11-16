@@ -535,7 +535,7 @@ function SchedaEsito({ e, punti, rif, onChiudi, onPunto }: { e: EsitoTrovato; pu
 
 function Panoramica({ totale, h24 }: { totale: number; h24: number }) {
   return (
-    <div className="pointer-events-auto rounded-[20px] bg-panel/95 px-4 py-3 shadow-[0_6px_24px_rgba(37,29,28,.16)] ring-1 ring-black/5 backdrop-blur">
+    <div className="pointer-events-auto hidden rounded-[20px] bg-panel/95 px-4 py-3 shadow-[0_6px_24px_rgba(37,29,28,.16)] ring-1 ring-black/5 backdrop-blur lg:block">
       <p className="text-[14px] font-bold text-ink">Hai perso o trovato qualcosa a Roma? Tocca uno dei due pulsanti</p>
       {totale > 0 && (
         <p className="mt-0.5 text-[12.5px] text-ink-soft">
